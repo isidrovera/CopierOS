@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: copieros_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: copieros
+      POSTGRES_USER: copieros
+      POSTGRES_PASSWORD: copieros_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - copieros_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  copieros_postgres_data:

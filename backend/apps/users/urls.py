@@ -1,0 +1,100 @@
+from django.urls import path
+
+from .views import (
+    AdminResetPasswordView,
+    ArchiveUserView,
+    BeginTotpSetupView,
+    ChangePasswordView,
+    ConfirmTotpSetupView,
+    CurrentUserView,
+    DisableTwoFactorView,
+    LoginView,
+    LogoutView,
+    RegenerateRecoveryCodesView,
+    RestoreUserView,
+    TwoFactorLoginView,
+    TwoFactorStatusView,
+    UserDetailUpdateView,
+    UserListCreateView,
+)
+
+
+urlpatterns = [
+    path(
+        "login/",
+        LoginView.as_view(),
+        name="login",
+    ),
+    path(
+        "login/two-factor/",
+        TwoFactorLoginView.as_view(),
+        name="two-factor-login",
+    ),
+    path(
+        "logout/",
+        LogoutView.as_view(),
+        name="logout",
+    ),
+    path(
+        "me/",
+        CurrentUserView.as_view(),
+        name="current-user",
+    ),
+    path(
+        "change-password/",
+        ChangePasswordView.as_view(),
+        name="change-password",
+    ),
+
+    path(
+        "security/two-factor/",
+        TwoFactorStatusView.as_view(),
+        name="two-factor-status",
+    ),
+    path(
+        "security/two-factor/setup/",
+        BeginTotpSetupView.as_view(),
+        name="two-factor-setup",
+    ),
+    path(
+        "security/two-factor/confirm/",
+        ConfirmTotpSetupView.as_view(),
+        name="two-factor-confirm",
+    ),
+    path(
+        "security/two-factor/disable/",
+        DisableTwoFactorView.as_view(),
+        name="two-factor-disable",
+    ),
+    path(
+        "security/two-factor/recovery-codes/",
+        RegenerateRecoveryCodesView.as_view(),
+        name="two-factor-recovery-codes",
+    ),
+
+    path(
+        "",
+        UserListCreateView.as_view(),
+        name="user-list-create",
+    ),
+    path(
+        "<uuid:id>/",
+        UserDetailUpdateView.as_view(),
+        name="user-detail-update",
+    ),
+    path(
+        "<uuid:user_id>/archive/",
+        ArchiveUserView.as_view(),
+        name="user-archive",
+    ),
+    path(
+        "<uuid:user_id>/restore/",
+        RestoreUserView.as_view(),
+        name="user-restore",
+    ),
+    path(
+        "<uuid:user_id>/reset-password/",
+        AdminResetPasswordView.as_view(),
+        name="user-reset-password",
+    ),
+]
