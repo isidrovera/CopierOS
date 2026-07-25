@@ -1903,3 +1903,1007 @@
     min-height: 0;
   }
 }
+
+
+/* ============================================================= */
+/* TARJETA VISUAL DE TÓNER / TINTA                               */
+/* ============================================================= */
+
+.consumable-unit-svg {
+  width: 78px;
+  height: 58px;
+}
+
+.consumable-cap {
+  fill: #263746;
+}
+
+.consumable-neck {
+  fill: #6f7c86;
+}
+
+.consumable-bottle {
+  stroke: #8395a2;
+  stroke-width: 1.5;
+}
+
+.consumable-liquid {
+  opacity: 0.95;
+}
+
+.consumable-liquid-wave {
+  fill: none;
+  stroke: rgb(255 255 255 / 72%);
+  stroke-width: 2;
+}
+
+.consumable-highlight {
+  fill: none;
+  stroke: rgb(255 255 255 / 84%);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.consumable-missing-mark circle {
+  fill: rgb(255 255 255 / 78%);
+  stroke: #dc2d2d;
+  stroke-width: 4;
+}
+
+.consumable-missing-mark path {
+  fill: none;
+  stroke: #dc2d2d;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.consumable-level-card {
+  margin-top: 8px;
+  padding: 9px;
+  border: 1px solid #dfe7ec;
+  border-radius: 10px;
+  background: #f9fbfc;
+}
+
+.consumable-level-header,
+.consumable-level-header > div,
+.consumable-level-scale,
+.consumable-missing-message {
+  display: flex;
+  align-items: center;
+}
+
+.consumable-level-header {
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.consumable-level-header > div {
+  min-width: 0;
+  gap: 6px;
+}
+
+.consumable-level-header strong {
+  overflow: hidden;
+  color: #435467;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.consumable-color-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      currentColor 14%,
+      transparent
+    );
+}
+
+.consumable-level-state {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eef2f4;
+  color: #687886;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.consumable-level-value {
+  margin-top: 8px;
+}
+
+.consumable-level-value > strong {
+  display: block;
+  margin-bottom: 6px;
+  color: currentColor;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.consumable-level-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e6ebee;
+}
+
+.consumable-level-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  transition: width 0.25s ease;
+}
+
+.consumable-level-scale {
+  justify-content: space-between;
+  margin-top: 4px;
+  color: #87939d;
+  font-size: 7px;
+}
+
+.consumable-missing-message {
+  gap: 9px;
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #fff0ef;
+}
+
+.missing-x {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #dc2d2d;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.consumable-missing-message strong,
+.consumable-missing-message small {
+  display: block;
+}
+
+.consumable-missing-message strong {
+  color: #bd2626;
+  font-size: 10px;
+}
+
+.consumable-missing-message small {
+  margin-top: 2px;
+  color: #8c6666;
+  font-size: 8px;
+}
+
+.consumable-level-card.cyan {
+  color: #0798bd;
+  border-color: #b9e8f2;
+  background: #f1fcfe;
+}
+
+.consumable-level-card.magenta {
+  color: #d91f75;
+  border-color: #f1bfd6;
+  background: #fff5fa;
+}
+
+.consumable-level-card.yellow {
+  color: #e3a400;
+  border-color: #f3dfa6;
+  background: #fffaf0;
+}
+
+.consumable-level-card.black {
+  color: #303840;
+  border-color: #cfd6dc;
+  background: #f6f8f9;
+}
+
+.consumable-level-card.missing,
+.consumable-level-card.empty {
+  border-color: #f1c6c2;
+}
+
+.consumable-level-card.missing
+.consumable-level-state,
+.consumable-level-card.empty
+.consumable-level-state {
+  background: #fff0ef;
+  color: #c3312c;
+}
+
+.consumable-level-card.low
+.consumable-level-state {
+  background: #fff3d8;
+  color: #a86e00;
+}
+
+.consumable-level-card.full
+.consumable-level-state {
+  background: #eaf8ef;
+  color: #277f4d;
+}
+
+
+/* ============================================================= */
+/* SOLO LAS UNIDADES PRINCIPALES RECIBEN ILUSTRACIÓN              */
+/* ============================================================= */
+
+.technical-unit-card
+.component-catalog-image,
+.technical-unit-card
+.component-fallback-icon {
+  display: flex;
+}
+
+.selected-subcomponents
+.component-catalog-image,
+.selected-subcomponents
+.component-fallback-icon,
+.subcomponent-option
+.component-catalog-image,
+.subcomponent-option
+.component-fallback-icon {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  .consumable-level-value > strong {
+    font-size: 16px;
+  }
+}
+
+
+/* ============================================================= */
+/* CORRECCIÓN VISUAL CATÁLOGO DE UNIDADES                        */
+/* ============================================================= */
+
+.component-fallback-icon,
+.component-catalog-image {
+  width: 118px !important;
+  height: 94px !important;
+  flex-basis: 118px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 16px !important;
+  padding: 10px !important;
+  background: linear-gradient(180deg, #fbfdff 0%, #eef4f8 100%) !important;
+  border: 1px solid #d7e3ec !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.75),
+    0 8px 18px rgba(24, 50, 72, .08) !important;
+}
+
+.component-catalog-image img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  filter: saturate(1.05) contrast(1.03);
+}
+
+.component-fallback-icon::after,
+.unit-visual-label {
+  display: none !important;
+}
+
+.unit-illustration.realistic-unit-svg {
+  width: 100px !important;
+  height: 72px !important;
+  overflow: visible;
+  filter: drop-shadow(0 5px 5px rgba(15, 23, 42, .12));
+}
+
+.component-fallback-icon.cyan,
+.component-catalog-image.cyan {
+  color: #10a6d8 !important;
+  background: linear-gradient(180deg, #f2fcff 0%, #e1f7fd 100%) !important;
+  border-color: #bfe9f5 !important;
+}
+
+.component-fallback-icon.magenta,
+.component-catalog-image.magenta {
+  color: #d81b7a !important;
+  background: linear-gradient(180deg, #fff6fb 0%, #fbe5f1 100%) !important;
+  border-color: #f1c2da !important;
+}
+
+.component-fallback-icon.yellow,
+.component-catalog-image.yellow {
+  color: #e4a600 !important;
+  background: linear-gradient(180deg, #fffaf0 0%, #f9efd3 100%) !important;
+  border-color: #f0dcab !important;
+}
+
+.component-fallback-icon.black,
+.component-catalog-image.black {
+  color: #2f3a45 !important;
+  background: linear-gradient(180deg, #f6f8fa 0%, #e7edf2 100%) !important;
+  border-color: #d5dde4 !important;
+}
+
+.component-fallback-icon.neutral,
+.component-catalog-image.neutral {
+  color: #5a7f98 !important;
+  background: linear-gradient(180deg, #f7fbfd 0%, #ebf3f7 100%) !important;
+  border-color: #d7e5ee !important;
+}
+
+.checklist-item-card.technical-unit-card {
+  padding: 14px !important;
+}
+
+.checklist-item-card.technical-unit-card .item-heading {
+  align-items: flex-start !important;
+}
+
+.checklist-item-card.technical-unit-card .item-heading strong {
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+}
+
+.checklist-item-card.technical-unit-card .item-heading small {
+  font-size: 9px !important;
+}
+
+.checklist-item-card.technical-unit-card .item-description {
+  margin-top: 8px !important;
+  font-size: 11px !important;
+}
+
+.checklist-item-card.technical-unit-card .item-actions {
+  align-self: stretch;
+}
+
+.realistic-unit-svg .metal-dark {
+  fill: #1f2937;
+}
+
+.realistic-unit-svg .metal-mid {
+  fill: #64748b;
+}
+
+.realistic-unit-svg .metal-light {
+  fill: #d7dee5;
+}
+
+.consumable-level-card {
+  margin-top: 10px !important;
+}
+
+.consumable-level-card .consumable-level-value > strong {
+  font-size: 24px !important;
+}
+
+.consumable-level-card .consumable-level-track {
+  height: 9px !important;
+}
+
+.consumable-level-card.cyan {
+  color: #0894c8 !important;
+  border-color: #bfe8f4 !important;
+  background: #f1fbfe !important;
+}
+
+.consumable-level-card.magenta {
+  color: #db1b78 !important;
+  border-color: #f2c2da !important;
+  background: #fff6fb !important;
+}
+
+.consumable-level-card.yellow {
+  color: #e6a100 !important;
+  border-color: #f0deae !important;
+  background: #fffaf0 !important;
+}
+
+.consumable-level-card.black {
+  color: #2d3640 !important;
+  border-color: #d1d8de !important;
+  background: #f7f9fa !important;
+}
+
+/* ============================================================= */
+/* MODAL DE TÓNER / TINTA                                        */
+/* ============================================================= */
+
+.consumable-review-panel {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #dce6ec;
+  border-radius: 12px;
+  background: #f8fbfc;
+}
+
+.consumable-review-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.consumable-review-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.consumable-review-heading strong {
+  color: #34475d;
+  font-size: 11px;
+}
+
+.consumable-review-heading small {
+  color: #81909f;
+  font-size: 8px;
+}
+
+.consumable-review-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #e8f3f7;
+  color: #28799b;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.consumable-review-label.missing,
+.consumable-review-label.empty {
+  background: #fff0ed;
+  color: #ad4d42;
+}
+
+.consumable-review-label.full {
+  background: #e7f6ed;
+  color: #277d4c;
+}
+
+.consumable-presence-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.consumable-presence-button {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid #dce4ea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #526478;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.consumable-presence-button:hover {
+  transform: translateY(-1px);
+  border-color: #8fbccc;
+}
+
+.consumable-presence-button.active {
+  border-color: #3c91b3;
+  background: #edf8fb;
+  box-shadow: 0 0 0 2px rgb(40 127 165 / 10%);
+}
+
+.consumable-presence-button.missing.active {
+  border-color: #c95b52;
+  background: #fff3f1;
+  box-shadow: 0 0 0 2px rgb(201 91 82 / 10%);
+}
+
+.presence-icon {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #e7f6ed;
+  color: #277d4c;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.consumable-presence-button.missing .presence-icon {
+  background: #fff0ed;
+  color: #ad4d42;
+}
+
+.consumable-presence-button > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.consumable-presence-button strong {
+  color: #3a4d62;
+  font-size: 10px;
+}
+
+.consumable-presence-button small {
+  color: #8793a1;
+  font-size: 8px;
+}
+
+.consumable-level-editor {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #e0e7ed;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.consumable-level-row,
+.consumable-level-scale {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.consumable-level-row {
+  margin-bottom: 8px;
+}
+
+.consumable-level-row label {
+  color: #536579;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.consumable-level-row strong {
+  color: #287fa5;
+  font-size: 17px;
+}
+
+.consumable-level-editor input[type="range"] {
+  width: 100%;
+  accent-color: #287fa5;
+  cursor: pointer;
+}
+
+.consumable-level-scale {
+  margin-top: 5px;
+  color: #8995a3;
+  font-size: 7px;
+}
+
+.consumable-quick-levels {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.consumable-quick-levels button {
+  min-height: 28px;
+  padding: 0 4px;
+  border: 1px solid #dce4ea;
+  border-radius: 7px;
+  background: #f8fafb;
+  color: #687789;
+  font: inherit;
+  font-size: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.consumable-quick-levels button.active {
+  border-color: #287fa5;
+  background: #287fa5;
+  color: #ffffff;
+}
+
+.consumable-absent-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px;
+  border: 1px solid #efc8c4;
+  border-radius: 10px;
+  background: #fff4f2;
+}
+
+.consumable-absent-preview > span {
+  width: 33px;
+  height: 33px;
+  flex: 0 0 33px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #d94f46;
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.consumable-absent-preview > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.consumable-absent-preview strong {
+  color: #a74841;
+  font-size: 10px;
+}
+
+.consumable-absent-preview small {
+  color: #8d706d;
+  font-size: 8px;
+}
+
+@media (max-width: 1180px) {
+  .component-fallback-icon,
+  .component-catalog-image {
+    width: 102px !important;
+    height: 82px !important;
+    flex-basis: 102px !important;
+  }
+
+  .unit-illustration.realistic-unit-svg {
+    width: 88px !important;
+    height: 64px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .component-fallback-icon,
+  .component-catalog-image {
+    width: 90px !important;
+    height: 74px !important;
+    flex-basis: 90px !important;
+  }
+
+  .unit-illustration.realistic-unit-svg {
+    width: 78px !important;
+    height: 56px !important;
+  }
+
+  .consumable-presence-options {
+    grid-template-columns: 1fr;
+  }
+
+  .consumable-quick-levels {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+
+/* ============================================================= */
+/* TÓNER: MOSTRAR COMO TARJETA VISUAL AUNQUE SEA CATEGORÍA TONER */
+/* ============================================================= */
+
+.checklist-item-card.consumable-unit-card {
+  border-left-color: currentColor;
+}
+
+.toner-cartridge-svg {
+  width: 82px !important;
+  height: 102px !important;
+  color: inherit;
+}
+
+.toner-shell {
+  fill: rgba(255, 255, 255, 0.68);
+  stroke: #8f9da8;
+  stroke-width: 2;
+}
+
+.toner-cap {
+  fill: #9aa6ae;
+  stroke: #697680;
+  stroke-width: 1;
+}
+
+.toner-cap-highlight {
+  fill: #dce3e7;
+}
+
+.toner-fill {
+  fill: currentColor;
+  opacity: 0.82;
+}
+
+.toner-level-line {
+  stroke: rgba(86, 97, 107, 0.58);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+
+.toner-label {
+  fill: currentColor;
+  fill-opacity: 0.12;
+  stroke: #929ea8;
+  stroke-width: 0.8;
+}
+
+.toner-label-text {
+  fill: currentColor;
+  font-size: 11px;
+  font-weight: 900;
+  font-family:
+    Arial,
+    sans-serif;
+}
+
+.toner-missing-overlay rect {
+  fill: rgba(255, 255, 255, 0.75);
+  stroke: #dc2626;
+  stroke-width: 3;
+}
+
+.toner-missing-overlay path {
+  fill: none;
+  stroke: #dc2626;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.component-fallback-icon.is-consumable {
+  min-height: 112px !important;
+}
+
+.component-fallback-icon.is-consumable.cyan {
+  color: #00a9cf !important;
+}
+
+.component-fallback-icon.is-consumable.magenta {
+  color: #e11d75 !important;
+}
+
+.component-fallback-icon.is-consumable.yellow {
+  color: #f2b600 !important;
+}
+
+.component-fallback-icon.is-consumable.black,
+.component-fallback-icon.is-consumable.neutral {
+  color: #252b31 !important;
+}
+
+.component-fallback-icon.is-consumable.is-missing {
+  background:
+    linear-gradient(
+      180deg,
+      #fffafa 0%,
+      #fff0ef 100%
+    ) !important;
+  border-color: #efc0bc !important;
+}
+
+@media (max-width: 720px) {
+  .toner-cartridge-svg {
+    width: 70px !important;
+    height: 90px !important;
+  }
+}
+
+
+/* ============================================================= */
+/* ORGANIZACIÓN DEL CHECKLIST POR SECCIONES                       */
+/* ============================================================= */
+
+.checklist-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.checklist-group {
+  overflow: hidden;
+  border: 1px solid #dfe7ed;
+  border-radius: 14px;
+  background: #fbfcfd;
+}
+
+.checklist-group-header {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns:
+    auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  border-bottom: 1px solid #e4eaef;
+  background: #f5f8fa;
+}
+
+.checklist-group-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #e4f1f6;
+  color: #287fa5;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.checklist-group-header > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.checklist-group-header strong {
+  color: #30445a;
+  font-size: 12px;
+}
+
+.checklist-group-header small {
+  color: #81909e;
+  font-size: 8px;
+}
+
+.checklist-group-count {
+  min-width: 27px;
+  height: 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #e8eef2;
+  color: #627286;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.checklist-group .checklist-items-list {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+
+.checklist-group
+.checklist-item-card {
+  height: 100%;
+}
+
+.group-toner
+.checklist-group-header {
+  background:
+    linear-gradient(
+      90deg,
+      #f0fbfe 0%,
+      #fff7fb 36%,
+      #fffaf0 68%,
+      #f4f6f8 100%
+    );
+}
+
+.group-toner
+.checklist-group-icon {
+  background: #ffffff;
+  color: #1f7fa4;
+  box-shadow:
+    0 0 0 1px #dce6ec;
+}
+
+.group-waste
+.checklist-group-header {
+  background: #f2f4f6;
+}
+
+.group-waste
+.checklist-group-icon {
+  background: #e1e6ea;
+  color: #4d5a66;
+}
+
+.group-technical_units
+.checklist-group-header {
+  background: #f2f8fb;
+}
+
+.group-consumables
+.checklist-group-header {
+  background: #f8f7fb;
+}
+
+.group-accessories
+.checklist-group-header {
+  background: #f7faf7;
+}
+
+
+/* ============================================================= */
+/* TACHO / DEPÓSITO DE TÓNER RESIDUAL                             */
+/* ============================================================= */
+
+.component-fallback-icon.unit-waste_toner {
+  color: #4c5964 !important;
+  background:
+    linear-gradient(
+      180deg,
+      #f7f9fa 0%,
+      #e9eef1 100%
+    ) !important;
+  border-color: #d2dae0 !important;
+}
+
+.waste-toner-svg {
+  width: 78px !important;
+  height: 94px !important;
+}
+
+.waste-toner-label {
+  fill: #56636f;
+  font-family:
+    Arial,
+    sans-serif;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+}
+
+.component-fallback-icon.unit-waste_toner
+.toner-missing-overlay path {
+  stroke: #dc2626;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.consumable-unit-card
+.item-heading strong {
+  color: #22374d;
+}
+
+@media (max-width: 1180px) {
+  .checklist-group
+  .checklist-items-list {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .checklist-group
+  .checklist-items-list {
+    grid-template-columns: 1fr;
+  }
+
+  .checklist-group-header {
+    grid-template-columns:
+      auto minmax(0, 1fr) auto;
+  }
+
+  .waste-toner-svg {
+    width: 68px !important;
+    height: 84px !important;
+  }
+}

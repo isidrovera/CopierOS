@@ -2,6 +2,8 @@
 import { ref } from "vue"
 import { useRouter } from "vue-router"
 
+import "./LoginView.css"
+
 import {
   loginUser,
   saveSession,
@@ -166,6 +168,84 @@ function recoverPassword() {
     <div class="background-light light-one"></div>
     <div class="background-light light-two"></div>
     <div class="background-light light-three"></div>
+
+    <div class="equipment-background" aria-hidden="true">
+      <div class="equipment-orbit orbit-one"></div>
+      <div class="equipment-orbit orbit-two"></div>
+
+      <div class="equipment-machine machine-left">
+        <div class="machine-glow"></div>
+        <svg viewBox="0 0 240 330">
+          <g class="machine-shell">
+            <path d="M58 26h124a16 16 0 0 1 16 16v48H42V42a16 16 0 0 1 16-16Z" />
+            <path d="M36 88h168a20 20 0 0 1 20 20v62a20 20 0 0 1-20 20H36a20 20 0 0 1-20-20v-62a20 20 0 0 1 20-20Z" />
+            <path d="M42 184h156v118a16 16 0 0 1-16 16H58a16 16 0 0 1-16-16Z" />
+            <path d="M62 205h116v42H62z" />
+            <path d="M62 258h116v38H62z" />
+          </g>
+          <g class="machine-details">
+            <rect x="60" y="104" width="72" height="38" rx="8" />
+            <circle cx="179" cy="121" r="7" />
+            <path d="M80 51h80" />
+            <path d="M74 160h92" />
+          </g>
+          <circle class="machine-status" cx="196" cy="121" r="5" />
+        </svg>
+      </div>
+
+      <div class="equipment-machine machine-right">
+        <div class="machine-glow"></div>
+        <svg viewBox="0 0 240 330">
+          <g class="machine-shell">
+            <path d="M54 34h132a15 15 0 0 1 15 15v44H39V49a15 15 0 0 1 15-15Z" />
+            <path d="M30 92h180a18 18 0 0 1 18 18v70a18 18 0 0 1-18 18H30a18 18 0 0 1-18-18v-70a18 18 0 0 1 18-18Z" />
+            <path d="M48 193h144v111a14 14 0 0 1-14 14H62a14 14 0 0 1-14-14Z" />
+            <path d="M66 212h108v36H66z" />
+            <path d="M66 258h108v38H66z" />
+          </g>
+          <g class="machine-details">
+            <rect x="58" y="111" width="80" height="40" rx="8" />
+            <path d="M75 57h90" />
+            <path d="M72 170h96" />
+            <circle cx="184" cy="130" r="8" />
+          </g>
+          <circle class="machine-status" cx="204" cy="130" r="5" />
+        </svg>
+      </div>
+
+      <div class="equipment-machine machine-back-left">
+        <svg viewBox="0 0 220 300">
+          <g class="machine-shell">
+            <path d="M50 30h120a14 14 0 0 1 14 14v42H36V44a14 14 0 0 1 14-14Z" />
+            <path d="M28 84h164a18 18 0 0 1 18 18v58a18 18 0 0 1-18 18H28a18 18 0 0 1-18-18v-58a18 18 0 0 1 18-18Z" />
+            <path d="M42 174h136v104H42z" />
+          </g>
+          <g class="machine-details">
+            <rect x="50" y="102" width="68" height="34" rx="7" />
+            <path d="M62 54h96" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="equipment-machine machine-back-right">
+        <svg viewBox="0 0 220 300">
+          <g class="machine-shell">
+            <path d="M50 30h120a14 14 0 0 1 14 14v42H36V44a14 14 0 0 1 14-14Z" />
+            <path d="M28 84h164a18 18 0 0 1 18 18v58a18 18 0 0 1-18 18H28a18 18 0 0 1-18-18v-58a18 18 0 0 1 18-18Z" />
+            <path d="M42 174h136v104H42z" />
+          </g>
+          <g class="machine-details">
+            <rect x="50" y="102" width="68" height="34" rx="7" />
+            <path d="M62 54h96" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="floating-paper paper-one"></div>
+      <div class="floating-paper paper-two"></div>
+      <div class="floating-paper paper-three"></div>
+    </div>
+
 
     <section class="auth-card">
       <!-- ======================================================= -->
@@ -363,7 +443,7 @@ function recoverPassword() {
           </div>
 
           <span class="system-name">
-            Copier Company
+            Copier OS
           </span>
 
           <h1>Acceso al sistema</h1>
@@ -997,656 +1077,7 @@ function recoverPassword() {
     </section>
 
     <p class="page-footer">
-      COPIER COMPANY · Sistema de gestión
+      COPIER OS · Sistema de gestión técnica
     </p>
   </main>
 </template>
-
-<style scoped>
-button,
-input {
-  font: inherit;
-}
-
-button {
-  border: 0;
-}
-
-/* ============================================================= */
-/* PALETA BASADA EN EL LOGO                                      */
-/* ============================================================= */
-
-.auth-page {
-  --brand-blue: #1f35c4;
-  --brand-blue-deep: #162caa;
-  --brand-blue-soft: #4e63d8;
-  --brand-gray: #8693a4;
-  --brand-gray-soft: #a5afbb;
-  --brand-white-soft: rgba(255, 255, 255, 0.88);
-  --brand-white-mid: rgba(255, 255, 255, 0.68);
-  --brand-white-low: rgba(255, 255, 255, 0.45);
-  --glass-bg: rgba(255, 255, 255, 0.09);
-  --glass-line: rgba(255, 255, 255, 0.18);
-  --input-line: rgba(255, 255, 255, 0.42);
-  --card-shadow: rgba(7, 14, 42, 0.38);
-}
-
-/* ============================================================= */
-/* FONDO                                                         */
-/* ============================================================= */
-
-.auth-page {
-  position: relative;
-  min-height: 100vh;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  box-sizing: border-box;
-  padding: 32px 20px;
-  background:
-    radial-gradient(
-      circle at 16% 18%,
-      rgba(31, 53, 196, 0.24),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at 82% 76%,
-      rgba(134, 147, 164, 0.26),
-      transparent 34%
-    ),
-    radial-gradient(
-      circle at 62% 24%,
-      rgba(78, 99, 216, 0.18),
-      transparent 24%
-    ),
-    linear-gradient(
-      145deg,
-      #0f1730,
-      #152451 46%,
-      #1d2541 100%
-    );
-  color: white;
-}
-
-.auth-page::before {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(
-      rgba(255, 255, 255, 0.012) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.012) 1px,
-      transparent 1px
-    );
-  background-size: 40px 40px;
-  content: "";
-  pointer-events: none;
-}
-
-.background-light {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(28px);
-  pointer-events: none;
-}
-
-.light-one {
-  top: 8%;
-  left: 12%;
-  width: 300px;
-  height: 300px;
-  background: rgba(31, 53, 196, 0.15);
-}
-
-.light-two {
-  right: 10%;
-  bottom: 7%;
-  width: 360px;
-  height: 360px;
-  background: rgba(134, 147, 164, 0.18);
-}
-
-.light-three {
-  top: 33%;
-  right: 28%;
-  width: 180px;
-  height: 180px;
-  background: rgba(78, 99, 216, 0.16);
-}
-
-/* ============================================================= */
-/* TARJETA                                                       */
-/* ============================================================= */
-
-.auth-card {
-  position: relative;
-  z-index: 2;
-  width: min(430px, 100%);
-  box-sizing: border-box;
-  padding: 38px 36px 30px;
-  border: 1px solid var(--glass-line);
-  border-radius: 30px;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.13),
-      rgba(255, 255, 255, 0.06)
-    );
-  box-shadow:
-    0 32px 80px var(--card-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(22px);
-}
-
-.auth-card::before {
-  position: absolute;
-  inset: 1px;
-  border-radius: 29px;
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.06),
-      transparent 46%
-    );
-  content: "";
-  pointer-events: none;
-}
-
-.auth-content {
-  position: relative;
-  z-index: 1;
-}
-
-/* ============================================================= */
-/* CABECERA                                                      */
-/* ============================================================= */
-
-.auth-header {
-  margin-bottom: 28px;
-  text-align: center;
-}
-
-.company-mark-wrap {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.company-mark {
-  width: 122px;
-  height: 122px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background:
-    radial-gradient(
-      circle at 30% 30%,
-      rgba(255, 255, 255, 0.18),
-      rgba(255, 255, 255, 0.05)
-    );
-  box-shadow:
-    0 20px 40px rgba(11, 19, 52, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-.small-mark {
-  width: 104px;
-  height: 104px;
-}
-
-.company-mark svg {
-  width: 108px;
-  height: 108px;
-}
-
-.ring {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.ring-main {
-  stroke: rgba(255, 255, 255, 0.42);
-  stroke-width: 4;
-}
-
-.ring-soft {
-  stroke: rgba(31, 53, 196, 0.16);
-  stroke-width: 2;
-}
-
-.node {
-  fill: var(--brand-gray-soft);
-}
-
-.device-icon {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.main-device {
-  stroke: var(--brand-white-soft);
-  stroke-width: 3.2;
-}
-
-.secondary-device {
-  stroke: var(--brand-gray-soft);
-  stroke-width: 2.5;
-}
-
-.status-dot {
-  fill: var(--brand-blue-soft);
-  stroke: none;
-}
-
-.system-name {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--brand-gray-soft);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.auth-header h1 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 28px;
-  line-height: 1.16;
-  letter-spacing: -0.02em;
-}
-
-.auth-header p {
-  margin: 10px 0 0;
-  color: var(--brand-white-mid);
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-/* ============================================================= */
-/* FORMULARIO                                                    */
-/* ============================================================= */
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.glass-field {
-  position: relative;
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid var(--input-line);
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease;
-}
-
-.glass-field:focus-within {
-  border-color: rgba(78, 99, 216, 0.95);
-  background:
-    linear-gradient(
-      90deg,
-      rgba(31, 53, 196, 0.08),
-      transparent
-    );
-}
-
-.field-icon {
-  position: absolute;
-  left: 3px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--brand-gray-soft);
-  pointer-events: none;
-}
-
-.field-icon svg,
-.show-password-button svg,
-.primary-button svg,
-.back-button svg,
-.alert-icon svg,
-.security-indicator svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.glass-field input {
-  width: 100%;
-  min-height: 52px;
-  box-sizing: border-box;
-  padding: 0 44px 0 33px;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #ffffff;
-  font-size: 14px;
-}
-
-.glass-field input::placeholder {
-  color: rgba(255, 255, 255, 0.54);
-}
-
-.glass-field input:-webkit-autofill,
-.glass-field input:-webkit-autofill:hover,
-.glass-field input:-webkit-autofill:focus {
-  transition:
-    background-color 9999s ease-out 0s;
-  -webkit-text-fill-color: #ffffff;
-}
-
-.show-password-button {
-  position: absolute;
-  right: 3px;
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--brand-gray-soft);
-  cursor: pointer;
-}
-
-.show-password-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
-}
-
-.code-field input {
-  padding-right: 20px;
-}
-
-.two-factor-input {
-  text-align: center;
-  font-size: 22px !important;
-  font-weight: 800;
-  letter-spacing: 0.26em;
-}
-
-.field-help {
-  display: block;
-  margin-top: -8px;
-  color: var(--brand-white-low);
-  font-size: 11px;
-  line-height: 1.5;
-  text-align: center;
-}
-
-/* ============================================================= */
-/* OPCIONES                                                      */
-/* ============================================================= */
-
-.form-options {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.remember-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--brand-white-mid);
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.remember-option input {
-  width: 15px;
-  height: 15px;
-  margin: 0;
-  accent-color: var(--brand-blue);
-}
-
-.link-button {
-  padding: 0;
-  background: transparent;
-  color: var(--brand-gray-soft);
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.link-button:hover {
-  color: #ffffff;
-  text-decoration: underline;
-}
-
-/* ============================================================= */
-/* BOTÓN PRINCIPAL                                               */
-/* ============================================================= */
-
-.primary-button {
-  min-height: 52px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 0 18px;
-  border-radius: 12px;
-  background:
-    linear-gradient(
-      90deg,
-      var(--brand-blue-deep),
-      var(--brand-blue) 52%,
-      var(--brand-gray)
-    );
-  color: white;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  box-shadow:
-    0 16px 32px rgba(17, 34, 107, 0.32);
-  cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    opacity 0.2s ease;
-}
-
-.primary-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow:
-    0 20px 38px rgba(17, 34, 107, 0.38);
-}
-
-.primary-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.primary-button:disabled {
-  opacity: 0.62;
-  cursor: wait;
-}
-
-.button-spinner {
-  width: 17px;
-  height: 17px;
-  box-sizing: border-box;
-  border: 2px solid rgba(255, 255, 255, 0.34);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ============================================================= */
-/* ALERTAS                                                       */
-/* ============================================================= */
-
-.alert {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  margin: 0;
-  padding: 11px 12px;
-  border-radius: 11px;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.alert-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  margin-top: 1px;
-}
-
-.error-alert {
-  border: 1px solid rgba(255, 136, 136, 0.22);
-  background: rgba(153, 48, 48, 0.18);
-  color: #ffdede;
-}
-
-.success-alert {
-  border: 1px solid rgba(120, 181, 146, 0.22);
-  background: rgba(73, 116, 96, 0.18);
-  color: #e0fff0;
-}
-
-/* ============================================================= */
-/* VOLVER                                                        */
-/* ============================================================= */
-
-.back-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 22px;
-  padding: 7px 9px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--brand-gray-soft);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.back-button:hover {
-  background: rgba(255, 255, 255, 0.11);
-  color: white;
-}
-
-.back-button:disabled {
-  opacity: 0.55;
-  cursor: wait;
-}
-
-/* ============================================================= */
-/* PIE                                                           */
-/* ============================================================= */
-
-.auth-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  margin-top: 25px;
-  color: var(--brand-white-low);
-  font-size: 10px;
-}
-
-.security-indicator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--brand-gray-soft);
-}
-
-.security-indicator svg {
-  width: 14px;
-  height: 14px;
-}
-
-.page-footer {
-  position: relative;
-  z-index: 2;
-  margin: 18px 0 0;
-  color: rgba(255, 255, 255, 0.34);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-}
-
-/* ============================================================= */
-/* RESPONSIVE                                                    */
-/* ============================================================= */
-
-@media (max-width: 560px) {
-  .auth-page {
-    padding: 18px 14px;
-  }
-
-  .auth-card {
-    padding: 32px 24px 27px;
-    border-radius: 25px;
-  }
-
-  .auth-card::before {
-    border-radius: 24px;
-  }
-
-  .company-mark {
-    width: 108px;
-    height: 108px;
-  }
-
-  .small-mark {
-    width: 96px;
-    height: 96px;
-  }
-
-  .company-mark svg {
-    width: 96px;
-    height: 96px;
-  }
-
-  .auth-header h1 {
-    font-size: 24px;
-  }
-
-  .form-options {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .two-factor-input {
-    font-size: 19px !important;
-    letter-spacing: 0.18em;
-  }
-}
-
-@media (max-width: 380px) {
-  .auth-card {
-    padding-right: 20px;
-    padding-left: 20px;
-  }
-
-  .auth-header h1 {
-    font-size: 22px;
-  }
-}
-</style>

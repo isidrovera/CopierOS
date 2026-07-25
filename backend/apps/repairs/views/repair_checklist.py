@@ -862,6 +862,18 @@ class RepairChecklistItemViewSet(
                             "",
                         )
                     ),
+                    consumable_present=(
+                        serializer.validated_data.get(
+                            "consumable_present",
+                            None,
+                        )
+                    ),
+                    consumable_level_percent=(
+                        serializer.validated_data.get(
+                            "consumable_level_percent",
+                            None,
+                        )
+                    ),
                 )
 
                 if (

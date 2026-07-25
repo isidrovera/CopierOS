@@ -411,6 +411,70 @@ class RepairChecklistItemComponentMixin:
         ]
 
 
+    def get_is_primary_consumable(self, obj):
+        component = getattr(
+            obj,
+            "component",
+            None,
+        )
+
+        return bool(
+            component
+            and getattr(
+                component,
+                "is_consumable",
+                False,
+            )
+            and not getattr(
+                component,
+                "parent_component_id",
+                None,
+            )
+        )
+
+    def get_consumable_present(self, obj):
+        if not self.get_is_primary_consumable(
+            obj
+        ):
+            return None
+
+        return obj.consumable_present
+
+    def get_consumable_level_percent(self, obj):
+        if not self.get_is_primary_consumable(
+            obj
+        ):
+            return None
+
+        return obj.consumable_level_percent
+
+    def get_consumable_level_label(self, obj):
+        if not self.get_is_primary_consumable(
+            obj
+        ):
+            return None
+
+        if obj.consumable_present is False:
+            return "Sin botella"
+
+        if obj.consumable_level_percent is None:
+            return "Sin registrar"
+
+        if obj.consumable_level_percent == 0:
+            return "Vacío"
+
+        if obj.consumable_level_percent == 100:
+            return "Lleno"
+
+        if obj.consumable_level_percent <= 10:
+            return "Nivel bajo"
+
+        if obj.consumable_level_percent <= 50:
+            return "Nivel medio"
+
+        return "Nivel alto"
+
+
 class RepairChecklistItemListSerializer(
     RepairChecklistItemComponentMixin,
     serializers.ModelSerializer,
@@ -459,6 +523,14 @@ class RepairChecklistItemListSerializer(
 
     selected_subcomponent_ids = serializers.SerializerMethodField()
 
+    is_primary_consumable = serializers.SerializerMethodField()
+
+    consumable_present = serializers.SerializerMethodField()
+
+    consumable_level_percent = serializers.SerializerMethodField()
+
+    consumable_level_label = serializers.SerializerMethodField()
+
     category_name = serializers.CharField(
         source="get_category_display",
         read_only=True,
@@ -504,6 +576,10 @@ class RepairChecklistItemListSerializer(
             "subcomponent_count",
             "selected_subcomponents",
             "selected_subcomponent_ids",
+            "is_primary_consumable",
+            "consumable_present",
+            "consumable_level_percent",
+            "consumable_level_label",
             "code",
             "name",
             "category",
@@ -584,6 +660,14 @@ class RepairChecklistItemDetailSerializer(
 
     selected_subcomponent_ids = serializers.SerializerMethodField()
 
+    is_primary_consumable = serializers.SerializerMethodField()
+
+    consumable_present = serializers.SerializerMethodField()
+
+    consumable_level_percent = serializers.SerializerMethodField()
+
+    consumable_level_label = serializers.SerializerMethodField()
+
     category_name = serializers.CharField(
         source="get_category_display",
         read_only=True,
@@ -649,6 +733,10 @@ class RepairChecklistItemDetailSerializer(
             "subcomponent_count",
             "selected_subcomponents",
             "selected_subcomponent_ids",
+            "is_primary_consumable",
+            "consumable_present",
+            "consumable_level_percent",
+            "consumable_level_label",
             "code",
             "name",
             "category",
@@ -1440,6 +1528,19 @@ class ReviewRepairChecklistItemSerializer(
         )
     )
 
+
+    consumable_present = serializers.BooleanField(
+        required=False,
+        allow_null=True,
+    )
+
+    consumable_level_percent = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        max_value=100,
+    )
+
     def validate(self, attrs):
         item = self.context.get(
             "item"
@@ -1509,6 +1610,87 @@ class ReviewRepairChecklistItemSerializer(
             == ComponentType.Category.TECHNICAL_UNIT
         )
 
+
+        is_primary_consumable = bool(
+            component
+            and getattr(
+                component,
+                "is_consumable",
+                False,
+            )
+            and not getattr(
+                component,
+                "parent_component_id",
+                None,
+            )
+        )
+
+        consumable_present = attrs.get(
+            "consumable_present",
+            getattr(
+                item,
+                "consumable_present",
+                None,
+            ),
+        )
+
+        consumable_level_percent = attrs.get(
+            "consumable_level_percent",
+            getattr(
+                item,
+                "consumable_level_percent",
+                None,
+            ),
+        )
+
+        if not is_primary_consumable:
+            if consumable_present is not None:
+                raise serializers.ValidationError(
+                    {
+                        "consumable_present": (
+                            "Este campo solo se utiliza para "
+                            "tóner, tinta o consumibles principales."
+                        )
+                    }
+                )
+
+            if consumable_level_percent is not None:
+                raise serializers.ValidationError(
+                    {
+                        "consumable_level_percent": (
+                            "El nivel solo se registra para "
+                            "tóner, tinta o consumibles principales."
+                        )
+                    }
+                )
+
+        if is_primary_consumable:
+            if consumable_present is None:
+                raise serializers.ValidationError(
+                    {
+                        "consumable_present": (
+                            "Debes indicar si la botella o "
+                            "cartucho está instalado."
+                        )
+                    }
+                )
+
+            if consumable_present is False:
+                consumable_level_percent = None
+
+            if (
+                consumable_present is True
+                and consumable_level_percent is None
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "consumable_level_percent": (
+                            "Debes registrar el nivel del "
+                            "consumible entre 0 y 100."
+                        )
+                    }
+                )
+
         if (
             selected_subcomponents
             and not is_technical_unit
@@ -1569,6 +1751,7 @@ class ReviewRepairChecklistItemSerializer(
 
         if (
             is_technical_unit
+            and not is_primary_consumable
             and status
             == RepairChecklistItem.Status.FAILED
             and not selected_subcomponents
@@ -1643,6 +1826,16 @@ class ReviewRepairChecklistItemSerializer(
         attrs["observation"] = observation
         attrs["selected_subcomponents"] = (
             selected_subcomponents
+        )
+        attrs["consumable_present"] = (
+            consumable_present
+            if is_primary_consumable
+            else None
+        )
+        attrs["consumable_level_percent"] = (
+            consumable_level_percent
+            if is_primary_consumable
+            else None
         )
 
         return attrs

@@ -466,11 +466,6 @@ def create_compatible_component_items(
     checklist = (
         RepairChecklist.objects
         .select_for_update()
-        .select_related(
-            "repair",
-            "repair__equipment",
-            "repair__equipment__equipment_model",
-        )
         .get(pk=checklist.pk)
     )
 
@@ -510,11 +505,6 @@ def create_compatible_component_items(
             ),
         )
 
-    allowed_categories = (
-        ComponentType.Category.TECHNICAL_UNIT,
-        ComponentType.Category.ACCESSORY,
-    )
-
     compatibilities = (
         ComponentCompatibility.objects
         .filter(
@@ -527,7 +517,9 @@ def create_compatible_component_items(
             component__component_type__archived_at__isnull=True,
             component__component_type__is_active=True,
             component__component_type__category__in=(
-                allowed_categories
+                ComponentType.Category.TECHNICAL_UNIT,
+                ComponentType.Category.ACCESSORY,
+                ComponentType.Category.TONER,
             ),
         )
         .select_related(
@@ -539,8 +531,7 @@ def create_compatible_component_items(
         .order_by(
             "-is_preferred",
             "display_order",
-            "component__display_order",
-            "component__component_type__display_order",
+            "component__component_type__name",
             "component__name",
         )
     )
@@ -579,24 +570,6 @@ def create_compatible_component_items(
         if not component:
             continue
 
-        if component.parent_component_id:
-            continue
-
-        component_type = getattr(
-            component,
-            "component_type",
-            None,
-        )
-
-        if not component_type:
-            continue
-
-        if (
-            component_type.category
-            not in allowed_categories
-        ):
-            continue
-
         if component.pk in processed_component_ids:
             continue
 
@@ -630,17 +603,42 @@ def create_compatible_component_items(
                         component
                     ),
                     "category": (
-                        RepairChecklistItem
-                        .Category
-                        .COMPONENT
+                        RepairChecklistItem.Category.ACCESSORY
+                        if (
+                            component.component_type.category
+                            == ComponentType.Category.ACCESSORY
+                        )
+                        else RepairChecklistItem.Category.COMPONENT
                     ),
                     "description": (
-                        "Revisión de la unidad compatible "
-                        f"con {compatibility_target}."
+                        (
+                            "Revisión del nivel y presencia del "
+                            "cartucho o botella de tóner compatible "
+                            f"con {compatibility_target}."
+                        )
+                        if (
+                            component.component_type.category
+                            == ComponentType.Category.TONER
+                        )
+                        else (
+                            "Revisión del componente compatible "
+                            f"con {compatibility_target}."
+                        )
                     ),
                     "instructions": (
-                        "Revisar condición, desgaste, limpieza, "
-                        "funcionamiento y necesidad de cambio."
+                        (
+                            "Indicar si el cartucho o botella está "
+                            "instalado y registrar su nivel entre "
+                            "0 y 100 por ciento."
+                        )
+                        if (
+                            component.component_type.category
+                            == ComponentType.Category.TONER
+                        )
+                        else (
+                            "Revisar condición, desgaste, limpieza, "
+                            "funcionamiento y necesidad de cambio."
+                        )
                     ),
                     "status": (
                         RepairChecklistItem
@@ -654,7 +652,13 @@ def create_compatible_component_items(
                             False,
                         )
                     ),
-                    "requires_photo": False,
+                    "requires_photo": bool(
+                        getattr(
+                            component,
+                            "requires_photo",
+                            False,
+                        )
+                    ),
                     "requires_observation": False,
                     "display_order": current_order,
                     "created_by": actor,
@@ -673,7 +677,6 @@ def create_compatible_component_items(
             )
 
     return created_items
-
 
 @transaction.atomic
 def start_checklist(
@@ -741,6 +744,8 @@ def review_checklist_item(
     status,
     actor=None,
     observation="",
+    consumable_present=None,
+    consumable_level_percent=None,
 ):
     item = (
         RepairChecklistItem.objects
@@ -784,6 +789,73 @@ def review_checklist_item(
     observation_text = normalize_text(
         observation
     )
+
+    component = getattr(
+        item,
+        "component",
+        None,
+    )
+
+    is_primary_consumable = bool(
+        component
+        and getattr(
+            component,
+            "is_consumable",
+            False,
+        )
+        and not getattr(
+            component,
+            "parent_component_id",
+            None,
+        )
+    )
+
+    if is_primary_consumable:
+        if consumable_present is None:
+            raise ValidationError(
+                {
+                    "consumable_present": (
+                        "Debes indicar si la botella "
+                        "o cartucho está instalado."
+                    )
+                }
+            )
+
+        if consumable_present is False:
+            consumable_level_percent = None
+
+        if (
+            consumable_present is True
+            and consumable_level_percent is None
+        ):
+            raise ValidationError(
+                {
+                    "consumable_level_percent": (
+                        "Debes registrar el nivel del "
+                        "consumible entre 0 y 100."
+                    )
+                }
+            )
+
+        if (
+            consumable_level_percent is not None
+            and not (
+                0
+                <= consumable_level_percent
+                <= 100
+            )
+        ):
+            raise ValidationError(
+                {
+                    "consumable_level_percent": (
+                        "El nivel del consumible debe "
+                        "estar entre 0 y 100."
+                    )
+                }
+            )
+    else:
+        consumable_present = None
+        consumable_level_percent = None
 
     if (
         status == RepairChecklistItem.Status.FAILED
@@ -851,6 +923,12 @@ def review_checklist_item(
 
     item.status = status
     item.observation = observation_text
+    item.consumable_present = (
+        consumable_present
+    )
+    item.consumable_level_percent = (
+        consumable_level_percent
+    )
     item.checked_by = actor
     item.checked_at = timezone.now()
     item.updated_by = actor

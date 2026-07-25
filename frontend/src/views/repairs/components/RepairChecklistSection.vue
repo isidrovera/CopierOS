@@ -75,6 +75,8 @@ const reviewForm = reactive({
   status: "",
   observation: "",
   selected_subcomponents: [],
+  consumable_present: null,
+  consumable_level_percent: null,
 })
 
 
@@ -264,7 +266,7 @@ function isTechnicalUnit(item) {
 
 function getItemStatusName(item) {
   if (
-    isTechnicalUnit(item) &&
+    isCatalogVisualItem(item) &&
     item?.commercial_status_name
   ) {
     return item.commercial_status_name
@@ -290,7 +292,7 @@ function getItemStatusName(item) {
     not_applicable: "No aplica",
   }
 
-  const names = isTechnicalUnit(item)
+  const names = isCatalogVisualItem(item)
     ? technicalNames
     : generalNames
 
@@ -335,6 +337,12 @@ function getItemStatusIcon(item) {
 
 
 function getUnitVisualType(item) {
+  const category = String(
+    item?.component_category ||
+    item?.component_category_name ||
+    ""
+  ).toLowerCase()
+
   const text = [
     item?.component_type_name,
     item?.component_name,
@@ -346,76 +354,259 @@ function getUnitVisualType(item) {
     .toLowerCase()
 
   if (
-    text.includes("imagen") ||
-    text.includes("drum") ||
-    text.includes("tambor") ||
-    text.includes("iu")
+    text.includes("tacho residual") ||
+    text.includes("depósito residual") ||
+    text.includes("deposito residual") ||
+    text.includes("waste toner") ||
+    text.includes("waste container") ||
+    text.includes("residual toner")
   ) {
-    return "drum"
+    return "waste_toner"
   }
 
   if (
-    text.includes("fusor") ||
-    text.includes("fuser") ||
-    text.includes("fusión")
+    item?.is_primary_consumable === true ||
+    item?.is_consumable === true ||
+    category === "toner" ||
+    category.includes("tóner") ||
+    category.includes("toner")
   ) {
-    return "fuser"
+    return "toner"
   }
 
-  if (
-    text.includes("itb") ||
-    text.includes("transfer") ||
-    text.includes("transferencia") ||
-    text.includes("banda")
-  ) {
-    return "itb"
-  }
+  const fallbackText = [
+    item?.component_type_name,
+    item?.component_name,
+    item?.name,
+    item?.component_code,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
 
   if (
-    text.includes("adf") ||
-    text.includes("alimentador") ||
-    text.includes("document")
-  ) {
-    return "adf"
-  }
-
-  if (
-    text.includes("cassette") ||
-    text.includes("casetera") ||
-    text.includes("bandeja")
-  ) {
-    return "cassette"
-  }
-
-  if (
-    text.includes("developer") ||
-    text.includes("revelador")
-  ) {
-    return "developer"
-  }
-
-  if (
-    text.includes("toner") ||
-    text.includes("tóner")
+    fallbackText.includes("toner") ||
+    fallbackText.includes("tóner") ||
+    fallbackText.includes("cartucho") ||
+    fallbackText.includes("botella")
   ) {
     return "toner"
   }
 
   if (
-    text.includes("scanner") ||
-    text.includes("escáner")
+    fallbackText.includes("tinta") ||
+    fallbackText.includes("ink")
   ) {
-    return "scanner"
+    return "ink"
   }
 
   if (
-    text.includes("laser") ||
-    text.includes("láser")
+    fallbackText.includes("duplex") ||
+    fallbackText.includes("dúplex")
   ) {
-    return "laser"
+    return "duplex"
+  }
+
+  if (
+    fallbackText.includes("imagen") ||
+    fallbackText.includes("drum") ||
+    fallbackText.includes("tambor") ||
+    fallbackText.includes("iu")
+  ) {
+    return "drum"
+  }
+
+  if (
+    fallbackText.includes("fusor") ||
+    fallbackText.includes("fuser") ||
+    fallbackText.includes("fusión")
+  ) {
+    return "fuser"
+  }
+
+  if (
+    fallbackText.includes("itb") ||
+    fallbackText.includes("transfer belt") ||
+    fallbackText.includes("transferencia") ||
+    fallbackText.includes("banda")
+  ) {
+    return "itb"
+  }
+
+  if (
+    fallbackText.includes("adf") ||
+    fallbackText.includes("alimentador") ||
+    fallbackText.includes("documentos")
+  ) {
+    return "adf"
+  }
+
+  if (
+    fallbackText.includes("casetera") ||
+    fallbackText.includes("cassette") ||
+    fallbackText.includes("bandeja")
+  ) {
+    return "cassette"
+  }
+
+  if (
+    fallbackText.includes("revelado") ||
+    fallbackText.includes("developer") ||
+    fallbackText.includes("revelador")
+  ) {
+    return "developer"
+  }
+
+  if (
+    fallbackText.includes("alimentación de papel") ||
+    fallbackText.includes("paper feed")
+  ) {
+    return "paper_feed"
   }
 
   return "generic"
+}
+
+
+function isConsumableUnit(item) {
+  if (
+    item?.is_primary_consumable === true
+  ) {
+    return true
+  }
+
+  return [
+    "toner",
+    "ink",
+    "waste_toner",
+  ].includes(
+    getUnitVisualType(item)
+  )
+}
+
+
+function isCatalogVisualItem(item) {
+  return (
+    isTechnicalUnit(item) ||
+    isConsumableUnit(item)
+  )
+}
+
+
+function getConsumablePresent(item) {
+  if (
+    item?.consumable_present === false ||
+    item?.has_container === false ||
+    item?.has_bottle === false
+  ) {
+    return false
+  }
+
+  if (
+    item?.consumable_status === "missing" ||
+    item?.consumable_status === "no_bottle"
+  ) {
+    return false
+  }
+
+  return true
+}
+
+
+function getConsumableLevel(item) {
+  const rawValue = (
+    item?.consumable_level_percent ??
+    item?.toner_level_percent ??
+    item?.ink_level_percent ??
+    item?.level_percent ??
+    item?.level ??
+    0
+  )
+
+  const numericValue = Number(
+    rawValue
+  )
+
+  if (!Number.isFinite(numericValue)) {
+    return 0
+  }
+
+  return Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(numericValue)
+    )
+  )
+}
+
+
+function getConsumableLevelLabel(item) {
+  if (!getConsumablePresent(item)) {
+    return "Sin botella"
+  }
+
+  const level = getConsumableLevel(item)
+
+  if (level === 100) {
+    return "Lleno"
+  }
+
+  if (level === 0) {
+    return "Vacío"
+  }
+
+  if (level <= 10) {
+    return "Nivel bajo"
+  }
+
+  if (level <= 50) {
+    return "Nivel medio"
+  }
+
+  return "Nivel alto"
+}
+
+
+function getConsumableFillHeight(item) {
+  if (!getConsumablePresent(item)) {
+    return 0
+  }
+
+  return Math.round(
+    getConsumableLevel(item) * 0.42
+  )
+}
+
+
+function getConsumableFillY(item) {
+  return (
+    64 -
+    getConsumableFillHeight(item)
+  )
+}
+
+
+function getConsumableCardClass(item) {
+  if (!getConsumablePresent(item)) {
+    return "missing"
+  }
+
+  const level = getConsumableLevel(item)
+
+  if (level === 0) {
+    return "empty"
+  }
+
+  if (level <= 10) {
+    return "low"
+  }
+
+  if (level < 100) {
+    return "partial"
+  }
+
+  return "full"
 }
 
 
@@ -454,6 +645,174 @@ function getUnitIconClass(item) {
   }
 
   return "neutral"
+}
+
+
+function getColorDisplayName(item) {
+  const color = getUnitIconClass(item)
+
+  const names = {
+    cyan: "Cyan",
+    magenta: "Magenta",
+    yellow: "Yellow",
+    black: "Black",
+  }
+
+  return names[color] || ""
+}
+
+
+function getDisplayItemName(item) {
+  const baseName = String(
+    item?.name ||
+    item?.component_name ||
+    "Componente"
+  ).trim()
+
+  const visualType = getUnitVisualType(item)
+
+  if (visualType === "waste_toner") {
+    return baseName
+  }
+
+  if (
+    ["toner", "ink"].includes(
+      visualType
+    )
+  ) {
+    const colorName =
+      getColorDisplayName(item)
+
+    if (
+      colorName &&
+      !baseName
+        .toLowerCase()
+        .includes(
+          colorName.toLowerCase()
+        )
+    ) {
+      return `${baseName} ${colorName}`
+    }
+  }
+
+  return baseName
+}
+
+
+function getItemGroupKey(item) {
+  const visualType =
+    getUnitVisualType(item)
+
+  if (visualType === "waste_toner") {
+    return "waste"
+  }
+
+  if (
+    ["toner", "ink"].includes(
+      visualType
+    )
+  ) {
+    return "toner"
+  }
+
+  if (isConsumableUnit(item)) {
+    return "consumables"
+  }
+
+  if (item?.is_accessory) {
+    return "accessories"
+  }
+
+  if (isTechnicalUnit(item)) {
+    return "technical_units"
+  }
+
+  return "general"
+}
+
+
+function getGroupName(key) {
+  const names = {
+    toner: "Tóner y tinta",
+    waste: "Depósitos residuales",
+    consumables: "Consumibles",
+    technical_units: "Unidades técnicas",
+    accessories: "Accesorios",
+    general: "Revisión general",
+  }
+
+  return names[key] || "Otros"
+}
+
+
+function getGroupDescription(key) {
+  const descriptions = {
+    toner:
+      "Cartuchos y botellas con control de nivel.",
+    waste:
+      "Tachos y depósitos para residuos de tóner.",
+    consumables:
+      "Consumibles principales del equipo.",
+    technical_units:
+      "Unidades completas evaluadas para venta.",
+    accessories:
+      "Accesorios instalados o compatibles.",
+    general:
+      "Puntos generales de inspección técnica.",
+  }
+
+  return descriptions[key] || ""
+}
+
+
+function getGroupIcon(key) {
+  const icons = {
+    toner: "◉",
+    waste: "▣",
+    consumables: "◆",
+    technical_units: "▤",
+    accessories: "⌁",
+    general: "✓",
+  }
+
+  return icons[key] || "•"
+}
+
+
+function groupChecklistItems(checklist) {
+  const order = [
+    "general",
+    "technical_units",
+    "toner",
+    "waste",
+    "consumables",
+    "accessories",
+  ]
+
+  const grouped = new Map()
+
+  getChecklistItems(checklist).forEach(
+    (item) => {
+      const key = getItemGroupKey(item)
+
+      if (!grouped.has(key)) {
+        grouped.set(key, [])
+      }
+
+      grouped.get(key).push(item)
+    }
+  )
+
+  return order
+    .filter((key) => grouped.has(key))
+    .map((key) => ({
+      key,
+      name: getGroupName(key),
+      description:
+        getGroupDescription(key),
+      icon: getGroupIcon(key),
+      items: grouped.get(key),
+    }))
 }
 
 
@@ -966,6 +1325,23 @@ function openReviewModal(
         ]
       : []
 
+  reviewForm.consumable_present =
+    isConsumableUnit(item)
+      ? (
+          item.consumable_present ??
+          null
+        )
+      : null
+
+  reviewForm.consumable_level_percent =
+    isConsumableUnit(item) &&
+    item.consumable_level_percent !== undefined &&
+    item.consumable_level_percent !== null
+      ? Number(
+          item.consumable_level_percent
+        )
+      : null
+
   reviewModalVisible.value = true
 }
 
@@ -976,6 +1352,8 @@ function closeReviewModal() {
   reviewForm.status = ""
   reviewForm.observation = ""
   reviewForm.selected_subcomponents = []
+  reviewForm.consumable_present = null
+  reviewForm.consumable_level_percent = null
 }
 
 
@@ -1013,8 +1391,69 @@ function shouldSelectSubcomponents() {
     isTechnicalUnit(
       selectedItem.value
     ) &&
+    !isConsumableUnit(
+      selectedItem.value
+    ) &&
     reviewForm.status === "failed"
   )
+}
+
+
+function isReviewingConsumable() {
+  return isConsumableUnit(
+    selectedItem.value
+  )
+}
+
+
+function getReviewConsumableLevelLabel() {
+  if (
+    reviewForm.consumable_present === false
+  ) {
+    return "Sin botella"
+  }
+
+  const level = Number(
+    reviewForm.consumable_level_percent
+  )
+
+  if (!Number.isFinite(level)) {
+    return "Sin registrar"
+  }
+
+  if (level === 0) {
+    return "Vacío"
+  }
+
+  if (level === 100) {
+    return "Lleno"
+  }
+
+  if (level <= 10) {
+    return "Nivel bajo"
+  }
+
+  if (level <= 50) {
+    return "Nivel medio"
+  }
+
+  return "Nivel alto"
+}
+
+
+function selectConsumablePresence(value) {
+  reviewForm.consumable_present = value
+
+  if (value === false) {
+    reviewForm.consumable_level_percent = null
+  }
+
+  if (
+    value === true &&
+    reviewForm.consumable_level_percent === null
+  ) {
+    reviewForm.consumable_level_percent = 100
+  }
 }
 
 
@@ -1037,7 +1476,7 @@ function getSelectedSubcomponents(item) {
 
 
 function getReviewOptionName(status) {
-  if (isTechnicalUnit(selectedItem.value)) {
+  if (isCatalogVisualItem(selectedItem.value)) {
     const names = {
       ok: "Nuevo",
       observed: "Desgastado",
@@ -1104,6 +1543,40 @@ async function submitItemReview() {
     return
   }
 
+  if (
+    isReviewingConsumable() &&
+    reviewForm.consumable_present === null
+  ) {
+    showMessage(
+      "error",
+      "Indica si la botella o cartucho está instalado."
+    )
+
+    return
+  }
+
+  if (
+    isReviewingConsumable() &&
+    reviewForm.consumable_present === true
+  ) {
+    const level = Number(
+      reviewForm.consumable_level_percent
+    )
+
+    if (
+      !Number.isFinite(level) ||
+      level < 0 ||
+      level > 100
+    ) {
+      showMessage(
+        "error",
+        "El nivel del consumible debe estar entre 0 y 100."
+      )
+
+      return
+    }
+  }
+
   processing.value = true
   errorMessage.value = ""
 
@@ -1123,6 +1596,22 @@ async function submitItemReview() {
                   .selected_subcomponents,
               ]
             : [],
+
+        consumable_present:
+          isReviewingConsumable()
+            ? reviewForm
+                .consumable_present
+            : null,
+
+        consumable_level_percent:
+          isReviewingConsumable() &&
+          reviewForm
+            .consumable_present === true
+            ? Number(
+                reviewForm
+                  .consumable_level_percent
+              )
+            : null,
       }
     )
 
@@ -1704,30 +2193,59 @@ onMounted(() => {
 
           <div
             v-else
-            class="checklist-items-list"
+            class="checklist-groups"
           >
-            <article
+            <section
               v-for="
-                item
-                in getChecklistItems(
+                group
+                in groupChecklistItems(
                   checklist
                 )
               "
-              :key="item.id"
-              class="checklist-item-card"
+              :key="group.key"
+              class="checklist-group"
+              :class="`group-${group.key}`"
+            >
+              <header class="checklist-group-header">
+                <span class="checklist-group-icon">
+                  {{ group.icon }}
+                </span>
+
+                <div>
+                  <strong>
+                    {{ group.name }}
+                  </strong>
+
+                  <small>
+                    {{ group.description }}
+                  </small>
+                </div>
+
+                <span class="checklist-group-count">
+                  {{ group.items.length }}
+                </span>
+              </header>
+
+              <div class="checklist-items-list">
+                <article
+                  v-for="item in group.items"
+                  :key="item.id"
+                  class="checklist-item-card"
               :class="[
                 getItemStatusClass(
                   item
                 ),
                 {
                   'technical-unit-card':
-                    isTechnicalUnit(item),
+                    isCatalogVisualItem(item),
+                  'consumable-unit-card':
+                    isConsumableUnit(item),
                 },
               ]"
             >
               <div
                 v-if="
-                  isTechnicalUnit(item) &&
+                  isCatalogVisualItem(item) &&
                   item.component_image
                 "
                 class="component-catalog-image"
@@ -1745,14 +2263,19 @@ onMounted(() => {
 
               <div
                 v-else-if="
-                  isTechnicalUnit(item)
+                  isCatalogVisualItem(item)
                 "
                 class="component-fallback-icon"
                 :class="[
-                  getUnitIconClass(
-                    item
-                  ),
+                  getUnitIconClass(item),
                   `unit-${getUnitVisualType(item)}`,
+                  {
+                    'is-consumable':
+                      isConsumableUnit(item),
+                    'is-missing':
+                      isConsumableUnit(item) &&
+                      !getConsumablePresent(item),
+                  },
                 ]"
                 aria-hidden="true"
               >
@@ -1760,217 +2283,446 @@ onMounted(() => {
                   v-if="
                     getUnitVisualType(item) === 'drum'
                   "
-                  viewBox="0 0 120 80"
-                  class="unit-illustration"
+                  viewBox="0 0 220 120"
+                  class="unit-illustration realistic-unit-svg"
                 >
-                  <rect
-                    x="24"
-                    y="27"
-                    width="72"
-                    height="26"
-                    rx="13"
-                    class="unit-main-fill"
-                  />
-                  <circle
-                    cx="24"
-                    cy="40"
-                    r="15"
-                    class="unit-dark-fill"
-                  />
-                  <circle
-                    cx="24"
-                    cy="40"
-                    r="7"
-                    class="unit-light-fill"
-                  />
-                  <rect
-                    x="91"
-                    y="32"
-                    width="15"
-                    height="16"
-                    rx="4"
-                    class="unit-dark-fill"
-                  />
-                  <path
-                    d="M10 40h28M24 26v28"
-                    class="unit-line"
-                  />
+                  <defs>
+                    <linearGradient
+                      :id="`drumBody-${item.id}`"
+                      x1="0"
+                      y1="0"
+                      x2="1"
+                      y2="0"
+                    >
+                      <stop offset="0%" stop-color="color-mix(in srgb, currentColor 62%, black)" />
+                      <stop offset="18%" stop-color="currentColor" />
+                      <stop offset="48%" stop-color="color-mix(in srgb, currentColor 75%, white)" />
+                      <stop offset="76%" stop-color="currentColor" />
+                      <stop offset="100%" stop-color="color-mix(in srgb, currentColor 55%, black)" />
+                    </linearGradient>
+                  </defs>
+
+                  <ellipse cx="42" cy="60" rx="28" ry="31" fill="#111827" />
+                  <ellipse cx="42" cy="60" rx="21" ry="23" fill="#202b36" />
+                  <ellipse cx="42" cy="60" rx="11" ry="12" fill="#a3b0bc" />
+                  <rect x="42" y="31" width="132" height="58" rx="29" :fill="`url(#drumBody-${item.id})`" />
+                  <ellipse cx="174" cy="60" rx="14" ry="18" fill="#1f2937" />
+                  <rect x="165" y="42" width="24" height="36" rx="7" fill="#111827" />
+                  <path d="M58 40h95" stroke="rgba(255,255,255,.42)" stroke-width="6" stroke-linecap="round" />
+                  <path d="M58 82h97" stroke="rgba(0,0,0,.18)" stroke-width="5" stroke-linecap="round" />
+                  <circle cx="42" cy="60" r="24" fill="none" stroke="rgba(255,255,255,.24)" stroke-width="3" />
                 </svg>
 
                 <svg
                   v-else-if="
                     getUnitVisualType(item) === 'fuser'
                   "
-                  viewBox="0 0 120 80"
-                  class="unit-illustration"
+                  viewBox="0 0 220 120"
+                  class="unit-illustration realistic-unit-svg"
                 >
-                  <rect
-                    x="14"
-                    y="22"
-                    width="92"
-                    height="36"
-                    rx="10"
-                    class="unit-soft-fill"
-                  />
-                  <rect
-                    x="26"
-                    y="29"
-                    width="68"
-                    height="10"
-                    rx="5"
-                    class="unit-main-fill"
-                  />
-                  <rect
-                    x="26"
-                    y="43"
-                    width="68"
-                    height="9"
-                    rx="4.5"
-                    class="unit-dark-fill"
-                  />
-                  <circle
-                    cx="18"
-                    cy="40"
-                    r="7"
-                    class="unit-dark-fill"
-                  />
-                  <circle
-                    cx="102"
-                    cy="40"
-                    r="7"
-                    class="unit-dark-fill"
-                  />
+                  <rect x="22" y="28" width="162" height="62" rx="12" fill="#1f2937" />
+                  <rect x="34" y="39" width="112" height="15" rx="7" fill="#0f172a" />
+                  <rect x="34" y="58" width="112" height="17" rx="8" fill="currentColor" />
+                  <rect x="146" y="36" width="24" height="43" rx="8" fill="#334155" />
+                  <rect x="170" y="43" width="19" height="26" rx="6" fill="#22c55e" />
+                  <rect x="12" y="45" width="18" height="23" rx="5" fill="#111827" />
+                  <path d="M30 34h132" stroke="rgba(255,255,255,.16)" stroke-width="3" />
+                  <path d="M28 83h138" stroke="rgba(255,255,255,.12)" stroke-width="3" />
                 </svg>
 
                 <svg
                   v-else-if="
                     getUnitVisualType(item) === 'itb'
                   "
-                  viewBox="0 0 120 80"
-                  class="unit-illustration"
+                  viewBox="0 0 220 120"
+                  class="unit-illustration realistic-unit-svg"
                 >
-                  <path
-                    d="M20 26h80l10 28H10z"
-                    class="unit-soft-fill"
-                  />
-                  <path
-                    d="M28 32h64l7 16H21z"
-                    class="unit-main-fill"
-                  />
-                  <circle
-                    cx="24"
-                    cy="54"
-                    r="8"
-                    class="unit-dark-fill"
-                  />
-                  <circle
-                    cx="96"
-                    cy="54"
-                    r="8"
-                    class="unit-dark-fill"
-                  />
+                  <path d="M26 41h138l22 14v26l-22 14H26l-10-10V51z" fill="#0f172a" />
+                  <rect x="44" y="50" width="92" height="25" rx="12" fill="currentColor" />
+                  <rect x="136" y="47" width="30" height="31" rx="8" fill="#1f2937" />
+                  <circle cx="36" cy="63" r="9" fill="#475569" />
+                  <circle cx="172" cy="63" r="11" fill="#475569" />
+                  <path d="M49 55h82" stroke="rgba(255,255,255,.4)" stroke-width="4" stroke-linecap="round" />
                 </svg>
 
                 <svg
                   v-else-if="
                     getUnitVisualType(item) === 'adf'
                   "
-                  viewBox="0 0 120 80"
-                  class="unit-illustration"
+                  viewBox="0 0 220 120"
+                  class="unit-illustration realistic-unit-svg"
                 >
-                  <path
-                    d="M20 24h65l15 13H35z"
-                    class="unit-main-fill"
-                  />
-                  <rect
-                    x="30"
-                    y="37"
-                    width="70"
-                    height="23"
-                    rx="6"
-                    class="unit-soft-fill"
-                  />
-                  <rect
-                    x="41"
-                    y="42"
-                    width="48"
-                    height="6"
-                    rx="3"
-                    class="unit-dark-fill"
-                  />
-                  <path
-                    d="M35 24l8-8h38l8 8"
-                    class="unit-line"
-                  />
+                  <rect x="38" y="54" width="92" height="34" rx="9" fill="#d1d5db" />
+                  <rect x="57" y="66" width="54" height="8" rx="4" fill="#9ca3af" />
+                  <path d="M62 33h60l26 19H88z" fill="#1f2937" />
+                  <path d="M50 47h70l16 11H65z" fill="#475569" />
+                  <rect x="28" y="82" width="120" height="8" rx="4" fill="#9ca3af" />
                 </svg>
 
                 <svg
                   v-else-if="
-                    getUnitVisualType(item) === 'cassette'
+                    getUnitVisualType(item) === 'cassette' ||
+                    getUnitVisualType(item) === 'paper_feed'
                   "
-                  viewBox="0 0 120 80"
-                  class="unit-illustration"
+                  viewBox="0 0 220 120"
+                  class="unit-illustration realistic-unit-svg"
                 >
+                  <path d="M32 48h110l22 15v26l-22 13H32l-12-11V58z" fill="#d1d5db" />
+                  <rect x="54" y="58" width="70" height="25" rx="5" fill="#f8fafc" />
+                  <path d="M48 48l15-12h78l13 12" fill="#94a3b8" />
+                  <rect x="86" y="87" width="30" height="7" rx="3.5" fill="#475569" />
+                  <path d="M62 64h52" stroke="#cbd5e1" stroke-width="3" />
+                </svg>
+
+                <svg
+                  v-else-if="
+                    getUnitVisualType(item) === 'developer'
+                  "
+                  viewBox="0 0 220 120"
+                  class="unit-illustration realistic-unit-svg"
+                >
+                  <rect x="28" y="38" width="128" height="44" rx="22" fill="#263746" />
+                  <circle cx="40" cy="60" r="20" fill="#1e293b" />
+                  <circle cx="40" cy="60" r="10" fill="currentColor" />
+                  <rect x="54" y="46" width="82" height="12" rx="6" fill="currentColor" />
+                  <rect x="54" y="62" width="82" height="10" rx="5" fill="#475569" />
+                  <rect x="152" y="48" width="20" height="24" rx="6" fill="#1f2937" />
+                  <path d="M60 50h68" stroke="rgba(255,255,255,.36)" stroke-width="4" />
+                </svg>
+
+                <svg
+                  v-else-if="
+                    getUnitVisualType(item) === 'duplex'
+                  "
+                  viewBox="0 0 220 120"
+                  class="unit-illustration realistic-unit-svg"
+                >
+                  <rect x="36" y="35" width="118" height="52" rx="9" fill="#d1d5db" />
+                  <rect x="70" y="49" width="50" height="18" rx="4" fill="#64748b" />
+                  <rect x="122" y="45" width="18" height="28" rx="4" fill="#94a3b8" />
+                  <path d="M40 78h110" stroke="#9ca3af" stroke-width="4" />
+                  <path d="M40 44h110" stroke="rgba(255,255,255,.55)" stroke-width="3" />
+                </svg>
+
+                <svg
+                  v-else-if="
+                    getUnitVisualType(item) === 'waste_toner'
+                  "
+                  viewBox="0 0 120 120"
+                  class="unit-illustration realistic-unit-svg waste-toner-svg"
+                >
+                  <defs>
+                    <linearGradient
+                      :id="`wasteBody-${item.id}`"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stop-color="#f7fafc"
+                      />
+                      <stop
+                        offset="100%"
+                        stop-color="#cbd5df"
+                      />
+                    </linearGradient>
+
+                    <clipPath
+                      :id="`wasteClip-${item.id}`"
+                    >
+                      <path
+                        d="M29 28h62l-6 71H35z"
+                      />
+                    </clipPath>
+                  </defs>
+
                   <rect
-                    x="18"
-                    y="19"
-                    width="84"
-                    height="43"
-                    rx="7"
-                    class="unit-soft-fill"
+                    x="25"
+                    y="18"
+                    width="70"
+                    height="13"
+                    rx="5"
+                    fill="#3b4753"
                   />
+
                   <rect
-                    x="27"
-                    y="27"
-                    width="66"
-                    height="23"
+                    x="37"
+                    y="11"
+                    width="46"
+                    height="9"
                     rx="4"
-                    class="unit-light-fill"
+                    fill="#687582"
                   />
-                  <rect
-                    x="48"
-                    y="54"
-                    width="24"
-                    height="5"
-                    rx="2.5"
-                    class="unit-dark-fill"
-                  />
+
                   <path
-                    d="M35 34h50"
-                    class="unit-line"
+                    d="M29 28h62l-6 71H35z"
+                    :fill="`url(#wasteBody-${item.id})`"
+                    stroke="#8d9aa5"
+                    stroke-width="2"
                   />
+
+                  <g
+                    :clip-path="`url(#wasteClip-${item.id})`"
+                  >
+                    <rect
+                      x="29"
+                      :y="
+                        99 -
+                        (
+                          64 *
+                          getConsumableLevel(item) /
+                          100
+                        )
+                      "
+                      width="62"
+                      :height="
+                        64 *
+                        getConsumableLevel(item) /
+                        100
+                      "
+                      fill="#505861"
+                      opacity="0.82"
+                    />
+
+                    <path
+                      v-if="
+                        getConsumableLevel(item) > 0
+                      "
+                      :d="`
+                        M29 ${
+                          99 -
+                          (
+                            64 *
+                            getConsumableLevel(item) /
+                            100
+                          )
+                        }
+                        C44 ${
+                          96 -
+                          (
+                            64 *
+                            getConsumableLevel(item) /
+                            100
+                          )
+                        },
+                        66 ${
+                          102 -
+                          (
+                            64 *
+                            getConsumableLevel(item) /
+                            100
+                          )
+                        },
+                        91 ${
+                          98 -
+                          (
+                            64 *
+                            getConsumableLevel(item) /
+                            100
+                          )
+                        }
+                      `"
+                      fill="none"
+                      stroke="rgba(255,255,255,.45)"
+                      stroke-width="3"
+                    />
+                  </g>
+
+                  <rect
+                    x="42"
+                    y="43"
+                    width="36"
+                    height="25"
+                    rx="5"
+                    fill="rgba(255,255,255,.68)"
+                    stroke="#9ca8b2"
+                  />
+
+                  <text
+                    x="60"
+                    y="59"
+                    text-anchor="middle"
+                    class="waste-toner-label"
+                  >
+                    RESIDUAL
+                  </text>
+
+                  <g
+                    v-if="
+                      !getConsumablePresent(item)
+                    "
+                    class="toner-missing-overlay"
+                  >
+                    <path
+                      d="M34 34L86 88M86 34L34 88"
+                    />
+                  </g>
+                </svg>
+
+                <svg
+                  v-else-if="
+                    [
+                      'toner',
+                      'ink',
+                    ].includes(
+                      getUnitVisualType(item)
+                    )
+                  "
+                  viewBox="0 0 100 120"
+                  class="unit-illustration realistic-unit-svg consumable-unit-svg toner-cartridge-svg"
+                >
+                  <defs>
+                    <clipPath
+                      :id="`tonerBodyClip-${item.id}`"
+                    >
+                      <rect
+                        x="20"
+                        y="15"
+                        width="60"
+                        height="75"
+                        rx="5"
+                      />
+                    </clipPath>
+                  </defs>
+
+                  <rect
+                    x="28"
+                    y="8"
+                    width="44"
+                    height="8"
+                    rx="2"
+                    class="toner-cap"
+                  />
+
+                  <rect
+                    x="31"
+                    y="5"
+                    width="38"
+                    height="4"
+                    rx="2"
+                    class="toner-cap-highlight"
+                  />
+
+                  <rect
+                    x="20"
+                    y="15"
+                    width="60"
+                    height="75"
+                    rx="5"
+                    class="toner-shell"
+                  />
+
+                  <g
+                    :clip-path="`url(#tonerBodyClip-${item.id})`"
+                  >
+                    <rect
+                      x="22"
+                      :y="
+                        17 +
+                        (
+                          71 *
+                          (
+                            100 -
+                            getConsumableLevel(item)
+                          ) /
+                          100
+                        )
+                      "
+                      width="56"
+                      :height="
+                        71 *
+                        getConsumableLevel(item) /
+                        100
+                      "
+                      class="toner-fill"
+                    />
+
+                    <line
+                      x1="18"
+                      :y1="
+                        17 +
+                        (
+                          71 *
+                          (
+                            100 -
+                            getConsumableLevel(item)
+                          ) /
+                          100
+                        )
+                      "
+                      x2="82"
+                      :y2="
+                        17 +
+                        (
+                          71 *
+                          (
+                            100 -
+                            getConsumableLevel(item)
+                          ) /
+                          100
+                        )
+                      "
+                      class="toner-level-line"
+                    />
+                  </g>
+
+                  <rect
+                    x="22"
+                    y="92"
+                    width="56"
+                    height="18"
+                    rx="3"
+                    class="toner-label"
+                  />
+
+                  <text
+                    x="50"
+                    y="105"
+                    text-anchor="middle"
+                    class="toner-label-text"
+                  >
+                    {{
+                      getUnitIconClass(item) === "cyan"
+                        ? "C"
+                        : getUnitIconClass(item) === "magenta"
+                          ? "M"
+                          : getUnitIconClass(item) === "yellow"
+                            ? "Y"
+                            : "K"
+                    }}
+                  </text>
+
+                  <g
+                    v-if="
+                      !getConsumablePresent(item)
+                    "
+                    class="toner-missing-overlay"
+                  >
+                    <rect
+                      x="20"
+                      y="15"
+                      width="60"
+                      height="95"
+                      rx="5"
+                    />
+
+                    <path
+                      d="M31 38L69 76M69 38L31 76"
+                    />
+                  </g>
                 </svg>
 
                 <svg
                   v-else
-                  viewBox="0 0 120 80"
-                  class="unit-illustration"
+                  viewBox="0 0 220 120"
+                  class="unit-illustration realistic-unit-svg"
                 >
-                  <circle
-                    cx="60"
-                    cy="40"
-                    r="23"
-                    class="unit-soft-fill"
-                  />
-                  <circle
-                    cx="60"
-                    cy="40"
-                    r="12"
-                    class="unit-main-fill"
-                  />
-                  <path
-                    d="M60 10v10M60 60v10M30 40H20M100 40H90M39 19l7 7M81 54l7 7M81 26l7-7M39 61l7-7"
-                    class="unit-line"
-                  />
+                  <rect x="38" y="38" width="112" height="45" rx="12" fill="#d8e2ea" />
+                  <circle cx="94" cy="60" r="14" fill="currentColor" />
+                  <path d="M94 34v10M94 76v10M68 60H58M130 60h10M76 43l6 6M112 71l6 6M112 49l6-6M76 77l6-6" stroke="#334155" stroke-width="4" stroke-linecap="round" fill="none" />
                 </svg>
-
-                <span class="unit-visual-label">
-                  {{
-                    item.component_type_name ||
-                    item.component_name ||
-                    "Unidad técnica"
-                  }}
-                </span>
               </div>
 
               <div
@@ -1993,7 +2745,7 @@ onMounted(() => {
                 <div class="item-heading">
                   <div>
                     <strong>
-                      {{ item.name }}
+                      {{ getDisplayItemName(item) }}
                     </strong>
 
                     <small>
@@ -2029,6 +2781,97 @@ onMounted(() => {
                 >
                   {{ item.description }}
                 </p>
+
+                <div
+                  v-if="
+                    isConsumableUnit(item)
+                  "
+                  class="consumable-level-card"
+                  :class="[
+                    getUnitIconClass(item),
+                    getConsumableCardClass(item),
+                  ]"
+                >
+                  <div class="consumable-level-header">
+                    <div>
+                      <span class="consumable-color-dot"></span>
+
+                      <strong>
+                        {{
+                          getUnitVisualType(item) === "waste_toner"
+                            ? "Nivel residual"
+                            : getUnitVisualType(item) === "ink"
+                              ? "Nivel de tinta"
+                              : "Nivel de tóner"
+                        }}
+                      </strong>
+                    </div>
+
+                    <span
+                      class="consumable-level-state"
+                    >
+                      {{
+                        getConsumableLevelLabel(
+                          item
+                        )
+                      }}
+                    </span>
+                  </div>
+
+                  <div
+                    v-if="
+                      getConsumablePresent(item)
+                    "
+                    class="consumable-level-value"
+                  >
+                    <strong>
+                      {{
+                        getConsumableLevel(
+                          item
+                        )
+                      }}%
+                    </strong>
+
+                    <div class="consumable-level-track">
+                      <span
+                        :style="{
+                          width:
+                            `${getConsumableLevel(item)}%`,
+                        }"
+                      ></span>
+                    </div>
+
+                    <div class="consumable-level-scale">
+                      <span>0%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  <div
+                    v-else
+                    class="consumable-missing-message"
+                  >
+                    <span class="missing-x">
+                      ×
+                    </span>
+
+                    <div>
+                      <strong>
+                        {{
+                    getUnitVisualType(
+                      selectedItem
+                    ) === "waste_toner"
+                      ? "Sin depósito"
+                      : "Sin botella"
+                  }}
+                      </strong>
+
+                      <small>
+                        No instalada
+                      </small>
+                    </div>
+                  </div>
+                </div>
 
                 <div
                   v-if="item.instructions"
@@ -2186,7 +3029,9 @@ onMounted(() => {
                   Subir evidencia
                 </button>
               </div>
-            </article>
+                </article>
+              </div>
+            </section>
           </div>
         </div>
       </article>
@@ -2681,6 +3526,210 @@ onMounted(() => {
               }}
             </strong>
           </label>
+        </div>
+
+        <div
+          v-if="isReviewingConsumable()"
+          class="consumable-review-panel"
+        >
+          <div class="consumable-review-heading">
+            <div>
+              <strong>
+                {{
+                  getUnitVisualType(
+                    selectedItem
+                  ) === "waste_toner"
+                    ? "Estado del depósito residual"
+                    : "Estado del cartucho o botella"
+                }}
+              </strong>
+
+              <small>
+                Registra presencia y nivel actual.
+              </small>
+            </div>
+
+            <span
+              class="consumable-review-label"
+              :class="{
+                missing:
+                  reviewForm
+                    .consumable_present === false,
+                empty:
+                  reviewForm
+                    .consumable_present === true &&
+                  Number(
+                    reviewForm
+                      .consumable_level_percent
+                  ) === 0,
+                full:
+                  reviewForm
+                    .consumable_present === true &&
+                  Number(
+                    reviewForm
+                      .consumable_level_percent
+                  ) === 100,
+              }"
+            >
+              {{
+                getReviewConsumableLevelLabel()
+              }}
+            </span>
+          </div>
+
+          <div class="consumable-presence-options">
+            <button
+              type="button"
+              class="consumable-presence-button"
+              :class="{
+                active:
+                  reviewForm
+                    .consumable_present === true,
+              }"
+              @click="
+                selectConsumablePresence(
+                  true
+                )
+              "
+            >
+              <span class="presence-icon">
+                ✓
+              </span>
+
+              <span>
+                <strong>
+                  {{
+                    getUnitVisualType(
+                      selectedItem
+                    ) === "waste_toner"
+                      ? "Con depósito"
+                      : "Con botella"
+                  }}
+                </strong>
+
+                <small>
+                  Instalada
+                </small>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="consumable-presence-button missing"
+              :class="{
+                active:
+                  reviewForm
+                    .consumable_present === false,
+              }"
+              @click="
+                selectConsumablePresence(
+                  false
+                )
+              "
+            >
+              <span class="presence-icon">
+                ×
+              </span>
+
+              <span>
+                <strong>
+                  Sin botella
+                </strong>
+
+                <small>
+                  No instalada
+                </small>
+              </span>
+            </button>
+          </div>
+
+          <div
+            v-if="
+              reviewForm
+                .consumable_present === true
+            "
+            class="consumable-level-editor"
+          >
+            <div class="consumable-level-row">
+              <label>
+                Nivel actual
+              </label>
+
+              <strong>
+                {{
+                  Number(
+                    reviewForm
+                      .consumable_level_percent
+                  )
+                }}%
+              </strong>
+            </div>
+
+            <input
+              v-model.number="
+                reviewForm
+                  .consumable_level_percent
+              "
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+            />
+
+            <div class="consumable-level-scale">
+              <span>0% · Vacío</span>
+              <span>100% · Lleno</span>
+            </div>
+
+            <div class="consumable-quick-levels">
+              <button
+                v-for="level in [
+                  0,
+                  10,
+                  25,
+                  50,
+                  75,
+                  100,
+                ]"
+                :key="level"
+                type="button"
+                :class="{
+                  active:
+                    Number(
+                      reviewForm
+                        .consumable_level_percent
+                    ) === level,
+                }"
+                @click="
+                  reviewForm
+                    .consumable_level_percent =
+                    level
+                "
+              >
+                {{ level }}%
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-else-if="
+              reviewForm
+                .consumable_present === false
+            "
+            class="consumable-absent-preview"
+          >
+            <span>×</span>
+
+            <div>
+              <strong>
+                Sin botella o cartucho
+              </strong>
+
+              <small>
+                No se registra porcentaje.
+              </small>
+            </div>
+          </div>
         </div>
 
         <div

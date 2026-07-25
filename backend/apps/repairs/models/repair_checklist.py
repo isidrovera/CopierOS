@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import (
+    MaxValueValidator,
+    MinValueValidator,
+)
 from django.db import models
 from django.utils import timezone
 
-from apps.equipment.models import EquipmentComponent
+from apps.equipment.models import (
+    EquipmentComponent,
+)
 
 from .base import RepairBaseModel
 from .repair import Repair
@@ -293,7 +299,8 @@ class RepairChecklist(RepairBaseModel):
 
         if self.is_main_checklist and self.repair_id:
             checklist_completed = (
-                self.status == self.Status.COMPLETED
+                self.status
+                == self.Status.COMPLETED
             )
 
             if (
@@ -318,8 +325,16 @@ class RepairChecklistItem(RepairBaseModel):
     """
     Punto individual de revisión técnica.
 
-    Puede representar una revisión general o una unidad,
-    accesorio, repuesto o subparte del equipo.
+    Puede representar:
+
+    - Una revisión general.
+    - Una unidad técnica completa.
+    - Un accesorio.
+    - Un consumible como tóner o tinta.
+
+    Las subpartes no se crean como tarjetas principales.
+    Solo se relacionan con una unidad principal cuando
+    requieren cambio.
     """
 
     class Category(models.TextChoices):
@@ -414,6 +429,20 @@ class RepairChecklistItem(RepairBaseModel):
         verbose_name="Componente",
     )
 
+    selected_subcomponents = models.ManyToManyField(
+        EquipmentComponent,
+        blank=True,
+        related_name=(
+            "selected_in_repair_checklist_items"
+        ),
+        verbose_name="Subpartes seleccionadas",
+        help_text=(
+            "Subpartes de la unidad principal que requieren "
+            "cambio. Solo se utiliza cuando la unidad está "
+            "marcada con falla."
+        ),
+    )
+
     code = models.CharField(
         max_length=100,
         db_index=True,
@@ -473,6 +502,35 @@ class RepairChecklistItem(RepairBaseModel):
         verbose_name="Observación",
     )
 
+    consumable_present = models.BooleanField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Consumible instalado",
+        help_text=(
+            "Indica si el tóner, botella o cartucho se "
+            "encuentra instalado. False significa sin botella "
+            "o cartucho. Se deja vacío para componentes que "
+            "no son consumibles."
+        ),
+    )
+
+    consumable_level_percent = (
+        models.PositiveSmallIntegerField(
+            null=True,
+            blank=True,
+            validators=[
+                MinValueValidator(0),
+                MaxValueValidator(100),
+            ],
+            verbose_name="Nivel del consumible",
+            help_text=(
+                "Nivel actual del tóner o tinta entre "
+                "0 y 100 por ciento."
+            ),
+        )
+    )
+
     checked_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -494,12 +552,7 @@ class RepairChecklistItem(RepairBaseModel):
         db_index=True,
         verbose_name="Orden",
     )
-    selected_subcomponents = models.ManyToManyField(
-        EquipmentComponent,
-        blank=True,
-        related_name="selected_in_repair_checklist_items",
-        verbose_name="Subpartes seleccionadas",
-    )
+
     class Meta:
         verbose_name = "Punto de revisión"
         verbose_name_plural = "Puntos de revisión"
@@ -545,12 +598,36 @@ class RepairChecklistItem(RepairBaseModel):
                 ],
                 name="repair_check_required_idx",
             ),
+            models.Index(
+                fields=[
+                    "consumable_present",
+                    "consumable_level_percent",
+                ],
+                name="repair_check_consumable_idx",
+            ),
         ]
 
     def __str__(self):
         return (
             f"{self.checklist.repair.code} - "
             f"{self.name}"
+        )
+
+    def is_primary_consumable(self):
+        """
+        Indica si el punto representa un consumible principal.
+
+        Las subpartes nunca manejan nivel de tóner o tinta.
+        """
+
+        if not self.component_id:
+            return False
+
+        component = self.component
+
+        return bool(
+            component.is_consumable
+            and not component.parent_component_id
         )
 
     def clean(self):
@@ -607,11 +684,14 @@ class RepairChecklistItem(RepairBaseModel):
                 }
             )
 
-        duplicate_item = RepairChecklistItem.objects.filter(
-            checklist_id=self.checklist_id,
-            code__iexact=self.code,
-        ).exclude(
-            pk=self.pk,
+        duplicate_item = (
+            RepairChecklistItem.objects.filter(
+                checklist_id=self.checklist_id,
+                code__iexact=self.code,
+            )
+            .exclude(
+                pk=self.pk,
+            )
         )
 
         if duplicate_item.exists():
@@ -635,7 +715,8 @@ class RepairChecklistItem(RepairBaseModel):
             raise ValidationError(
                 {
                     "component": (
-                        "Debe seleccionar el componente relacionado."
+                        "Debe seleccionar el componente "
+                        "relacionado."
                     ),
                 }
             )
@@ -651,8 +732,22 @@ class RepairChecklistItem(RepairBaseModel):
             raise ValidationError(
                 {
                     "category": (
-                        "Los puntos vinculados a componentes deben "
-                        "usar la categoría componente o accesorio."
+                        "Los puntos vinculados a componentes "
+                        "deben usar la categoría componente "
+                        "o accesorio."
+                    ),
+                }
+            )
+
+        if (
+            self.component_id
+            and self.component.parent_component_id
+        ):
+            raise ValidationError(
+                {
+                    "component": (
+                        "Las subpartes no pueden registrarse "
+                        "como puntos principales del checklist."
                     ),
                 }
             )
@@ -675,7 +770,8 @@ class RepairChecklistItem(RepairBaseModel):
                 raise ValidationError(
                     {
                         "checked_at": (
-                            "Debe registrar la fecha de revisión."
+                            "Debe registrar la fecha "
+                            "de revisión."
                         ),
                     }
                 )
@@ -684,7 +780,8 @@ class RepairChecklistItem(RepairBaseModel):
                 raise ValidationError(
                     {
                         "checked_by": (
-                            "Debe indicar quién realizó la revisión."
+                            "Debe indicar quién realizó "
+                            "la revisión."
                         ),
                     }
                 )
@@ -719,18 +816,114 @@ class RepairChecklistItem(RepairBaseModel):
             )
 
         if (
-            self.status == self.Status.NOT_APPLICABLE
+            self.status
+            == self.Status.NOT_APPLICABLE
             and self.is_required
             and not self.observation
         ):
             raise ValidationError(
                 {
                     "observation": (
-                        "Debe indicar por qué el punto obligatorio "
-                        "no aplica."
+                        "Debe indicar por qué el punto "
+                        "obligatorio no aplica."
                     ),
                 }
             )
+
+        primary_consumable = (
+            self.is_primary_consumable()
+        )
+
+        if not primary_consumable:
+            if self.consumable_present is not None:
+                raise ValidationError(
+                    {
+                        "consumable_present": (
+                            "Este campo solo se utiliza para "
+                            "tóner, tinta o consumibles "
+                            "principales."
+                        ),
+                    }
+                )
+
+            if (
+                self.consumable_level_percent
+                is not None
+            ):
+                raise ValidationError(
+                    {
+                        "consumable_level_percent": (
+                            "El nivel solo se registra para "
+                            "tóner, tinta o consumibles "
+                            "principales."
+                        ),
+                    }
+                )
+
+        if primary_consumable:
+            if (
+                self.status
+                != self.Status.PENDING
+                and self.consumable_present
+                is None
+            ):
+                raise ValidationError(
+                    {
+                        "consumable_present": (
+                            "Debes indicar si el tóner, "
+                            "botella o cartucho está instalado."
+                        ),
+                    }
+                )
+
+            if self.consumable_present is False:
+                if (
+                    self.consumable_level_percent
+                    is not None
+                ):
+                    raise ValidationError(
+                        {
+                            "consumable_level_percent": (
+                                "Un consumible sin botella "
+                                "o cartucho no puede tener "
+                                "un porcentaje registrado."
+                            ),
+                        }
+                    )
+
+            if self.consumable_present is True:
+                if (
+                    self.status
+                    != self.Status.PENDING
+                    and self.consumable_level_percent
+                    is None
+                ):
+                    raise ValidationError(
+                        {
+                            "consumable_level_percent": (
+                                "Debes registrar el nivel "
+                                "del consumible."
+                            ),
+                        }
+                    )
+
+                if (
+                    self.consumable_level_percent
+                    is not None
+                    and not (
+                        0
+                        <= self.consumable_level_percent
+                        <= 100
+                    )
+                ):
+                    raise ValidationError(
+                        {
+                            "consumable_level_percent": (
+                                "El nivel debe estar entre "
+                                "0 y 100."
+                            ),
+                        }
+                    )
 
     def save(self, *args, **kwargs):
         """
