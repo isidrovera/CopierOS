@@ -20,10 +20,6 @@ from .rental_contract import (
     RentalContractListSerializer,
     RentalContractSerializer,
 )
-from .rental_contract_equipment import (
-    RentalContractEquipmentListSerializer,
-    RentalContractEquipmentSerializer,
-)
 from .rental_assignment import (
     RentalAssignmentListSerializer,
     RentalAssignmentSerializer,
@@ -57,8 +53,6 @@ __all__ = [
     "RentalPreparationListSerializer",
     "RentalContractSerializer",
     "RentalContractListSerializer",
-    "RentalContractEquipmentSerializer",
-    "RentalContractEquipmentListSerializer",
     "RentalAssignmentSerializer",
     "RentalAssignmentListSerializer",
     "RentalInstallationSerializer",

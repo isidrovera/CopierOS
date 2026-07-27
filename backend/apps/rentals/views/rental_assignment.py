@@ -15,7 +15,7 @@ from apps.rentals.serializers import (
 class RentalAssignmentViewSet(viewsets.ModelViewSet):
     """
     API para administrar asignaciones de equipos
-    de alquiler a clientes y sedes.
+    vinculadas a contratos de alquiler.
     """
 
     permission_classes = [
@@ -28,13 +28,12 @@ class RentalAssignmentViewSet(viewsets.ModelViewSet):
         queryset = (
             RentalAssignment.objects
             .select_related(
+                "contract",
+                "contract__customer",
                 "rental_equipment",
                 "rental_equipment__equipment",
                 "rental_equipment__equipment__equipment_model",
-                (
-                    "rental_equipment__equipment__"
-                    "equipment_model__brand"
-                ),
+                "rental_equipment__equipment__equipment_model__brand",
                 "customer",
                 "branch",
                 "contact",
@@ -49,9 +48,12 @@ class RentalAssignmentViewSet(viewsets.ModelViewSet):
         )
 
         include_archived = (
-            self.request.query_params.get(
-                "include_archived",
-                "",
+            str(
+                self.request.query_params.get(
+                    "include_archived",
+                    "",
+                )
+                or ""
             )
             .strip()
             .lower()
@@ -69,35 +71,32 @@ class RentalAssignmentViewSet(viewsets.ModelViewSet):
                 archived_at__isnull=True,
             )
 
-        search = (
+        search = str(
             self.request.query_params.get(
                 "search",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if search:
             queryset = queryset.filter(
                 Q(code__icontains=search)
+                | Q(contract__code__icontains=search)
+                | Q(contract__contract_number__icontains=search)
                 | Q(customer__legal_name__icontains=search)
                 | Q(customer__trade_name__icontains=search)
                 | Q(
-                    rental_equipment__equipment__
-                    serial_number__icontains=search,
+                    rental_equipment__equipment__serial_number__icontains=search
                 )
                 | Q(
-                    rental_equipment__equipment__
-                    internal_code__icontains=search,
+                    rental_equipment__equipment__internal_code__icontains=search
                 )
                 | Q(
-                    rental_equipment__equipment__
-                    equipment_model__name__icontains=search,
+                    rental_equipment__equipment__equipment_model__name__icontains=search
                 )
                 | Q(
-                    rental_equipment__equipment__
-                    equipment_model__brand__
-                    name__icontains=search,
+                    rental_equipment__equipment__equipment_model__brand__name__icontains=search
                 )
                 | Q(site_location__icontains=search)
                 | Q(installation_notes__icontains=search)
@@ -105,125 +104,134 @@ class RentalAssignmentViewSet(viewsets.ModelViewSet):
                 | Q(notes__icontains=search)
             ).distinct()
 
-        rental_equipment_id = (
+        contract_id = str(
+            self.request.query_params.get(
+                "contract",
+                "",
+            )
+            or ""
+        ).strip()
+
+        if contract_id:
+            queryset = queryset.filter(
+                contract_id=contract_id,
+            )
+
+        rental_equipment_id = str(
             self.request.query_params.get(
                 "rental_equipment",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if rental_equipment_id:
             queryset = queryset.filter(
                 rental_equipment_id=rental_equipment_id,
             )
 
-        customer_id = (
+        customer_id = str(
             self.request.query_params.get(
                 "customer",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if customer_id:
             queryset = queryset.filter(
                 customer_id=customer_id,
             )
 
-        branch_id = (
+        branch_id = str(
             self.request.query_params.get(
                 "branch",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if branch_id:
             queryset = queryset.filter(
                 branch_id=branch_id,
             )
 
-        contact_id = (
+        contact_id = str(
             self.request.query_params.get(
                 "contact",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if contact_id:
             queryset = queryset.filter(
                 contact_id=contact_id,
             )
 
-        assignment_status = (
+        assignment_status = str(
             self.request.query_params.get(
                 "status",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if assignment_status:
             queryset = queryset.filter(
                 status=assignment_status,
             )
 
-        assigned_from = (
+        assigned_from = str(
             self.request.query_params.get(
                 "assigned_from",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if assigned_from:
             queryset = queryset.filter(
                 assigned_at__date__gte=assigned_from,
             )
 
-        assigned_to = (
+        assigned_to = str(
             self.request.query_params.get(
                 "assigned_to",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if assigned_to:
             queryset = queryset.filter(
                 assigned_at__date__lte=assigned_to,
             )
 
-        installation_from = (
+        installation_from = str(
             self.request.query_params.get(
                 "installation_from",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if installation_from:
             queryset = queryset.filter(
-                scheduled_installation_date__gte=(
-                    installation_from
-                ),
+                scheduled_installation_date__gte=installation_from,
             )
 
-        installation_to = (
+        installation_to = str(
             self.request.query_params.get(
                 "installation_to",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if installation_to:
             queryset = queryset.filter(
-                scheduled_installation_date__lte=(
-                    installation_to
-                ),
+                scheduled_installation_date__lte=installation_to,
             )
 
         return queryset
@@ -273,13 +281,13 @@ class RentalAssignmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        reason = (
+        reason = str(
             request.data.get(
                 "reason",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if not reason:
             return Response(
@@ -311,63 +319,9 @@ class RentalAssignmentViewSet(viewsets.ModelViewSet):
         url_path="archive",
     )
     def archive_assignment(self, request, pk=None):
-        assignment = self.get_object()
-
-        if assignment.archived_at:
-            return Response(
-                {
-                    "detail": (
-                        "La asignación ya se encuentra archivada."
-                    ),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if assignment.status in [
-            RentalAssignment.Status.INSTALLED,
-            RentalAssignment.Status.ACTIVE,
-            RentalAssignment.Status.REMOVAL_PENDING,
-        ]:
-            return Response(
-                {
-                    "detail": (
-                        "No se puede archivar una asignación "
-                        "instalada, activa o pendiente de retiro."
-                    ),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        reason = (
-            request.data.get(
-                "reason",
-                "",
-            )
-            .strip()
-        )
-
-        if not reason:
-            return Response(
-                {
-                    "detail": (
-                        "Debe indicar el motivo de archivado."
-                    ),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        assignment.archive(
-            user=request.user,
-            reason=reason,
-        )
-
-        return Response(
-            {
-                "detail": (
-                    "Asignación archivada correctamente."
-                ),
-            },
-            status=status.HTTP_200_OK,
+        return self.destroy(
+            request,
+            pk=pk,
         )
 
     @action(
@@ -459,16 +413,64 @@ class RentalAssignmentViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=["get"],
+        url_path="contract-history",
+    )
+    def contract_history(self, request):
+        contract_id = str(
+            request.query_params.get(
+                "contract",
+                "",
+            )
+            or ""
+        ).strip()
+
+        if not contract_id:
+            return Response(
+                {
+                    "detail": (
+                        "Debe indicar el contrato."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = (
+            self.get_queryset()
+            .filter(
+                contract_id=contract_id,
+            )
+            .order_by(
+                "-assigned_at",
+                "-created_at",
+            )
+        )
+
+        serializer = RentalAssignmentListSerializer(
+            queryset,
+            many=True,
+            context={
+                "request": request,
+            },
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=False,
+        methods=["get"],
         url_path="customer-equipment",
     )
     def customer_equipment(self, request):
-        customer_id = (
+        customer_id = str(
             request.query_params.get(
                 "customer",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if not customer_id:
             return Response(
@@ -510,13 +512,13 @@ class RentalAssignmentViewSet(viewsets.ModelViewSet):
         url_path="equipment-history",
     )
     def equipment_history(self, request):
-        rental_equipment_id = (
+        rental_equipment_id = str(
             request.query_params.get(
                 "rental_equipment",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if not rental_equipment_id:
             return Response(

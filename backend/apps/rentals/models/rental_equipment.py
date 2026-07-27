@@ -244,7 +244,7 @@ class RentalEquipment(RentalsBaseModel):
                     "warehouse",
                     "operational_status",
                 ],
-                name="rent_equip_warehouse_status_idx",
+                name="rent_eq_warehouse_st_idx",
             ),
             models.Index(
                 fields=[

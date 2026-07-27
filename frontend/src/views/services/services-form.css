@@ -1,0 +1,563 @@
+.service-form-page {
+  min-height: 100%;
+  padding: 18px;
+  padding-bottom: 110px;
+  background:
+    linear-gradient(
+      180deg,
+      #f6f8fc 0%,
+      #eef2f8 100%
+    );
+  color: #17233b;
+}
+
+.service-form-page *,
+.service-form-page *::before,
+.service-form-page *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   ENCABEZADO
+========================================================= */
+
+.services-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.services-header h2 {
+  margin: 3px 0 5px;
+  color: #17233b;
+  font-size: clamp(21px, 2vw, 28px);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.services-header p {
+  margin: 0;
+  color: #68758c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.page-kicker,
+.card-kicker {
+  display: block;
+  color: #1739c4;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   MENSAJES
+========================================================= */
+
+.message {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.error-message {
+  border: 1px solid #f0b5b5;
+  background: #fff1f1;
+  color: #a52d2d;
+}
+
+.success-message {
+  border: 1px solid #a9dfbf;
+  background: #edf9f1;
+  color: #237343;
+}
+
+/* =========================================================
+   FORMULARIO
+========================================================= */
+
+.service-form {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+}
+
+.form-card {
+  width: 100%;
+  padding: 20px;
+  overflow: visible;
+  border: 1px solid #d9e1ee;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 7px 24px rgba(28, 44, 75, 0.055);
+}
+
+.form-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e8edf5;
+}
+
+.form-card-header h3 {
+  margin: 5px 0 4px;
+  color: #17233b;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.form-card-header p {
+  margin: 0;
+  color: #69768b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   ORIGEN DE LA ATENCIÓN
+========================================================= */
+
+.service-origin-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.service-origin-option {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 88px;
+  padding: 14px;
+  overflow: hidden;
+  border: 1px solid #d8e0ec;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #25334a;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.service-origin-option:hover {
+  border-color: #4165dc;
+  background: #f8faff;
+  box-shadow:
+    0 8px 20px rgba(32, 67, 180, 0.1);
+  transform: translateY(-2px);
+}
+
+.service-origin-option--active {
+  border-color: #2448ca;
+  background:
+    linear-gradient(
+      135deg,
+      #edf2ff 0%,
+      #f8faff 100%
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(36, 72, 202, 0.13),
+    0 8px 20px rgba(36, 72, 202, 0.09);
+}
+
+.service-origin-option__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 13px;
+  background: #eef2fb;
+  color: #3454c5;
+}
+
+.service-origin-option--active
+.service-origin-option__icon {
+  background:
+    linear-gradient(
+      135deg,
+      #2448ca,
+      #385fd8
+    );
+  color: #ffffff;
+}
+
+/*
+  Esta regla corrige los iconos gigantes
+  que aparecen en la captura.
+*/
+.service-origin-option__icon svg {
+  display: block;
+  width: 25px !important;
+  min-width: 25px;
+  max-width: 25px;
+  height: 25px !important;
+  min-height: 25px;
+  max-height: 25px;
+  fill: currentColor;
+}
+
+.service-origin-option > span:last-child {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.service-origin-option strong {
+  color: #1d2a42;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.service-origin-option small {
+  margin-top: 4px;
+  color: #6c788c;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   GRILLA Y CAMPOS
+========================================================= */
+
+.form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  align-items: start;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.form-grid label > span {
+  margin-bottom: 7px;
+  color: #334056;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d6deea;
+  border-radius: 11px;
+  outline: none;
+  background: #ffffff;
+  color: #213048;
+  font-family: inherit;
+  font-size: 13px;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.form-grid input,
+.form-grid select {
+  height: 44px;
+  padding: 0 12px;
+}
+
+.form-grid textarea {
+  min-height: 105px;
+  padding: 11px 12px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus {
+  border-color: #3458d4;
+  box-shadow:
+    0 0 0 3px rgba(52, 88, 212, 0.12);
+}
+
+.form-grid input[readonly],
+.form-grid textarea[readonly] {
+  border-color: #e0e6ef;
+  background: #f5f7fa;
+  color: #536077;
+  cursor: default;
+}
+
+.form-grid select {
+  cursor: pointer;
+}
+
+.full-field {
+  grid-column: 1 / -1;
+}
+
+/* =========================================================
+   CÓDIGO AUTOMÁTICO
+========================================================= */
+
+.automatic-code-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid #cdd8f7;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #2448c7;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   SNAPSHOT DE CLIENTE
+========================================================= */
+
+.snapshot-card {
+  overflow: visible;
+}
+
+.snapshot-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 95px;
+  padding: 18px;
+  border: 1px dashed #cfd8e5;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #6f7c91;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* =========================================================
+   BOTONES
+========================================================= */
+
+.primary-button,
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.primary-button {
+  border: 1px solid #2442bf;
+  background:
+    linear-gradient(
+      135deg,
+      #2c4bd0,
+      #1c36ad
+    );
+  color: #ffffff;
+  box-shadow:
+    0 7px 16px rgba(36, 66, 191, 0.22);
+}
+
+.primary-button:hover:not(:disabled) {
+  box-shadow:
+    0 10px 22px rgba(36, 66, 191, 0.28);
+  transform: translateY(-1px);
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  border: 1px solid #d5ddea;
+  background: #ffffff;
+  color: #344158;
+}
+
+.secondary-button:hover {
+  border-color: #acb9ce;
+  background: #f7f9fc;
+}
+
+/* =========================================================
+   ACCIONES INFERIORES
+========================================================= */
+
+.form-actions {
+  position: sticky;
+  z-index: 20;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d8e0ec;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 10px 30px rgba(28, 43, 72, 0.14);
+  backdrop-filter: blur(12px);
+}
+
+/* =========================================================
+   CARGA
+========================================================= */
+
+.loading-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  min-height: 160px;
+  border: 1px solid #dce3ed;
+  border-radius: 15px;
+  background: #ffffff;
+  color: #647188;
+  font-size: 13px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 21px;
+  height: 21px;
+  border: 3px solid #dbe2ec;
+  border-top-color: #2c4ed0;
+  border-radius: 50%;
+  animation: service-form-spin 0.75s linear infinite;
+}
+
+@keyframes service-form-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   CORRECCIÓN DE SVG GLOBALES
+========================================================= */
+
+.service-form-page svg {
+  flex-shrink: 0;
+}
+
+.service-form-page button svg {
+  pointer-events: none;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+  .form-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .service-form-page {
+    padding: 12px;
+    padding-bottom: 100px;
+  }
+
+  .services-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .service-origin-options {
+    grid-template-columns: 1fr;
+  }
+
+  .form-card {
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  .form-card-header {
+    flex-direction: column;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-field {
+    grid-column: auto;
+  }
+
+  .form-actions {
+    bottom: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .service-origin-option {
+    min-height: 78px;
+  }
+
+  .service-origin-option__icon {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .service-origin-option__icon svg {
+    width: 22px !important;
+    min-width: 22px;
+    max-width: 22px;
+    height: 22px !important;
+    min-height: 22px;
+    max-height: 22px;
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-actions button {
+    width: 100%;
+    padding: 0 10px;
+  }
+}

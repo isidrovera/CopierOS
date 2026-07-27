@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from apps.rentals.models import (
     RentalAssignment,
+    RentalContract,
     RentalEquipment,
 )
 
@@ -10,21 +11,15 @@ from apps.rentals.models import (
 class RentalAssignmentSerializer(serializers.ModelSerializer):
     """
     Serializer principal para asignaciones de equipos
-    de alquiler a clientes, sedes y contactos.
+    vinculadas directamente a contratos de alquiler.
     """
 
-    rental_equipment_display = (
-        serializers.SerializerMethodField()
-    )
+    contract_code = serializers.SerializerMethodField()
+    contract_number = serializers.SerializerMethodField()
 
-    equipment_serial_number = (
-        serializers.SerializerMethodField()
-    )
-
-    equipment_internal_code = (
-        serializers.SerializerMethodField()
-    )
-
+    rental_equipment_display = serializers.SerializerMethodField()
+    equipment_serial_number = serializers.SerializerMethodField()
+    equipment_internal_code = serializers.SerializerMethodField()
     equipment_brand_name = serializers.SerializerMethodField()
     equipment_model_name = serializers.SerializerMethodField()
 
@@ -50,6 +45,9 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "code",
+            "contract",
+            "contract_code",
+            "contract_number",
             "rental_equipment",
             "rental_equipment_display",
             "equipment_serial_number",
@@ -99,6 +97,18 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
             "archived_by",
             "archived_reason",
         ]
+
+    def get_contract_code(self, obj):
+        if not obj.contract:
+            return ""
+
+        return obj.contract.code
+
+    def get_contract_number(self, obj):
+        if not obj.contract:
+            return ""
+
+        return obj.contract.contract_number
 
     def get_rental_equipment_display(self, obj):
         return str(obj.rental_equipment)
@@ -219,9 +229,7 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
         )
 
     def validate_code(self, value):
-        code = str(
-            value or ""
-        ).strip().upper()
+        code = str(value or "").strip().upper()
 
         if not code:
             raise serializers.ValidationError(
@@ -244,6 +252,22 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
 
         return code
 
+    def validate_contract(self, value):
+        if value.archived_at:
+            raise serializers.ValidationError(
+                "El contrato seleccionado está archivado."
+            )
+
+        if value.status not in [
+            RentalContract.Status.APPROVED,
+            RentalContract.Status.ACTIVE,
+        ]:
+            raise serializers.ValidationError(
+                "El contrato debe estar aprobado o activo."
+            )
+
+        return value
+
     def validate_rental_equipment(self, value):
         if value.archived_at:
             raise serializers.ValidationError(
@@ -256,15 +280,13 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
         ):
             raise serializers.ValidationError(
                 "Solo los equipos destinados a alquiler "
-                "pueden asignarse a clientes."
+                "pueden asignarse."
             )
 
-        allowed_statuses = [
+        if value.operational_status not in [
             RentalEquipment.OperationalStatus.READY_FOR_RENTAL,
             RentalEquipment.OperationalStatus.RESERVED,
-        ]
-
-        if value.operational_status not in allowed_statuses:
+        ]:
             raise serializers.ValidationError(
                 "El equipo debe estar listo para alquiler "
                 "o reservado."
@@ -299,43 +321,32 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         instance = self.instance
 
+        contract = attrs.get(
+            "contract",
+            getattr(instance, "contract", None),
+        )
+
         rental_equipment = attrs.get(
             "rental_equipment",
-            getattr(
-                instance,
-                "rental_equipment",
-                None,
-            ),
+            getattr(instance, "rental_equipment", None),
         )
 
         customer = attrs.get(
             "customer",
-            getattr(
-                instance,
-                "customer",
-                None,
-            ),
+            getattr(instance, "customer", None),
         )
 
         branch = attrs.get(
             "branch",
-            getattr(
-                instance,
-                "branch",
-                None,
-            ),
+            getattr(instance, "branch", None),
         )
 
         contact = attrs.get(
             "contact",
-            getattr(
-                instance,
-                "contact",
-                None,
-            ),
+            getattr(instance, "contact", None),
         )
 
-        status = attrs.get(
+        status_value = attrs.get(
             "status",
             getattr(
                 instance,
@@ -350,20 +361,10 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
             None,
         )
 
-        removed_at = getattr(
-            instance,
-            "removed_at",
-            None,
-        )
-
         removal_reason = str(
             attrs.get(
                 "removal_reason",
-                getattr(
-                    instance,
-                    "removal_reason",
-                    "",
-                ),
+                getattr(instance, "removal_reason", ""),
             )
             or ""
         ).strip()
@@ -371,14 +372,19 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
         cancellation_reason = str(
             attrs.get(
                 "cancellation_reason",
-                getattr(
-                    instance,
-                    "cancellation_reason",
-                    "",
-                ),
+                getattr(instance, "cancellation_reason", ""),
             )
             or ""
         ).strip()
+
+        if not contract:
+            raise serializers.ValidationError(
+                {
+                    "contract": (
+                        "El contrato es obligatorio."
+                    ),
+                }
+            )
 
         if not rental_equipment:
             raise serializers.ValidationError(
@@ -394,6 +400,16 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
                 {
                     "customer": (
                         "El cliente es obligatorio."
+                    ),
+                }
+            )
+
+        if contract.customer_id != customer.id:
+            raise serializers.ValidationError(
+                {
+                    "customer": (
+                        "El cliente debe coincidir con "
+                        "el cliente del contrato."
                     ),
                 }
             )
@@ -452,7 +468,7 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
             RentalAssignment.Status.REMOVAL_PENDING,
         ]
 
-        if status in active_statuses:
+        if status_value in active_statuses:
             active_assignment = RentalAssignment.objects.filter(
                 rental_equipment=rental_equipment,
                 status__in=active_statuses,
@@ -468,26 +484,28 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {
                         "rental_equipment": (
-                            "El equipo ya tiene una asignación activa."
+                            "El equipo ya tiene una "
+                            "asignación activa."
                         ),
                     }
                 )
 
         if (
-            status == RentalAssignment.Status.ACTIVE
+            status_value == RentalAssignment.Status.ACTIVE
             and not installed_at
         ):
             raise serializers.ValidationError(
                 {
                     "status": (
-                        "Debe instalar el equipo antes de activar "
-                        "el alquiler."
+                        "Debe instalar el equipo antes "
+                        "de activar el alquiler."
                     ),
                 }
             )
 
         if (
-            status == RentalAssignment.Status.REMOVAL_PENDING
+            status_value
+            == RentalAssignment.Status.REMOVAL_PENDING
             and not removal_reason
         ):
             raise serializers.ValidationError(
@@ -499,7 +517,7 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
             )
 
         if (
-            status == RentalAssignment.Status.REMOVED
+            status_value == RentalAssignment.Status.REMOVED
             and not removal_reason
         ):
             raise serializers.ValidationError(
@@ -511,27 +529,13 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
             )
 
         if (
-            status == RentalAssignment.Status.CANCELLED
+            status_value == RentalAssignment.Status.CANCELLED
             and not cancellation_reason
         ):
             raise serializers.ValidationError(
                 {
                     "cancellation_reason": (
                         "Debe indicar el motivo de cancelación."
-                    ),
-                }
-            )
-
-        if (
-            installed_at
-            and removed_at
-            and removed_at < installed_at
-        ):
-            raise serializers.ValidationError(
-                {
-                    "removed_at": (
-                        "La fecha de retiro no puede ser "
-                        "anterior a la instalación."
                     ),
                 }
             )
@@ -550,9 +554,7 @@ class RentalAssignmentSerializer(serializers.ModelSerializer):
         validated_data["created_by"] = user
         validated_data["updated_by"] = user
 
-        assignment = super().create(
-            validated_data
-        )
+        assignment = super().create(validated_data)
 
         rental_equipment = assignment.rental_equipment
 
@@ -684,6 +686,9 @@ class RentalAssignmentListSerializer(
         fields = [
             "id",
             "code",
+            "contract",
+            "contract_code",
+            "contract_number",
             "rental_equipment",
             "rental_equipment_display",
             "equipment_serial_number",

@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
+
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.rentals.models import RentalContract
+from apps.rentals.models import (
+    RentalAssignment,
+    RentalContract,
+)
 from apps.rentals.serializers import (
     RentalContractListSerializer,
     RentalContractSerializer,
@@ -35,7 +41,7 @@ class RentalContractViewSet(viewsets.ModelViewSet):
                 "archived_by",
             )
             .prefetch_related(
-                "contract_equipment",
+                "assignments",
             )
             .order_by(
                 "-created_at",
@@ -43,9 +49,12 @@ class RentalContractViewSet(viewsets.ModelViewSet):
         )
 
         include_archived = (
-            self.request.query_params.get(
-                "include_archived",
-                "",
+            str(
+                self.request.query_params.get(
+                    "include_archived",
+                    "",
+                )
+                or ""
             )
             .strip()
             .lower()
@@ -63,13 +72,13 @@ class RentalContractViewSet(viewsets.ModelViewSet):
                 archived_at__isnull=True,
             )
 
-        search = (
+        search = str(
             self.request.query_params.get(
                 "search",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if search:
             queryset = queryset.filter(
@@ -83,104 +92,104 @@ class RentalContractViewSet(viewsets.ModelViewSet):
                 | Q(notes__icontains=search)
             ).distinct()
 
-        customer_id = (
+        customer_id = str(
             self.request.query_params.get(
                 "customer",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if customer_id:
             queryset = queryset.filter(
                 customer_id=customer_id,
             )
 
-        main_branch_id = (
+        main_branch_id = str(
             self.request.query_params.get(
                 "main_branch",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if main_branch_id:
             queryset = queryset.filter(
                 main_branch_id=main_branch_id,
             )
 
-        contract_type = (
+        contract_type = str(
             self.request.query_params.get(
                 "contract_type",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if contract_type:
             queryset = queryset.filter(
                 contract_type=contract_type,
             )
 
-        contract_status = (
+        contract_status = str(
             self.request.query_params.get(
                 "status",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if contract_status:
             queryset = queryset.filter(
                 status=contract_status,
             )
 
-        start_date_from = (
+        start_date_from = str(
             self.request.query_params.get(
                 "start_date_from",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if start_date_from:
             queryset = queryset.filter(
                 start_date__gte=start_date_from,
             )
 
-        start_date_to = (
+        start_date_to = str(
             self.request.query_params.get(
                 "start_date_to",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if start_date_to:
             queryset = queryset.filter(
                 start_date__lte=start_date_to,
             )
 
-        end_date_from = (
+        end_date_from = str(
             self.request.query_params.get(
                 "end_date_from",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if end_date_from:
             queryset = queryset.filter(
                 end_date__gte=end_date_from,
             )
 
-        end_date_to = (
+        end_date_to = str(
             self.request.query_params.get(
                 "end_date_to",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if end_date_to:
             queryset = queryset.filter(
@@ -219,35 +228,35 @@ class RentalContractViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        active_equipment = contract.contract_equipment.filter(
+        active_assignments = contract.assignments.filter(
             archived_at__isnull=True,
             status__in=[
-                "reserved",
-                "installation_pending",
-                "installed",
-                "active",
-                "removal_pending",
+                RentalAssignment.Status.RESERVED,
+                RentalAssignment.Status.INSTALLATION_PENDING,
+                RentalAssignment.Status.INSTALLED,
+                RentalAssignment.Status.ACTIVE,
+                RentalAssignment.Status.REMOVAL_PENDING,
             ],
         ).exists()
 
-        if active_equipment:
+        if active_assignments:
             return Response(
                 {
                     "detail": (
                         "No se puede archivar el contrato porque "
-                        "tiene equipos activos."
+                        "tiene equipos asignados activos."
                     ),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        reason = (
+        reason = str(
             request.data.get(
                 "reason",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if not reason:
             return Response(
@@ -279,70 +288,9 @@ class RentalContractViewSet(viewsets.ModelViewSet):
         url_path="archive",
     )
     def archive_contract(self, request, pk=None):
-        contract = self.get_object()
-
-        if contract.archived_at:
-            return Response(
-                {
-                    "detail": (
-                        "El contrato ya se encuentra archivado."
-                    ),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        active_equipment = contract.contract_equipment.filter(
-            archived_at__isnull=True,
-            status__in=[
-                "reserved",
-                "installation_pending",
-                "installed",
-                "active",
-                "removal_pending",
-            ],
-        ).exists()
-
-        if active_equipment:
-            return Response(
-                {
-                    "detail": (
-                        "No se puede archivar el contrato porque "
-                        "tiene equipos activos."
-                    ),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        reason = (
-            request.data.get(
-                "reason",
-                "",
-            )
-            .strip()
-        )
-
-        if not reason:
-            return Response(
-                {
-                    "detail": (
-                        "Debe indicar el motivo de archivado."
-                    ),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        contract.archive(
-            user=request.user,
-            reason=reason,
-        )
-
-        return Response(
-            {
-                "detail": (
-                    "Contrato archivado correctamente."
-                ),
-            },
-            status=status.HTTP_200_OK,
+        return self.destroy(
+            request,
+            pk=pk,
         )
 
     @action(
@@ -431,16 +379,16 @@ class RentalContractViewSet(viewsets.ModelViewSet):
         url_path="expiring",
     )
     def expiring_contracts(self, request):
-        days = (
+        days_value = str(
             request.query_params.get(
                 "days",
                 "30",
             )
-            .strip()
-        )
+            or "30"
+        ).strip()
 
         try:
-            days = int(days)
+            days = int(days_value)
         except (TypeError, ValueError):
             return Response(
                 {
@@ -461,12 +409,10 @@ class RentalContractViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from datetime import timedelta
-
-        from django.utils import timezone
-
         today = timezone.localdate()
-        limit_date = today + timedelta(days=days)
+        limit_date = today + timedelta(
+            days=days,
+        )
 
         queryset = (
             self.get_queryset()
@@ -483,6 +429,49 @@ class RentalContractViewSet(viewsets.ModelViewSet):
 
         serializer = RentalContractListSerializer(
             queryset,
+            many=True,
+            context={
+                "request": request,
+            },
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="assignments",
+    )
+    def contract_assignments(self, request, pk=None):
+        contract = self.get_object()
+
+        assignments = (
+            contract.assignments
+            .filter(
+                archived_at__isnull=True,
+            )
+            .select_related(
+                "rental_equipment",
+                "rental_equipment__equipment",
+                "customer",
+                "branch",
+                "contact",
+            )
+            .order_by(
+                "-assigned_at",
+                "-created_at",
+            )
+        )
+
+        from apps.rentals.serializers import (
+            RentalAssignmentListSerializer,
+        )
+
+        serializer = RentalAssignmentListSerializer(
+            assignments,
             many=True,
             context={
                 "request": request,

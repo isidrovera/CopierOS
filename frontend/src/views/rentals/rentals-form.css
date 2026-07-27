@@ -1,0 +1,270 @@
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.rental-form-page {
+  --brand-blue: #1f35c4;
+  --brand-blue-dark: #162caa;
+  --text-primary: #17233b;
+  --text-secondary: #667382;
+  --border-color: #dfe3ec;
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: rentalPageReveal 0.3s ease-out;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.page-kicker {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--brand-blue);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.page-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 28px;
+}
+
+.page-header p {
+  max-width: 720px;
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.rental-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(22, 35, 59, 0.07);
+}
+
+.form-section-heading {
+  grid-column: 1 / -1;
+  padding: 4px 0 12px;
+  border-bottom: 1px solid #e8ebf1;
+}
+
+.form-section-heading span {
+  color: var(--brand-blue);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.form-section-heading h3 {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  font-size: 17px;
+}
+
+.form-section-heading p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.form-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-field > span {
+  color: #516076;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.form-field > span strong {
+  color: #d64545;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+  outline: 0;
+  background: #fff;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-field textarea {
+  min-height: 105px;
+  resize: vertical;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: #4e63d8;
+  box-shadow: 0 0 0 3px rgba(31, 53, 196, 0.1);
+}
+
+.field-full {
+  grid-column: 1 / -1;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+  background: #f8f9fc;
+}
+
+.checkbox-field input {
+  margin-top: 2px;
+}
+
+.checkbox-field span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.checkbox-field strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.checkbox-field small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-button {
+  border: 0;
+  background: linear-gradient(135deg, var(--brand-blue-dark), var(--brand-blue));
+  color: #fff;
+}
+
+.secondary-button {
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: var(--text-secondary);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.58;
+  cursor: wait;
+}
+
+.message,
+.loading-card {
+  padding: 13px 15px;
+  border-radius: 11px;
+}
+
+.error-message {
+  border: 1px solid #e9c8c8;
+  background: #fff3f3;
+  color: #9f4141;
+}
+
+.loading-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: var(--text-secondary);
+}
+
+.spinner,
+.button-spinner {
+  display: inline-block;
+  border-radius: 50%;
+  animation: rentalSpin 0.7s linear infinite;
+}
+
+.spinner {
+  width: 21px;
+  height: 21px;
+  border: 3px solid #dce1eb;
+  border-top-color: var(--brand-blue);
+}
+
+.button-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+}
+
+@keyframes rentalPageReveal {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .page-header {
+    flex-direction: column;
+  }
+
+  .rental-form {
+    grid-template-columns: 1fr;
+  }
+
+  .field-full,
+  .form-section-heading {
+    grid-column: 1;
+  }
+}

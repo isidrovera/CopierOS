@@ -1,0 +1,316 @@
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.services-page,
+.service-detail-page,
+.service-form-page {
+  --brand-blue: #1f35c4;
+  --brand-blue-dark: #172b9f;
+  --brand-soft: #eef1ff;
+  --text: #18243b;
+  --muted: #6d7888;
+  --border: #dfe4ed;
+  --surface: #ffffff;
+  --soft: #f6f8fc;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: servicePageReveal 0.32s ease-out;
+}
+
+.services-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.page-kicker,
+.card-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--brand-blue);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.services-header h2,
+.panel-header h3 {
+  margin: 0;
+  color: var(--text);
+}
+
+.services-header h2 {
+  font-size: 28px;
+}
+
+.services-header p,
+.panel-header p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 15px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-button {
+  border: 0;
+  background: linear-gradient(135deg, var(--brand-blue-dark), var(--brand-blue));
+  color: white;
+  box-shadow: 0 9px 20px rgba(31, 53, 196, 0.2);
+}
+
+.secondary-button {
+  border: 1px solid var(--border);
+  background: white;
+  color: #4f5d70;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.services-tabs,
+.detail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: white;
+}
+
+.services-tabs button,
+.detail-tabs button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.services-tabs button.active,
+.detail-tabs button.active {
+  background: var(--brand-soft);
+  color: var(--brand-blue);
+}
+
+.services-stats,
+.evidence-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.services-stats article,
+.evidence-summary article {
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: white;
+}
+
+.services-stats small,
+.evidence-summary small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.services-stats strong,
+.evidence-summary strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 25px;
+}
+
+.services-filter-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(140px, 1fr)) auto;
+  gap: 9px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: white;
+}
+
+.services-filter-card input,
+.services-filter-card select {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: white;
+  color: var(--text);
+}
+
+.services-table-card {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: white;
+}
+
+.services-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1050px;
+}
+
+.services-table th,
+.services-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #ebedf2;
+  text-align: left;
+  vertical-align: top;
+  font-size: 12px;
+}
+
+.services-table th {
+  background: #f7f8fb;
+  color: #768194;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.services-table td strong,
+.services-table td small {
+  display: block;
+}
+
+.services-table td small {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.table-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand-blue);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.row-actions {
+  white-space: nowrap;
+}
+
+.row-actions button {
+  margin: 0 4px 4px 0;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: white;
+  color: #536174;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.status-badge,
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #eef1f5;
+  color: #5c6878;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.status-draft,
+.status-pending_assignment { background: #f0f2f6; color: #697586; }
+.status-assigned,
+.status-accepted { background: #edf0ff; color: #324bc1; }
+.status-en_route { background: #e8f3ff; color: #176aa5; }
+.status-on_site,
+.status-in_progress { background: #e9f8f0; color: #26764a; }
+.status-pending_parts,
+.status-requires_return { background: #fff3df; color: #9a651d; }
+.status-technician_completed,
+.status-pending_conformity { background: #eee9ff; color: #6846ad; }
+.status-closed { background: #e6f6ec; color: #247344; }
+.status-cancelled,
+.status-failed_visit { background: #fff0f0; color: #a34747; }
+
+.priority-low { background: #eef2f5; color: #687585; }
+.priority-normal { background: #edf0ff; color: #324bc1; }
+.priority-high { background: #fff3df; color: #9a651d; }
+.priority-urgent { background: #ffebeb; color: #b13e3e; }
+
+.message {
+  padding: 11px 13px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.error-message { border: 1px solid #e7c4c4; background: #fff3f3; color: #993f3f; }
+.success-message { border: 1px solid #bfe4cd; background: #eef9f2; color: #267045; }
+
+.loading-card,
+.empty-panel,
+.empty-table {
+  padding: 30px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.loading-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: white;
+}
+
+.spinner {
+  width: 19px;
+  height: 19px;
+  border: 3px solid #dfe3ec;
+  border-top-color: var(--brand-blue);
+  border-radius: 50%;
+  animation: serviceSpin 0.8s linear infinite;
+}
+
+@keyframes serviceSpin { to { transform: rotate(360deg); } }
+@keyframes servicePageReveal { from { opacity: 0; transform: translateY(7px); } }
+
+@media (max-width: 1100px) {
+  .services-filter-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .services-header { flex-direction: column; }
+  .services-stats,
+  .evidence-summary { grid-template-columns: repeat(2, 1fr); }
+  .services-filter-card { grid-template-columns: 1fr; }
+}

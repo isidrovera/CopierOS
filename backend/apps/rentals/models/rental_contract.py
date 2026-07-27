@@ -230,7 +230,7 @@ class RentalContract(RentalsBaseModel):
                     "customer",
                     "status",
                 ],
-                name="rent_contract_customer_status_idx",
+                name="rent_ctr_customer_st_idx",
             ),
             models.Index(
                 fields=[

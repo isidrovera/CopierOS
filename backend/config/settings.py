@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     "apps.partners.apps.PartnersConfig",
     "apps.equipment.apps.EquipmentConfig",
     "apps.repairs.apps.RepairsConfig",
+    "apps.rentals.apps.RentalsConfig",
+    "apps.services.apps.ServicesConfig",
 ]
 
 

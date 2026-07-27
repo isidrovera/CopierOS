@@ -201,7 +201,7 @@ class RentalPreparation(RentalsBaseModel):
                     "assigned_technician",
                     "status",
                 ],
-                name="rent_prep_technician_status_idx",
+                name="rent_prep_tech_st_idx",
             ),
             models.Index(
                 fields=[

@@ -31,10 +31,7 @@ class RentalEquipmentMovementViewSet(viewsets.ModelViewSet):
                 "rental_equipment",
                 "rental_equipment__equipment",
                 "rental_equipment__equipment__equipment_model",
-                (
-                    "rental_equipment__equipment__"
-                    "equipment_model__brand"
-                ),
+                "rental_equipment__equipment__equipment_model__brand",
                 "source_warehouse",
                 "destination_warehouse",
                 "created_by",
@@ -48,9 +45,12 @@ class RentalEquipmentMovementViewSet(viewsets.ModelViewSet):
         )
 
         include_archived = (
-            self.request.query_params.get(
-                "include_archived",
-                "",
+            str(
+                self.request.query_params.get(
+                    "include_archived",
+                    "",
+                )
+                or ""
             )
             .strip()
             .lower()
@@ -68,166 +68,147 @@ class RentalEquipmentMovementViewSet(viewsets.ModelViewSet):
                 archived_at__isnull=True,
             )
 
-        search = (
+        search = str(
             self.request.query_params.get(
                 "search",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if search:
             queryset = queryset.filter(
                 Q(
-                    rental_equipment__equipment__
-                    serial_number__icontains=search,
+                    rental_equipment__equipment__serial_number__icontains=search
                 )
                 | Q(
-                    rental_equipment__equipment__
-                    internal_code__icontains=search,
+                    rental_equipment__equipment__internal_code__icontains=search
                 )
                 | Q(
-                    rental_equipment__equipment__
-                    equipment_model__name__icontains=search,
+                    rental_equipment__equipment__equipment_model__name__icontains=search
                 )
                 | Q(
-                    rental_equipment__equipment__
-                    equipment_model__brand__
-                    name__icontains=search,
+                    rental_equipment__equipment__equipment_model__brand__name__icontains=search
                 )
-                | Q(
-                    reference_number__icontains=search,
-                )
-                | Q(
-                    document_number__icontains=search,
-                )
-                | Q(
-                    source_location__icontains=search,
-                )
-                | Q(
-                    destination_location__icontains=search,
-                )
-                | Q(
-                    reason__icontains=search,
-                )
-                | Q(
-                    notes__icontains=search,
-                )
+                | Q(reference_number__icontains=search)
+                | Q(document_number__icontains=search)
+                | Q(source_location__icontains=search)
+                | Q(destination_location__icontains=search)
+                | Q(reason__icontains=search)
+                | Q(notes__icontains=search)
             )
 
-        rental_equipment_id = (
+        rental_equipment_id = str(
             self.request.query_params.get(
                 "rental_equipment",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if rental_equipment_id:
             queryset = queryset.filter(
                 rental_equipment_id=rental_equipment_id,
             )
 
-        movement_type = (
+        movement_type = str(
             self.request.query_params.get(
                 "movement_type",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if movement_type:
             queryset = queryset.filter(
                 movement_type=movement_type,
             )
 
-        previous_status = (
+        previous_status = str(
             self.request.query_params.get(
                 "previous_status",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if previous_status:
             queryset = queryset.filter(
                 previous_status=previous_status,
             )
 
-        new_status = (
+        new_status = str(
             self.request.query_params.get(
                 "new_status",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if new_status:
             queryset = queryset.filter(
                 new_status=new_status,
             )
 
-        source_warehouse_id = (
+        source_warehouse_id = str(
             self.request.query_params.get(
                 "source_warehouse",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if source_warehouse_id:
             queryset = queryset.filter(
                 source_warehouse_id=source_warehouse_id,
             )
 
-        destination_warehouse_id = (
+        destination_warehouse_id = str(
             self.request.query_params.get(
                 "destination_warehouse",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if destination_warehouse_id:
             queryset = queryset.filter(
-                destination_warehouse_id=(
-                    destination_warehouse_id
-                ),
+                destination_warehouse_id=destination_warehouse_id,
             )
 
-        reference_type = (
+        reference_type = str(
             self.request.query_params.get(
                 "reference_type",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if reference_type:
             queryset = queryset.filter(
                 reference_type=reference_type,
             )
 
-        occurred_from = (
+        occurred_from = str(
             self.request.query_params.get(
                 "occurred_from",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if occurred_from:
             queryset = queryset.filter(
                 occurred_at__date__gte=occurred_from,
             )
 
-        occurred_to = (
+        occurred_to = str(
             self.request.query_params.get(
                 "occurred_to",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if occurred_to:
             queryset = queryset.filter(
@@ -266,13 +247,13 @@ class RentalEquipmentMovementViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        reason = (
+        reason = str(
             request.data.get(
                 "reason",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if not reason:
             return Response(
@@ -304,48 +285,9 @@ class RentalEquipmentMovementViewSet(viewsets.ModelViewSet):
         url_path="archive",
     )
     def archive_movement(self, request, pk=None):
-        movement = self.get_object()
-
-        if movement.archived_at:
-            return Response(
-                {
-                    "detail": (
-                        "El movimiento ya se encuentra archivado."
-                    ),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        reason = (
-            request.data.get(
-                "reason",
-                "",
-            )
-            .strip()
-        )
-
-        if not reason:
-            return Response(
-                {
-                    "detail": (
-                        "Debe indicar el motivo de archivado."
-                    ),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        movement.archive(
-            user=request.user,
-            reason=reason,
-        )
-
-        return Response(
-            {
-                "detail": (
-                    "Movimiento archivado correctamente."
-                ),
-            },
-            status=status.HTTP_200_OK,
+        return self.destroy(
+            request,
+            pk=pk,
         )
 
     @action(
@@ -404,13 +346,13 @@ class RentalEquipmentMovementViewSet(viewsets.ModelViewSet):
         url_path="equipment-history",
     )
     def equipment_history(self, request):
-        rental_equipment_id = (
+        rental_equipment_id = str(
             request.query_params.get(
                 "rental_equipment",
                 "",
             )
-            .strip()
-        )
+            or ""
+        ).strip()
 
         if not rental_equipment_id:
             return Response(

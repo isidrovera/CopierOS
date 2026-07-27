@@ -6,7 +6,6 @@ from .rental_equipment import RentalEquipment
 from .rental_equipment_movement import RentalEquipmentMovement
 from .rental_preparation import RentalPreparation
 from .rental_contract import RentalContract
-from .rental_contract_equipment import RentalContractEquipment
 from .rental_assignment import RentalAssignment
 from .rental_installation import RentalInstallation
 from .rental_removal import RentalRemoval
@@ -21,7 +20,6 @@ __all__ = [
     "RentalEquipmentMovement",
     "RentalPreparation",
     "RentalContract",
-    "RentalContractEquipment",
     "RentalAssignment",
     "RentalInstallation",
     "RentalRemoval",

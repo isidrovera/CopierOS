@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 from rest_framework import serializers
 
-from apps.rentals.models import RentalContract
+from apps.rentals.models import (
+    RentalAssignment,
+    RentalContract,
+)
 
 
 class RentalContractSerializer(serializers.ModelSerializer):
@@ -111,19 +114,19 @@ class RentalContractSerializer(serializers.ModelSerializer):
         return str(obj.main_contact)
 
     def get_equipment_count(self, obj):
-        return obj.contract_equipment.filter(
+        return obj.assignments.filter(
             archived_at__isnull=True,
         ).count()
 
     def get_active_equipment_count(self, obj):
-        return obj.contract_equipment.filter(
+        return obj.assignments.filter(
             archived_at__isnull=True,
             status__in=[
-                "reserved",
-                "installation_pending",
-                "installed",
-                "active",
-                "removal_pending",
+                RentalAssignment.Status.RESERVED,
+                RentalAssignment.Status.INSTALLATION_PENDING,
+                RentalAssignment.Status.INSTALLED,
+                RentalAssignment.Status.ACTIVE,
+                RentalAssignment.Status.REMOVAL_PENDING,
             ],
         ).count()
 
@@ -155,9 +158,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
         )
 
     def validate_code(self, value):
-        code = str(
-            value or ""
-        ).strip().upper()
+        code = str(value or "").strip().upper()
 
         if not code:
             raise serializers.ValidationError(
@@ -181,9 +182,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
         return code
 
     def validate_contract_number(self, value):
-        contract_number = str(
-            value or ""
-        ).strip()
+        contract_number = str(value or "").strip()
 
         if not contract_number:
             return ""
@@ -267,7 +266,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
             ),
         )
 
-        status = attrs.get(
+        status_value = attrs.get(
             "status",
             getattr(
                 instance,
@@ -341,8 +340,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
 
         if (
             main_branch
-            and main_branch.partner_id
-            != customer.id
+            and main_branch.partner_id != customer.id
         ):
             raise serializers.ValidationError(
                 {
@@ -355,8 +353,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
 
         if (
             main_contact
-            and main_contact.partner_id
-            != customer.id
+            and main_contact.partner_id != customer.id
         ):
             raise serializers.ValidationError(
                 {
@@ -371,8 +368,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
             main_contact
             and main_contact.branch_id
             and main_branch
-            and main_contact.branch_id
-            != main_branch.id
+            and main_contact.branch_id != main_branch.id
         ):
             raise serializers.ValidationError(
                 {
@@ -400,7 +396,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
         if (
             contract_type
             == RentalContract.ContractType.FIXED_TERM
-            and status
+            and status_value
             in [
                 RentalContract.Status.APPROVED,
                 RentalContract.Status.ACTIVE,
@@ -417,7 +413,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
             )
 
         if (
-            status == RentalContract.Status.ACTIVE
+            status_value == RentalContract.Status.ACTIVE
             and not start_date
         ):
             raise serializers.ValidationError(
@@ -429,7 +425,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
             )
 
         if (
-            status == RentalContract.Status.SUSPENDED
+            status_value == RentalContract.Status.SUSPENDED
             and not suspension_reason
         ):
             raise serializers.ValidationError(
@@ -441,7 +437,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
             )
 
         if (
-            status == RentalContract.Status.TERMINATED
+            status_value == RentalContract.Status.TERMINATED
             and not termination_reason
         ):
             raise serializers.ValidationError(
@@ -453,7 +449,7 @@ class RentalContractSerializer(serializers.ModelSerializer):
             )
 
         if (
-            status == RentalContract.Status.CANCELLED
+            status_value == RentalContract.Status.CANCELLED
             and not cancellation_reason
         ):
             raise serializers.ValidationError(

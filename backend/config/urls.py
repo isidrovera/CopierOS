@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.urls import include, path
 
 
+
 def health(request):
     """
     Endpoint básico para comprobar que el backend
@@ -46,6 +47,14 @@ urlpatterns = [
     path(
         "api/repairs/",
         include("apps.repairs.urls"),
+    ),
+    path(
+        "api/rentals/",
+        include("apps.rentals.urls"),
+    ),
+    path(
+        "api/services/",
+        include("apps.services.urls"),
     ),
 ]
 
