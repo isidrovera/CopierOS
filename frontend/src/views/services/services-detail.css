@@ -1,7 +1,6 @@
 @import "./services.css";
 @import "./service-search-select.css";
 
-
 .header-actions,
 .workflow-actions {
   display: flex;
@@ -9,15 +8,9 @@
   gap: 8px;
 }
 
-
-/* =========================================================
-   RESUMEN PRINCIPAL
-========================================================= */
-
 .service-hero-card {
   display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -60,11 +53,6 @@
   font-size: 11px;
 }
 
-
-/* =========================================================
-   ACCIONES DE LA ORDEN
-========================================================= */
-
 .service-action-card {
   display: flex;
   align-items: flex-end;
@@ -79,16 +67,10 @@
 .technician-assignment {
   width: min(520px, 100%);
   display: grid;
-  grid-template-columns:
-    minmax(260px, 1fr) auto;
+  grid-template-columns: minmax(260px, 1fr) auto;
   align-items: end;
   gap: 8px;
 }
-
-
-/* =========================================================
-   PANELES
-========================================================= */
 
 .detail-panel {
   padding: 18px;
@@ -109,8 +91,7 @@
 .meter-grid,
 .history-columns {
   display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 13px;
 }
 
@@ -135,599 +116,33 @@
   line-height: 1.55;
 }
 
+.checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 11px;
+}
 
-/* =========================================================
-   CHECKLIST - PROGRESO
-========================================================= */
-
-.checklist-progress {
-  margin-bottom: 16px;
-  padding: 13px 14px;
-  border: 1px solid #e1e6ef;
+.checklist-item-card {
+  padding: 13px;
+  border: 1px solid #e3e7ef;
   border-radius: 12px;
-  background: #f8faff;
+  background: #fbfcff;
 }
 
-.checklist-progress__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 9px;
-}
-
-.checklist-progress__header strong {
-  color: #23314a;
-  font-size: 12px;
-}
-
-.checklist-progress__header span {
-  color: #2448c8;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.checklist-progress__track {
-  width: 100%;
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e3e8f2;
-}
-
-.checklist-progress__track span {
+.checklist-item-card strong,
+.checklist-item-card small {
   display: block;
-  height: 100%;
-  border-radius: inherit;
-  background:
-    linear-gradient(
-      90deg,
-      #2448c8,
-      #3a63dc
-    );
-  transition: width 0.3s ease;
 }
 
-
-/* =========================================================
-   CHECKLIST - TARJETAS EDITABLES
-========================================================= */
-
-.checklist-edit-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-  gap: 13px;
-}
-
-.checklist-edit-card {
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid #dfe4ed;
-  border-radius: 14px;
-  background: #ffffff;
-  box-shadow:
-    0 5px 16px rgba(32, 48, 77, 0.045);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-}
-
-.checklist-edit-card:hover {
-  box-shadow:
-    0 9px 22px rgba(32, 48, 77, 0.08);
-  transform: translateY(-1px);
-}
-
-.checklist-edit-card.checklist-status-pending {
-  border-left: 4px solid #98a2b3;
-}
-
-.checklist-edit-card.checklist-status-ok {
-  border-left: 4px solid #2b8a57;
-}
-
-.checklist-edit-card.checklist-status-observed {
-  border-left: 4px solid #d39424;
-}
-
-.checklist-edit-card.checklist-status-failed {
-  border-left: 4px solid #c74949;
-}
-
-.checklist-edit-card.checklist-status-not-applicable {
-  border-left: 4px solid #748196;
-}
-
-.checklist-edit-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px;
-  border-bottom: 1px solid #e8ecf2;
-  background: #fafbfe;
-}
-
-.checklist-edit-card__header > div {
-  min-width: 0;
-}
-
-.checklist-edit-card__header strong {
-  display: block;
-  overflow: hidden;
-  color: #1c2940;
-  font-size: 14px;
-  font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.checklist-edit-card__header small {
-  display: block;
-  margin-top: 5px;
-  color: #758197;
-  font-size: 10px;
-}
-
-.checklist-edit-card__body {
-  display: grid;
-  gap: 12px;
-  padding: 14px;
-}
-
-.checklist-result-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  min-height: 25px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: #eef1f5;
-  color: #647083;
-  font-size: 9px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.checklist-result-badge.checklist-status-ok {
-  background: #e9f7ef;
-  color: #28764b;
-}
-
-.checklist-result-badge.checklist-status-observed {
-  background: #fff4df;
-  color: #9a681d;
-}
-
-.checklist-result-badge.checklist-status-failed {
-  background: #ffeded;
-  color: #aa4040;
-}
-
-.checklist-result-badge.checklist-status-not-applicable {
-  background: #eef1f5;
-  color: #647083;
-}
-
-.checklist-field {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.checklist-field > span,
-.subpart-fields label > span,
-.evidence-upload-grid label > span {
-  margin-bottom: 6px;
-  color: #334158;
+.checklist-item-card small,
+.checklist-item-card p {
+  color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
-}
-
-.checklist-field b {
-  color: #c73d3d;
-}
-
-.checklist-field select,
-.checklist-field input,
-.checklist-field textarea,
-.subpart-fields input,
-.subpart-fields select,
-.subpart-fields textarea,
-.evidence-upload-grid select,
-.evidence-upload-grid input,
-.evidence-upload-grid textarea {
-  width: 100%;
-  min-width: 0;
-  border: 1px solid #d8dfea;
-  border-radius: 9px;
-  outline: none;
-  background: #ffffff;
-  color: #26344b;
-  font-family: inherit;
-  font-size: 12px;
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.checklist-field select,
-.checklist-field input,
-.subpart-fields input,
-.subpart-fields select,
-.evidence-upload-grid select,
-.evidence-upload-grid input {
-  min-height: 39px;
-  padding: 0 10px;
-}
-
-.checklist-field textarea,
-.subpart-fields textarea,
-.evidence-upload-grid textarea {
-  padding: 9px 10px;
-  resize: vertical;
-  line-height: 1.45;
-}
-
-.checklist-field select:focus,
-.checklist-field input:focus,
-.checklist-field textarea:focus,
-.subpart-fields input:focus,
-.subpart-fields select:focus,
-.subpart-fields textarea:focus,
-.evidence-upload-grid select:focus,
-.evidence-upload-grid input:focus,
-.evidence-upload-grid textarea:focus {
-  border-color: #3458d4;
-  box-shadow:
-    0 0 0 3px rgba(52, 88, 212, 0.11);
-}
-
-.checklist-edit-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 4px;
-}
-
-.checklist-edit-card__footer small {
-  color: #788499;
-  font-size: 9px;
-  line-height: 1.45;
-}
-
-.checklist-edit-card__footer .primary-button {
-  min-height: 37px;
-  padding: 0 12px;
-  font-size: 10px;
-}
-
-
-/* =========================================================
-   CONSUMIBLES
-========================================================= */
-
-.consumable-fields {
-  display: grid;
-  grid-template-columns:
-    minmax(150px, 0.6fr)
-    minmax(200px, 1.4fr);
-  gap: 10px;
-  padding: 11px;
-  border: 1px solid #e2e7ef;
-  border-radius: 10px;
-  background: #f8fafc;
-}
-
-.checklist-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #344159;
-  font-size: 11px;
-  font-weight: 750;
-}
-
-.checklist-checkbox input {
-  width: 17px;
-  height: 17px;
-  accent-color: #2448c8;
-}
-
-.consumable-level {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 1fr) 45px;
-  align-items: center;
-  gap: 9px;
-}
-
-.consumable-level input {
-  width: 100%;
-  accent-color: #2448c8;
-}
-
-.consumable-level strong {
-  color: #2448c8;
-  font-size: 12px;
-  text-align: right;
-}
-
-
-/* =========================================================
-   SUBPARTES COMPATIBLES
-========================================================= */
-
-.subparts-panel {
-  padding: 12px;
-  border: 1px solid #e1e6ef;
-  border-radius: 12px;
-  background: #f8faff;
-}
-
-.subparts-panel__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 11px;
-}
-
-.subparts-panel__header strong {
-  display: block;
-  color: #21304a;
-  font-size: 12px;
-}
-
-.subparts-panel__header small {
-  display: block;
-  margin-top: 3px;
-  color: #728096;
-  font-size: 10px;
-}
-
-.mini-button {
-  min-height: 29px;
-  padding: 0 9px;
-  border: 1px solid #cfd7e5;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #44536b;
-  font-size: 9px;
-  font-weight: 850;
-  cursor: pointer;
-}
-
-.mini-button:hover:not(:disabled) {
-  border-color: #3458d4;
-  color: #2448c8;
-}
-
-.mini-button:disabled {
-  opacity: 0.55;
-  cursor: wait;
-}
-
-.subparts-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-height: 90px;
-  color: #6d798d;
-  font-size: 11px;
-}
-
-.subparts-list {
-  display: grid;
-  gap: 9px;
-}
-
-.subpart-card {
-  overflow: hidden;
-  border: 1px solid #dde3ec;
-  border-radius: 11px;
-  background: #ffffff;
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.subpart-card--selected {
-  border-color: #4165d8;
-  box-shadow:
-    0 0 0 2px rgba(65, 101, 216, 0.09);
-}
-
-.subpart-card__selection {
-  display: grid;
-  grid-template-columns:
-    28px 42px minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
-  padding: 10px;
-}
-
-.subpart-card__selection img,
-.subpart-placeholder {
-  width: 42px;
-  height: 42px;
-  border-radius: 9px;
-  object-fit: cover;
-  background: #eef2f7;
-}
-
-.subpart-placeholder {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #65758e;
-  font-size: 20px;
-}
-
-.subpart-card__selection > div:last-child {
-  min-width: 0;
-}
-
-.subpart-card__selection strong {
-  display: block;
-  overflow: hidden;
-  color: #223149;
-  font-size: 11px;
-  font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.subpart-card__selection small {
-  display: block;
-  margin-top: 3px;
-  color: #758297;
-  font-size: 9px;
-}
-
-.subpart-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 25px;
-  height: 25px;
-  padding: 0;
-  border: 1px solid #cbd4e1;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #ffffff;
-  cursor: pointer;
-}
-
-.subpart-check--active {
-  border-color: #2448c8;
-  background: #2448c8;
-}
-
-.subpart-check span {
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.subpart-fields {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-  gap: 9px;
-  padding: 10px;
-  border-top: 1px solid #e5e9f0;
-  background: #fafbfe;
-}
-
-.subpart-fields label {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.subpart-field-full {
-  grid-column: 1 / -1;
-}
-
-.subparts-empty {
-  margin: 0;
-  padding: 18px;
-  border: 1px dashed #ccd5e2;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #748196;
-  font-size: 10px;
-  line-height: 1.5;
-  text-align: center;
-}
-
-
-/* =========================================================
-   REPUESTOS
-========================================================= */
-
-.part-urgency-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 24px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: #eef1f5;
-  color: #657183;
-  font-size: 9px;
-  font-weight: 900;
-}
-
-.part-urgency-normal {
-  background: #edf1ff;
-  color: #324bc1;
-}
-
-.part-urgency-high {
-  background: #fff3df;
-  color: #9a651d;
-}
-
-.part-urgency-critical {
-  background: #ffebeb;
-  color: #b13e3e;
-}
-
-
-/* =========================================================
-   EVIDENCIAS
-========================================================= */
-
-.evidence-upload-card {
-  margin-top: 14px;
-  padding: 14px;
-  border: 1px solid #dde3ec;
-  border-radius: 13px;
-  background: #f9fbfe;
-}
-
-.evidence-upload-grid {
-  display: grid;
-  grid-template-columns:
-    minmax(160px, 0.7fr)
-    minmax(220px, 1fr)
-    minmax(260px, 1.3fr);
-  gap: 12px;
-}
-
-.evidence-upload-grid label {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.evidence-file-field small {
-  display: block;
-  margin-top: 5px;
-  overflow: hidden;
-  color: #788499;
-  font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.evidence-upload-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
 }
 
 .evidence-grid {
   display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-top: 14px;
 }
@@ -756,51 +171,11 @@
   display: block;
 }
 
-.evidence-grid strong {
-  color: #243249;
-  font-size: 11px;
-}
-
 .evidence-grid small,
 .evidence-grid p {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
 }
-
-.evidence-grid p {
-  margin: 6px 0 0;
-  line-height: 1.45;
-}
-
-
-/* =========================================================
-   CONTADORES
-========================================================= */
-
-.meter-grid h4 {
-  margin: 0 0 12px;
-  color: #243249;
-  font-size: 13px;
-}
-
-.meter-grid p {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 7px 0;
-  color: #68758a;
-  font-size: 11px;
-}
-
-.meter-grid p strong {
-  color: #243249;
-}
-
-
-/* =========================================================
-   TRACKING GPS
-========================================================= */
 
 .tracking-summary {
   max-height: 500px;
@@ -834,163 +209,194 @@
   font-size: 11px;
 }
 
-
-/* =========================================================
-   HISTORIAL
-========================================================= */
-
-.history-columns > div {
-  min-width: 0;
-}
-
-.history-columns h3 {
-  margin: 0 0 10px;
-  color: #243249;
-  font-size: 14px;
-}
-
-.history-item + .history-item {
-  margin-top: 8px;
-}
-
-.history-item strong {
-  color: #243249;
-  font-size: 11px;
-}
-
-.history-item p {
-  margin-bottom: 0;
-}
-
-
-/* =========================================================
-   RESPONSIVE
-========================================================= */
-
-@media (max-width: 1150px) {
-  .checklist-edit-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .evidence-upload-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-  .evidence-notes-field {
-    grid-column: 1 / -1;
-  }
-}
-
 @media (max-width: 1000px) {
-  .service-hero-card {
-    grid-template-columns:
-      repeat(2, 1fr);
-  }
-
-  .service-hero-card > div:nth-child(2) {
-    border-right: 0;
-  }
-
-  .service-hero-card > div:nth-child(-n + 2) {
-    border-bottom: 1px solid #e9ecf2;
-  }
-
-  .evidence-grid {
-    grid-template-columns:
-      repeat(2, 1fr);
-  }
-
-  .service-action-card {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .technician-assignment {
-    width: 100%;
-  }
+  .service-hero-card { grid-template-columns: repeat(2, 1fr); }
+  .checklist-grid { grid-template-columns: repeat(2, 1fr); }
+  .evidence-grid { grid-template-columns: repeat(2, 1fr); }
+  .service-action-card { align-items: stretch; flex-direction: column; }
 }
 
-@media (max-width: 700px) {
-  .detail-panel {
-    padding: 13px;
-  }
-
+@media (max-width: 650px) {
   .service-hero-card,
   .detail-grid,
   .meter-grid,
   .history-columns,
-  .evidence-grid,
-  .evidence-upload-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .service-hero-card > div {
-    border-right: 0;
-    border-bottom: 1px solid #e9ecf2;
-  }
-
-  .service-hero-card > div:last-child {
-    border-bottom: 0;
-  }
-
-  .technician-assignment {
-    grid-template-columns: 1fr;
-  }
-
-  .consumable-fields {
-    grid-template-columns: 1fr;
-  }
-
-  .subpart-fields {
-    grid-template-columns: 1fr;
-  }
-
-  .subpart-field-full,
-  .evidence-notes-field {
-    grid-column: auto;
-  }
-
-  .checklist-edit-card__footer {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .checklist-edit-card__footer .primary-button {
-    width: 100%;
-  }
-
-  .evidence-upload-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .evidence-upload-actions button {
-    width: 100%;
-  }
+  .checklist-grid,
+  .evidence-grid { grid-template-columns: 1fr; }
+  .technician-assignment { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 480px) {
-  .checklist-edit-card__header {
-    flex-direction: column;
+
+/* Contadores editables */
+.meter-header-actions,
+.part-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.meter-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.meter-form-card,
+.part-request-card {
+  border: 1px solid #dfe6ef;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(25, 42, 70, 0.07);
+}
+
+.meter-form-card {
+  padding: 20px;
+}
+
+.meter-form-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.meter-form-card h4 {
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+}
+
+.meter-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.meter-fields label,
+.meter-reason-field,
+.part-request-notes {
+  display: grid;
+  gap: 7px;
+}
+
+.meter-fields span,
+.meter-reason-field span,
+.part-request-notes span {
+  color: #42526a;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.meter-fields input,
+.meter-reason-field textarea,
+.part-request-notes textarea {
+  width: 100%;
+  border: 1px solid #cfd8e5;
+  border-radius: 11px;
+  background: #f9fbfd;
+  padding: 11px 12px;
+  color: #172033;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.meter-reason-field {
+  margin-top: 16px;
+}
+
+.meter-application-status {
+  margin-top: 16px;
+  border-radius: 12px;
+  background: #eef6ff;
+  padding: 12px 16px;
+  color: #24496e;
+}
+
+/* Pedido de repuestos */
+.part-request-status {
+  display: grid;
+  gap: 5px;
+  text-align: right;
+}
+
+.part-request-status strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+}
+
+.part-request-status--draft {
+  background: #fff4d6;
+  color: #7a5600;
+}
+
+.part-request-status--requested {
+  background: #e8f1ff;
+  color: #174f96;
+}
+
+.part-request-status--reviewed,
+.part-request-status--approved {
+  background: #e7f8ef;
+  color: #17623b;
+}
+
+.part-request-status--partial {
+  background: #fff0e4;
+  color: #914b13;
+}
+
+.part-request-status--delivered {
+  background: #e3f8ed;
+  color: #0d6a3c;
+}
+
+.part-request-status--cancelled {
+  background: #fdeaea;
+  color: #9b2727;
+}
+
+.part-request-card {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+.part-request-card div {
+  display: grid;
+  gap: 5px;
+}
+
+.part-request-card small {
+  color: #6a778c;
+}
+
+.part-request-notes {
+  margin-bottom: 16px;
+}
+
+.part-request-actions {
+  margin-top: 16px;
+}
+
+@media (max-width: 900px) {
+  .meter-form-grid,
+  .part-request-card {
+    grid-template-columns: 1fr;
   }
 
-  .checklist-result-badge {
-    align-self: flex-start;
+  .meter-fields {
+    grid-template-columns: 1fr;
   }
 
-  .subparts-panel__header {
-    flex-direction: column;
-  }
-
-  .subpart-card__selection {
-    grid-template-columns:
-      26px 38px minmax(0, 1fr);
-  }
-
-  .subpart-card__selection img,
-  .subpart-placeholder {
-    width: 38px;
-    height: 38px;
+  .part-request-status {
+    text-align: left;
   }
 }

@@ -14,6 +14,7 @@ import {
 import {
   applyServiceMeterReading,
   assignServiceTechnician,
+  createServiceMeterReading,
   changeServiceOrderStatus,
   generateServiceChecklist,
   getCompatibleServiceSubparts,
@@ -29,6 +30,8 @@ import {
   getServiceTrackingPoints,
   loadCurrentServiceSnapshot,
   saveServiceChecklistItem,
+  updateServiceMeterReading,
+  updateServicePartRequest,
   uploadServiceEvidence,
 } from "../../services/services.service"
 
@@ -72,7 +75,25 @@ const evidenceForm = reactive({
 })
 
 const meterReading = ref(null)
+const meterSaving = ref(false)
+
+const meterForm = reactive({
+  initial_total_meter: "",
+  initial_black_meter: "",
+  initial_color_meter: "",
+  initial_scan_meter: "",
+  final_total_meter: "",
+  final_black_meter: "",
+  final_color_meter: "",
+  final_scan_meter: "",
+  initial_unavailable_reason: "",
+  final_unavailable_reason: "",
+})
+
+const partRequests = ref([])
 const partItems = ref([])
+const partRequestSaving = ref(false)
+const partRequestNotes = ref("")
 const statusHistory = ref([])
 const assignmentHistory = ref([])
 const trackingPoints = ref([])
@@ -168,8 +189,8 @@ const evidenceStageOptions = [
     label: "Repuestos",
   },
   {
-    value: "other",
-    label: "Otra evidencia",
+    value: "general",
+    label: "Evidencia general",
   },
 ]
 
@@ -331,6 +352,42 @@ const selectedEvidenceNames = computed(
         (file) => file.name,
       )
       .join(", ")
+  ),
+)
+
+
+const activePartRequest = computed(
+  () => (
+    partRequests.value[0]
+    || null
+  ),
+)
+
+
+const showTotalMeter = computed(
+  () => Boolean(
+    order.value?.equipment_has_total_meter,
+  ),
+)
+
+
+const showBlackMeter = computed(
+  () => Boolean(
+    order.value?.equipment_has_black_meter,
+  ),
+)
+
+
+const showColorMeter = computed(
+  () => Boolean(
+    order.value?.equipment_has_color_meter,
+  ),
+)
+
+
+const showScanMeter = computed(
+  () => Boolean(
+    order.value?.equipment_has_scan_meter,
   ),
 )
 
@@ -967,6 +1024,414 @@ async function saveChecklistItem(
 }
 
 
+
+function meterInputValue(value) {
+  return (
+    value === null
+    || value === undefined
+      ? ""
+      : value
+  )
+}
+
+
+function initializeMeterForm(reading = null) {
+  const source = reading || {}
+
+  meterForm.initial_total_meter = meterInputValue(
+    source.initial_total_meter,
+  )
+
+  meterForm.initial_black_meter = meterInputValue(
+    source.initial_black_meter,
+  )
+
+  meterForm.initial_color_meter = meterInputValue(
+    source.initial_color_meter,
+  )
+
+  meterForm.initial_scan_meter = meterInputValue(
+    source.initial_scan_meter,
+  )
+
+  meterForm.final_total_meter = meterInputValue(
+    source.final_total_meter,
+  )
+
+  meterForm.final_black_meter = meterInputValue(
+    source.final_black_meter,
+  )
+
+  meterForm.final_color_meter = meterInputValue(
+    source.final_color_meter,
+  )
+
+  meterForm.final_scan_meter = meterInputValue(
+    source.final_scan_meter,
+  )
+
+  meterForm.initial_unavailable_reason = (
+    source.initial_unavailable_reason
+    || ""
+  )
+
+  meterForm.final_unavailable_reason = (
+    source.final_unavailable_reason
+    || ""
+  )
+}
+
+
+function normalizeMeterValue(value) {
+  if (
+    value === ""
+    || value === null
+    || value === undefined
+  ) {
+    return null
+  }
+
+  const number = Number(value)
+
+  return Number.isFinite(number)
+    ? Math.trunc(number)
+    : null
+}
+
+
+function validateMeterForm() {
+  const initialValues = [
+    showTotalMeter.value
+      ? normalizeMeterValue(
+          meterForm.initial_total_meter,
+        )
+      : null,
+
+    showBlackMeter.value
+      ? normalizeMeterValue(
+          meterForm.initial_black_meter,
+        )
+      : null,
+
+    showColorMeter.value
+      ? normalizeMeterValue(
+          meterForm.initial_color_meter,
+        )
+      : null,
+
+    showScanMeter.value
+      ? normalizeMeterValue(
+          meterForm.initial_scan_meter,
+        )
+      : null,
+  ]
+
+  const finalValues = [
+    showTotalMeter.value
+      ? normalizeMeterValue(
+          meterForm.final_total_meter,
+        )
+      : null,
+
+    showBlackMeter.value
+      ? normalizeMeterValue(
+          meterForm.final_black_meter,
+        )
+      : null,
+
+    showColorMeter.value
+      ? normalizeMeterValue(
+          meterForm.final_color_meter,
+        )
+      : null,
+
+    showScanMeter.value
+      ? normalizeMeterValue(
+          meterForm.final_scan_meter,
+        )
+      : null,
+  ]
+
+  if (
+    initialValues.every(
+      (value) => value === null,
+    )
+    && !cleanText(
+      meterForm.initial_unavailable_reason,
+    )
+  ) {
+    return (
+      "Registre al menos un contador inicial "
+      + "o indique el motivo."
+    )
+  }
+
+  const pairs = [
+    [
+      "Total",
+      initialValues[0],
+      finalValues[0],
+    ],
+    [
+      "B/N",
+      initialValues[1],
+      finalValues[1],
+    ],
+    [
+      "Color",
+      initialValues[2],
+      finalValues[2],
+    ],
+    [
+      "Escáner",
+      initialValues[3],
+      finalValues[3],
+    ],
+  ]
+
+  for (
+    const [
+      label,
+      initial,
+      final,
+    ]
+    of pairs
+  ) {
+    if (
+      initial !== null
+      && final !== null
+      && final < initial
+    ) {
+      return (
+        `El contador final ${label} `
+        + "no puede ser menor al inicial."
+      )
+    }
+  }
+
+  return ""
+}
+
+
+function buildMeterPayload() {
+  const now = new Date().toISOString()
+
+  const payload = {
+    service_order: order.value.id,
+
+    initial_total_meter: (
+      showTotalMeter.value
+        ? normalizeMeterValue(
+            meterForm.initial_total_meter,
+          )
+        : null
+    ),
+
+    initial_black_meter: (
+      showBlackMeter.value
+        ? normalizeMeterValue(
+            meterForm.initial_black_meter,
+          )
+        : null
+    ),
+
+    initial_color_meter: (
+      showColorMeter.value
+        ? normalizeMeterValue(
+            meterForm.initial_color_meter,
+          )
+        : null
+    ),
+
+    initial_scan_meter: (
+      showScanMeter.value
+        ? normalizeMeterValue(
+            meterForm.initial_scan_meter,
+          )
+        : null
+    ),
+
+    final_total_meter: (
+      showTotalMeter.value
+        ? normalizeMeterValue(
+            meterForm.final_total_meter,
+          )
+        : null
+    ),
+
+    final_black_meter: (
+      showBlackMeter.value
+        ? normalizeMeterValue(
+            meterForm.final_black_meter,
+          )
+        : null
+    ),
+
+    final_color_meter: (
+      showColorMeter.value
+        ? normalizeMeterValue(
+            meterForm.final_color_meter,
+          )
+        : null
+    ),
+
+    final_scan_meter: (
+      showScanMeter.value
+        ? normalizeMeterValue(
+            meterForm.final_scan_meter,
+          )
+        : null
+    ),
+
+    initial_unavailable_reason: cleanText(
+      meterForm.initial_unavailable_reason,
+    ),
+
+    final_unavailable_reason: cleanText(
+      meterForm.final_unavailable_reason,
+    ),
+  }
+
+  const hasInitialReading = [
+    payload.initial_total_meter,
+    payload.initial_black_meter,
+    payload.initial_color_meter,
+    payload.initial_scan_meter,
+  ].some(
+    (value) => value !== null,
+  )
+
+  const hasFinalReading = [
+    payload.final_total_meter,
+    payload.final_black_meter,
+    payload.final_color_meter,
+    payload.final_scan_meter,
+  ].some(
+    (value) => value !== null,
+  )
+
+  payload.initial_reading_at = (
+    meterReading.value?.initial_reading_at
+    || (
+      hasInitialReading
+        ? now
+        : null
+    )
+  )
+
+  payload.final_reading_at = (
+    hasFinalReading
+      ? (
+          meterReading.value?.final_reading_at
+          || now
+        )
+      : null
+  )
+
+  return payload
+}
+
+
+async function saveMeters() {
+  const validationMessage = (
+    validateMeterForm()
+  )
+
+  if (validationMessage) {
+    error.value = validationMessage
+    return
+  }
+
+  meterSaving.value = true
+  error.value = ""
+  success.value = ""
+
+  try {
+    const payload = buildMeterPayload()
+
+    const saved = (
+      meterReading.value?.id
+        ? await updateServiceMeterReading(
+            meterReading.value.id,
+            payload,
+          )
+        : await createServiceMeterReading(
+            payload,
+          )
+    )
+
+    meterReading.value = saved
+    initializeMeterForm(saved)
+
+    success.value = (
+      "Contadores guardados correctamente."
+    )
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    meterSaving.value = false
+  }
+}
+
+
+async function sendPartRequest() {
+  const requestItem = activePartRequest.value
+
+  if (!requestItem?.id) {
+    error.value = (
+      "No existe un pedido de repuestos "
+      + "para enviar."
+    )
+    return
+  }
+
+  if (!partItems.value.length) {
+    error.value = (
+      "El pedido no contiene repuestos."
+    )
+    return
+  }
+
+  partRequestSaving.value = true
+  error.value = ""
+  success.value = ""
+
+  try {
+    const updated = (
+      await updateServicePartRequest(
+        requestItem.id,
+        {
+          status: "requested",
+          notes: cleanText(
+            partRequestNotes.value,
+          ),
+        },
+      )
+    )
+
+    partRequests.value = [
+      updated,
+      ...partRequests.value.filter(
+        (item) => item.id !== updated.id,
+      ),
+    ]
+
+    partRequestNotes.value = (
+      updated.notes
+      || ""
+    )
+
+    success.value = (
+      "Pedido de repuestos enviado correctamente."
+    )
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    partRequestSaving.value = false
+  }
+}
+
+
 async function reloadChecklistAndParts() {
   if (!checklist.value) {
     checklistItems.value = []
@@ -1004,6 +1469,12 @@ async function reloadChecklistAndParts() {
     normalize(
       requestRows,
     )
+  )
+
+  partRequests.value = requests
+  partRequestNotes.value = (
+    requests[0]?.notes
+    || ""
   )
 
   const requestItems = (
@@ -1111,10 +1582,20 @@ async function loadAll() {
       || null
     )
 
+    initializeMeterForm(
+      meterReading.value,
+    )
+
     const requests = (
       normalize(
         parts,
       )
+    )
+
+    partRequests.value = requests
+    partRequestNotes.value = (
+      requests[0]?.notes
+      || ""
     )
 
     const requestItems = (
@@ -2270,7 +2751,7 @@ onMounted(
         <div class="panel-header">
           <div>
             <span class="card-kicker">
-              Solicitudes
+              Solicitud de repuestos
             </span>
 
             <h3>
@@ -2278,12 +2759,98 @@ onMounted(
             </h3>
 
             <p>
-              Las piezas se generan desde los
-              componentes marcados como
-              “Requiere cambio”.
+              Las piezas se generan al guardar un
+              componente como “Requiere cambio”.
             </p>
           </div>
+
+          <div
+            v-if="activePartRequest"
+            class="part-request-status"
+          >
+            <small>Estado del pedido</small>
+
+            <strong
+              :class="
+                `part-request-status--${activePartRequest.status}`
+              "
+            >
+              {{
+                activePartRequest.status_display
+                || activePartRequest.status
+              }}
+            </strong>
+          </div>
         </div>
+
+        <div
+          v-if="activePartRequest"
+          class="part-request-card"
+        >
+          <div>
+            <small>Pedido</small>
+
+            <strong>
+              {{
+                activePartRequest.id
+                  .slice(0, 8)
+                  .toUpperCase()
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <small>Creado</small>
+
+            <strong>
+              {{
+                formatDate(
+                  activePartRequest.created_at,
+                )
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <small>Solicitado</small>
+
+            <strong>
+              {{
+                formatDate(
+                  activePartRequest.requested_at,
+                )
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <small>Total de piezas</small>
+
+            <strong>
+              {{ partItems.length }}
+            </strong>
+          </div>
+        </div>
+
+        <label
+          v-if="activePartRequest"
+          class="part-request-notes"
+        >
+          <span>Observación general del pedido</span>
+
+          <textarea
+            v-model="partRequestNotes"
+            rows="3"
+            :disabled="
+              partRequestSaving
+              || activePartRequest.status !== 'draft'
+            "
+            placeholder="
+              Información adicional para almacén
+              o el responsable de repuestos
+            "
+          ></textarea>
+        </label>
 
         <div class="services-table-card">
           <table class="services-table">
@@ -2374,6 +2941,27 @@ onMounted(
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div
+          v-if="
+            activePartRequest?.status === 'draft'
+            && partItems.length
+          "
+          class="part-request-actions"
+        >
+          <button
+            type="button"
+            class="primary-button"
+            :disabled="partRequestSaving"
+            @click="sendPartRequest"
+          >
+            {{
+              partRequestSaving
+                ? "Enviando..."
+                : "Enviar pedido"
+            }}
+          </button>
         </div>
       </section>
 
@@ -2602,120 +3190,265 @@ onMounted(
             <h3>
               Contadores iniciales y finales
             </h3>
+
+            <p>
+              Registra únicamente los contadores
+              habilitados para este modelo.
+            </p>
           </div>
 
-          <button
-            v-if="
-              meterReading
-              && !meterReading.applied_to_equipment_history
-            "
-            class="primary-button"
-            type="button"
-            @click="applyMeters"
-          >
-            Aplicar al equipo
-          </button>
+          <div class="meter-header-actions">
+            <button
+              class="secondary-button"
+              type="button"
+              :disabled="meterSaving"
+              @click="saveMeters"
+            >
+              {{
+                meterSaving
+                  ? "Guardando..."
+                  : (
+                      meterReading
+                        ? "Actualizar contadores"
+                        : "Guardar contadores"
+                    )
+              }}
+            </button>
+
+            <button
+              v-if="
+                meterReading
+                && !meterReading.applied_to_equipment_history
+              "
+              class="primary-button"
+              type="button"
+              :disabled="
+                meterSaving
+                || actionLoading
+              "
+              @click="applyMeters"
+            >
+              Aplicar al equipo
+            </button>
+          </div>
+        </div>
+
+        <div class="meter-form-grid">
+          <article class="meter-form-card">
+            <header>
+              <div>
+                <span class="card-kicker">
+                  Llegada
+                </span>
+
+                <h4>Lectura inicial</h4>
+              </div>
+
+              <small>
+                {{
+                  formatDate(
+                    meterReading?.initial_reading_at,
+                  )
+                }}
+              </small>
+            </header>
+
+            <div class="meter-fields">
+              <label v-if="showTotalMeter">
+                <span>Contador total</span>
+
+                <input
+                  v-model.number="
+                    meterForm.initial_total_meter
+                  "
+                  type="number"
+                  min="0"
+                  step="1"
+                  :disabled="meterSaving"
+                  placeholder="0"
+                >
+              </label>
+
+              <label v-if="showBlackMeter">
+                <span>Blanco y negro</span>
+
+                <input
+                  v-model.number="
+                    meterForm.initial_black_meter
+                  "
+                  type="number"
+                  min="0"
+                  step="1"
+                  :disabled="meterSaving"
+                  placeholder="0"
+                >
+              </label>
+
+              <label v-if="showColorMeter">
+                <span>Color</span>
+
+                <input
+                  v-model.number="
+                    meterForm.initial_color_meter
+                  "
+                  type="number"
+                  min="0"
+                  step="1"
+                  :disabled="meterSaving"
+                  placeholder="0"
+                >
+              </label>
+
+              <label v-if="showScanMeter">
+                <span>Escáner</span>
+
+                <input
+                  v-model.number="
+                    meterForm.initial_scan_meter
+                  "
+                  type="number"
+                  min="0"
+                  step="1"
+                  :disabled="meterSaving"
+                  placeholder="0"
+                >
+              </label>
+            </div>
+
+            <label class="meter-reason-field">
+              <span>
+                Motivo si no se pudo obtener
+                la lectura inicial
+              </span>
+
+              <textarea
+                v-model="
+                  meterForm.initial_unavailable_reason
+                "
+                rows="3"
+                :disabled="meterSaving"
+                placeholder="
+                  Ejemplo: equipo apagado,
+                  pantalla dañada o sin acceso
+                "
+              ></textarea>
+            </label>
+          </article>
+
+          <article class="meter-form-card">
+            <header>
+              <div>
+                <span class="card-kicker">
+                  Finalización
+                </span>
+
+                <h4>Lectura final</h4>
+              </div>
+
+              <small>
+                {{
+                  formatDate(
+                    meterReading?.final_reading_at,
+                  )
+                }}
+              </small>
+            </header>
+
+            <div class="meter-fields">
+              <label v-if="showTotalMeter">
+                <span>Contador total</span>
+
+                <input
+                  v-model.number="
+                    meterForm.final_total_meter
+                  "
+                  type="number"
+                  min="0"
+                  step="1"
+                  :disabled="meterSaving"
+                  placeholder="0"
+                >
+              </label>
+
+              <label v-if="showBlackMeter">
+                <span>Blanco y negro</span>
+
+                <input
+                  v-model.number="
+                    meterForm.final_black_meter
+                  "
+                  type="number"
+                  min="0"
+                  step="1"
+                  :disabled="meterSaving"
+                  placeholder="0"
+                >
+              </label>
+
+              <label v-if="showColorMeter">
+                <span>Color</span>
+
+                <input
+                  v-model.number="
+                    meterForm.final_color_meter
+                  "
+                  type="number"
+                  min="0"
+                  step="1"
+                  :disabled="meterSaving"
+                  placeholder="0"
+                >
+              </label>
+
+              <label v-if="showScanMeter">
+                <span>Escáner</span>
+
+                <input
+                  v-model.number="
+                    meterForm.final_scan_meter
+                  "
+                  type="number"
+                  min="0"
+                  step="1"
+                  :disabled="meterSaving"
+                  placeholder="0"
+                >
+              </label>
+            </div>
+
+            <label class="meter-reason-field">
+              <span>
+                Motivo si no se pudo obtener
+                la lectura final
+              </span>
+
+              <textarea
+                v-model="
+                  meterForm.final_unavailable_reason
+                "
+                rows="3"
+                :disabled="meterSaving"
+                placeholder="
+                  Registra el motivo únicamente
+                  cuando no existe lectura final
+                "
+              ></textarea>
+            </label>
+          </article>
         </div>
 
         <div
           v-if="meterReading"
-          class="meter-grid"
+          class="meter-application-status"
         >
-          <article>
-            <h4>Lectura inicial</h4>
-
-            <p>
-              Total:
-              <strong>
-                {{
-                  meterReading.initial_total_meter
-                  ?? "—"
-                }}
-              </strong>
-            </p>
-
-            <p>
-              B/N:
-              <strong>
-                {{
-                  meterReading.initial_black_meter
-                  ?? "—"
-                }}
-              </strong>
-            </p>
-
-            <p>
-              Color:
-              <strong>
-                {{
-                  meterReading.initial_color_meter
-                  ?? "—"
-                }}
-              </strong>
-            </p>
-
-            <p>
-              Escáner:
-              <strong>
-                {{
-                  meterReading.initial_scan_meter
-                  ?? "—"
-                }}
-              </strong>
-            </p>
-          </article>
-
-          <article>
-            <h4>Lectura final</h4>
-
-            <p>
-              Total:
-              <strong>
-                {{
-                  meterReading.final_total_meter
-                  ?? "—"
-                }}
-              </strong>
-            </p>
-
-            <p>
-              B/N:
-              <strong>
-                {{
-                  meterReading.final_black_meter
-                  ?? "—"
-                }}
-              </strong>
-            </p>
-
-            <p>
-              Color:
-              <strong>
-                {{
-                  meterReading.final_color_meter
-                  ?? "—"
-                }}
-              </strong>
-            </p>
-
-            <p>
-              Escáner:
-              <strong>
-                {{
-                  meterReading.final_scan_meter
-                  ?? "—"
-                }}
-              </strong>
-            </p>
-          </article>
+          <strong>
+            {{
+              meterReading.applied_to_equipment_history
+                ? "Lectura aplicada al historial del equipo"
+                : "Lectura pendiente de aplicar al equipo"
+            }}
+          </strong>
         </div>
-
-        <p
-          v-else
-          class="empty-panel"
-        >
-          No se registraron contadores.
-        </p>
       </section>
 
       <section

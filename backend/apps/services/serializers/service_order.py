@@ -8,9 +8,28 @@ from apps.services.domain import build_order_snapshot
 from apps.services.models import ServiceOrder
 
 
-class ServiceOrderSerializer(serializers.ModelSerializer):
+class ServiceOrderSerializer(
+    serializers.ModelSerializer
+):
     equipment_display = serializers.SerializerMethodField()
+
     technician_display = serializers.SerializerMethodField()
+
+    equipment_has_total_meter = (
+        serializers.SerializerMethodField()
+    )
+
+    equipment_has_black_meter = (
+        serializers.SerializerMethodField()
+    )
+
+    equipment_has_color_meter = (
+        serializers.SerializerMethodField()
+    )
+
+    equipment_has_scan_meter = (
+        serializers.SerializerMethodField()
+    )
 
     service_origin_display = serializers.CharField(
         source="get_service_origin_display",
@@ -39,10 +58,15 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ServiceOrder
+
         fields = "__all__"
 
         read_only_fields = (
             "code",
+            "equipment_has_total_meter",
+            "equipment_has_black_meter",
+            "equipment_has_color_meter",
+            "equipment_has_scan_meter",
             "created_at",
             "updated_at",
             "created_by",
@@ -66,6 +90,23 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
             "rental_assignment_reference",
         )
 
+    @staticmethod
+    def _get_equipment_model(obj):
+        equipment = getattr(
+            obj,
+            "equipment",
+            None,
+        )
+
+        if not equipment:
+            return None
+
+        return getattr(
+            equipment,
+            "equipment_model",
+            None,
+        )
+
     def get_equipment_display(self, obj):
         return str(obj.equipment)
 
@@ -74,11 +115,100 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
             return ""
 
         technician = obj.assigned_technician
-        full_name = technician.get_full_name().strip()
+
+        full_name = (
+            technician
+            .get_full_name()
+            .strip()
+        )
 
         return (
             full_name
             or technician.get_username()
+        )
+
+    def get_equipment_has_total_meter(
+        self,
+        obj,
+    ):
+        equipment_model = (
+            self._get_equipment_model(
+                obj,
+            )
+        )
+
+        if not equipment_model:
+            return False
+
+        return bool(
+            getattr(
+                equipment_model,
+                "has_total_meter",
+                False,
+            )
+        )
+
+    def get_equipment_has_black_meter(
+        self,
+        obj,
+    ):
+        equipment_model = (
+            self._get_equipment_model(
+                obj,
+            )
+        )
+
+        if not equipment_model:
+            return False
+
+        return bool(
+            getattr(
+                equipment_model,
+                "has_black_meter",
+                False,
+            )
+        )
+
+    def get_equipment_has_color_meter(
+        self,
+        obj,
+    ):
+        equipment_model = (
+            self._get_equipment_model(
+                obj,
+            )
+        )
+
+        if not equipment_model:
+            return False
+
+        return bool(
+            getattr(
+                equipment_model,
+                "has_color_meter",
+                False,
+            )
+        )
+
+    def get_equipment_has_scan_meter(
+        self,
+        obj,
+    ):
+        equipment_model = (
+            self._get_equipment_model(
+                obj,
+            )
+        )
+
+        if not equipment_model:
+            return False
+
+        return bool(
+            getattr(
+                equipment_model,
+                "has_scan_meter",
+                False,
+            )
         )
 
     def _get_instance_value(
@@ -190,7 +320,10 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
                 }
             )
 
-    def validate_equipment(self, equipment):
+    def validate_equipment(
+        self,
+        equipment,
+    ):
         if equipment.archived_at:
             raise serializers.ValidationError(
                 "La máquina seleccionada está archivada."
@@ -230,7 +363,10 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
 
         return technician
 
-    def validate(self, attrs):
+    def validate(
+        self,
+        attrs,
+    ):
         instance = self.instance
 
         equipment = attrs.get(
@@ -395,8 +531,13 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
 
         return attrs
 
-    def create(self, validated_data):
-        request = self.context.get("request")
+    def create(
+        self,
+        validated_data,
+    ):
+        request = self.context.get(
+            "request"
+        )
 
         user = (
             request.user
@@ -409,8 +550,13 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
             None,
         )
 
-        validated_data["created_by"] = user
-        validated_data["updated_by"] = user
+        validated_data[
+            "created_by"
+        ] = user
+
+        validated_data[
+            "updated_by"
+        ] = user
 
         try:
             return super().create(
@@ -433,7 +579,9 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
         instance,
         validated_data,
     ):
-        request = self.context.get("request")
+        request = self.context.get(
+            "request"
+        )
 
         user = (
             request.user
@@ -446,7 +594,9 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
             None,
         )
 
-        validated_data["updated_by"] = user
+        validated_data[
+            "updated_by"
+        ] = user
 
         try:
             return super().update(
@@ -483,6 +633,10 @@ class ServiceOrderListSerializer(
             "equipment_internal_code",
             "equipment_brand_name",
             "equipment_model_name",
+            "equipment_has_total_meter",
+            "equipment_has_black_meter",
+            "equipment_has_color_meter",
+            "equipment_has_scan_meter",
             "customer_name",
             "customer_trade_name",
             "branch_name",
