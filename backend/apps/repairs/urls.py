@@ -1,93 +1,35 @@
 # -*- coding: utf-8 -*-
-from django.urls import (
-    include,
-    path,
-)
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-
-from .views import (
-    RepairAssignmentViewSet,
-    RepairChecklistItemViewSet,
-    RepairChecklistViewSet,
-    RepairComponentViewSet,
-    RepairDiagnosisViewSet,
-    RepairPhotoViewSet,
-    RepairSNMPValidationViewSet,
-    RepairStatusHistoryViewSet,
-    RepairTestViewSet,
-    RepairViewSet,
-)
-
+from .views import *
 
 app_name = "repairs"
-
-
 router = DefaultRouter()
 
-router.register(
-    r"repairs",
-    RepairViewSet,
-    basename="repair",
+ROUTES = (
+    ("repairs", RepairViewSet, "repair"),
+    ("assignments", RepairAssignmentViewSet, "repair-assignment"),
+    ("status-history", RepairStatusHistoryViewSet, "repair-status-history"),
+    ("diagnoses", RepairDiagnosisViewSet, "repair-diagnosis"),
+    ("checklists", RepairChecklistViewSet, "repair-checklist"),
+    ("checklist-items", RepairChecklistItemViewSet, "repair-checklist-item"),
+    ("components", RepairComponentViewSet, "repair-component"),
+    ("photos", RepairPhotoViewSet, "repair-photo"),
+    ("tests", RepairTestViewSet, "repair-test"),
+    ("snmp-validations", RepairSNMPValidationViewSet, "repair-snmp-validation"),
+    ("part-requests", RepairPartRequestViewSet, "repair-part-request"),
+    ("part-request-items", RepairPartRequestItemViewSet, "repair-part-request-item"),
+    ("part-request-reviews", RepairPartRequestReviewViewSet, "repair-part-request-review"),
+    ("part-request-decisions", RepairPartRequestDecisionViewSet, "repair-part-request-decision"),
+    ("part-sources", RepairPartSourceViewSet, "repair-part-source"),
+    ("part-withdrawals", RepairPartWithdrawalViewSet, "repair-part-withdrawal"),
+    ("part-deliveries", RepairPartDeliveryViewSet, "repair-part-delivery"),
+    ("part-replacements", RepairPartReplacementViewSet, "repair-part-replacement"),
+    ("part-request-history", RepairPartRequestHistoryViewSet, "repair-part-request-history"),
+    ("part-request-comments", RepairPartRequestCommentViewSet, "repair-part-request-comment"),
+    ("part-request-attachments", RepairPartRequestAttachmentViewSet, "repair-part-request-attachment"),
+    ("part-request-notifications", RepairPartRequestNotificationViewSet, "repair-part-request-notification"),
 )
-
-router.register(
-    r"assignments",
-    RepairAssignmentViewSet,
-    basename="repair-assignment",
-)
-
-router.register(
-    r"status-history",
-    RepairStatusHistoryViewSet,
-    basename="repair-status-history",
-)
-
-router.register(
-    r"diagnoses",
-    RepairDiagnosisViewSet,
-    basename="repair-diagnosis",
-)
-
-router.register(
-    r"checklists",
-    RepairChecklistViewSet,
-    basename="repair-checklist",
-)
-
-router.register(
-    r"checklist-items",
-    RepairChecklistItemViewSet,
-    basename="repair-checklist-item",
-)
-
-router.register(
-    r"components",
-    RepairComponentViewSet,
-    basename="repair-component",
-)
-
-router.register(
-    r"photos",
-    RepairPhotoViewSet,
-    basename="repair-photo",
-)
-
-router.register(
-    r"tests",
-    RepairTestViewSet,
-    basename="repair-test",
-)
-
-router.register(
-    r"snmp-validations",
-    RepairSNMPValidationViewSet,
-    basename="repair-snmp-validation",
-)
-
-
-urlpatterns = [
-    path(
-        "",
-        include(router.urls),
-    ),
-]
+for prefix, viewset, basename in ROUTES:
+    router.register(prefix, viewset, basename=basename)
+urlpatterns = [path("", include(router.urls))]

@@ -12,6 +12,18 @@ from .models import (
     RepairSNMPValidation,
     RepairStatusHistory,
     RepairTest,
+    RepairPartRequest,
+    RepairPartRequestItem,
+    RepairPartRequestReview,
+    RepairPartRequestDecision,
+    RepairPartSource,
+    RepairPartWithdrawal,
+    RepairPartDelivery,
+    RepairPartReplacement,
+    RepairPartRequestHistory,
+    RepairPartRequestComment,
+    RepairPartRequestAttachment,
+    RepairPartRequestNotification,
 )
 
 
@@ -601,4 +613,27 @@ class RepairSNMPValidationAdmin(
     ordering = existing_fields(
         RepairSNMPValidation,
         "-created_at",
+    )
+
+NEW_REPAIR_PART_MODELS = (
+    RepairPartRequest, RepairPartRequestItem, RepairPartRequestReview,
+    RepairPartRequestDecision, RepairPartSource, RepairPartWithdrawal,
+    RepairPartDelivery, RepairPartReplacement, RepairPartRequestHistory,
+    RepairPartRequestComment, RepairPartRequestAttachment,
+    RepairPartRequestNotification,
+)
+
+for model in NEW_REPAIR_PART_MODELS:
+    admin.site.register(
+        model,
+        type(
+            f"{model.__name__}Admin",
+            (admin.ModelAdmin,),
+            {
+                "readonly_fields": existing_fields(
+                    model, "id", "created_at", "updated_at", "archived_at"
+                ),
+                "ordering": existing_fields(model, "-created_at"),
+            },
+        ),
     )

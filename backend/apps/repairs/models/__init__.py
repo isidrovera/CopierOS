@@ -15,6 +15,19 @@ from .repair_status_history import RepairStatusHistory
 from .repair_test import RepairTest
 
 
+from .repair_part_request import RepairPartRequest
+from .repair_part_request_item import RepairPartRequestItem
+from .repair_part_request_review import RepairPartRequestReview
+from .repair_part_request_decision import RepairPartRequestDecision
+from .repair_part_source import RepairPartSource
+from .repair_part_withdrawal import RepairPartWithdrawal
+from .repair_part_delivery import RepairPartDelivery
+from .repair_part_replacement import RepairPartReplacement
+from .repair_part_request_history import RepairPartRequestHistory
+from .repair_part_request_comment import RepairPartRequestComment
+from .repair_part_request_attachment import RepairPartRequestAttachment
+from .repair_part_request_notification import RepairPartRequestNotification
+
 __all__ = (
     "RepairBaseModel",
     "Repair",
@@ -27,4 +40,16 @@ __all__ = (
     "RepairPhoto",
     "RepairTest",
     "RepairSNMPValidation",
+    "RepairPartRequest",
+    "RepairPartRequestItem",
+    "RepairPartRequestReview",
+    "RepairPartRequestDecision",
+    "RepairPartSource",
+    "RepairPartWithdrawal",
+    "RepairPartDelivery",
+    "RepairPartReplacement",
+    "RepairPartRequestHistory",
+    "RepairPartRequestComment",
+    "RepairPartRequestAttachment",
+    "RepairPartRequestNotification",
 )

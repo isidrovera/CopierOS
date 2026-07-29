@@ -101,6 +101,19 @@ from .repair_snmp_validation import (
 )
 
 
+from .repair_part_request import *
+from .repair_part_request_item import *
+from .repair_part_request_review import *
+from .repair_part_request_decision import *
+from .repair_part_source import *
+from .repair_part_withdrawal import *
+from .repair_part_delivery import *
+from .repair_part_replacement import *
+from .repair_part_request_history import *
+from .repair_part_request_comment import *
+from .repair_part_request_attachment import *
+from .repair_part_request_notification import *
+
 __all__ = [
     "get_authenticated_user",
     "convert_django_validation_error",
@@ -182,3 +195,5 @@ __all__ = [
     "RecalculateSNMPMatchesSerializer",
     "ArchiveRepairSNMPValidationSerializer",
 ]
+
+__all__ = sorted(set(__all__) | {name for name in globals() if name.endswith("Serializer")})
