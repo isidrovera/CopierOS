@@ -1,0 +1,1185 @@
+COPIER OS
+RESUMEN DE CONTINUIDAD — MÓDULO SERVICIOS Y PEDIDOS DE REPUESTOS
+Fecha: 29/07/2026
+
+============================================================
+1. OBJETIVO
+============================================================
+
+Este documento sirve para continuar en otro chat el desarrollo de la interfaz frontend del módulo Servicios de Copier OS.
+
+El backend ya fue ampliado para manejar:
+- Órdenes de servicio.
+- Asignación de técnicos.
+- Estados e historial.
+- Tracking GPS.
+- Checklists técnicos.
+- Evidencias.
+- Lecturas de contadores.
+- Pedidos de repuestos.
+- Evaluación y aprobación.
+- Solicitudes de información.
+- Revisión de stock.
+- Partes reutilizables.
+- Traslado de repuestos.
+- Instalación.
+- Historial del repuesto por equipo.
+- Comentarios, adjuntos y notificaciones.
+
+La interfaz debe consumir el backend existente. No se deben inventar campos, estados ni rutas sin revisar serializers, views y urls actuales.
+
+============================================================
+2. STACK
+============================================================
+
+Backend:
+- Django 5.2.
+- Django REST Framework.
+- PostgreSQL.
+- TokenAuthentication.
+- App: apps.services.
+
+Frontend:
+- Vue 3.
+- Vite.
+- vue-router.
+- Sin sidebar fijo.
+- Navegación principal arriba.
+- Cards compactos.
+- Listas densas.
+- Badges de colores.
+- Diseño moderno con colores de Copier OS.
+
+Ruta base aproximada:
+/api/services/
+
+Antes de programar cada recurso revisar:
+backend/apps/services/urls.py
+backend/apps/services/views/
+backend/apps/services/serializers/
+
+============================================================
+3. ENTORNO ACTUAL EN MAC
+============================================================
+
+- Python 3.13.
+- Entorno virtual .venv.
+- PostgreSQL en Docker.
+- Contenedor: copieros_postgres.
+- Base: copieros.
+- Usuario PostgreSQL: copieros.
+- Puerto: 5432.
+- Migraciones aplicadas.
+- Superusuario creado.
+- Administrador Django funcionando.
+
+Comandos habituales:
+
+cd ~/Documents/GitHub/CopierOS/backend
+source .venv/bin/activate
+docker start copieros_postgres
+python manage.py runserver
+
+Administrador:
+http://127.0.0.1:8000/admin/
+
+============================================================
+4. MODELOS DEL MÓDULO SERVICES
+============================================================
+
+Modelos base y antiguos:
+- base.py
+- service_order.py
+- service_history.py
+- service_tracking.py
+- service_checklist.py
+- service_evidence_meter.py
+
+Modelos nuevos:
+- service_part_request.py
+- service_part_request_item.py
+- service_part_request_history.py
+- service_part_request_information.py
+- service_part_request_decision.py
+- service_part_request_attachment.py
+- service_part_request_comment.py
+- service_part_request_notification.py
+- service_reusable_part.py
+- service_reusable_part_history.py
+- service_part_stock_review.py
+- service_part_stock_review_history.py
+- service_part_transfer.py
+- service_part_transfer_history.py
+- service_installation_item.py
+- equipment_installed_item.py
+
+El archivo backend/apps/services/models/__init__.py importa modelos antiguos y nuevos.
+
+============================================================
+5. SERVICE ORDER
+============================================================
+
+Estados reales:
+- draft: Borrador
+- pending_assignment: Pendiente de asignación
+- assigned: Asignada
+- accepted: Aceptada por técnico
+- en_route: Técnico en ruta
+- on_site: Técnico en ubicación
+- in_progress: En proceso
+- pending_parts: Pendiente de repuestos
+- requires_return: Requiere nueva visita
+- technician_completed: Finalizada por técnico
+- pending_conformity: Pendiente de conformidad
+- closed: Cerrada
+- rescheduled: Reprogramada
+- failed_visit: Visita no realizada
+- cancelled: Cancelada
+
+Tipos:
+- preventive
+- corrective
+- network
+- meter_reading
+- inspection
+- other
+
+Resultados:
+- pending
+- operational
+- operational_with_notes
+- pending_parts
+- requires_return
+- not_repaired
+- not_attended
+
+Prioridades:
+- low
+- normal
+- high
+- urgent
+
+Origen:
+- rental
+- external
+
+Campos importantes para la interfaz:
+- code
+- equipment
+- assigned_technician
+- assigned_by
+- assigned_at
+- service_origin
+- service_type
+- priority
+- status
+- result
+- customer_code
+- customer_document_type
+- customer_document_number
+- customer_name
+- customer_trade_name
+- branch_name
+- address
+- address_reference
+- district
+- province
+- region
+- destination_latitude
+- destination_longitude
+- geofence_radius_meters
+- site_location
+- contact_name
+- contact_job_title
+- contact_phone
+- contact_email
+- contract_reference
+- rental_assignment_reference
+- equipment_serial_number
+- reported_problem
+- technical_diagnosis
+- work_performed
+- final_observations
+
+Reglas importantes:
+- Debe tener equipo.
+- Debe registrar serie.
+- Debe registrar cliente.
+- Debe registrar dirección.
+- Debe registrar problema reportado.
+- Si tiene técnico asignado, debe existir assigned_at.
+- El backend puede completar assigned_at automáticamente.
+
+============================================================
+6. CHECKLIST TÉCNICO
+============================================================
+
+Modelos:
+- ServiceChecklist
+- ServiceChecklistItem
+
+Estados del checklist:
+- pending
+- in_progress
+- completed
+- cancelled
+
+Estados del ítem:
+- pending
+- ok
+- observed
+- requires_change
+- not_applicable
+
+Organización visual:
+1. Consumibles.
+2. Tóner.
+3. Unidades.
+4. Accesorios.
+
+Requisitos de interfaz:
+- Cards compactos.
+- Iconos por tipo de componente.
+- Tóner CMYK.
+- Etiquetas completas: Toner Black, Cyan, Magenta y Yellow.
+- El tacho residual no debe mostrar color ni letra K.
+- Al marcar requires_change, desplegar subpartes compatibles.
+- Cada subparte debe permitir cantidad.
+- Si deja de requerir cambio, ocultar o eliminar subpartes.
+- No duplicar información del componente.
+- Separar visualmente componente principal y subpartes.
+
+Acciones:
+- Iniciar checklist.
+- Actualizar ítems.
+- Marcar correcto.
+- Marcar observado.
+- Marcar requiere cambio.
+- Marcar no aplica.
+- Elegir subpartes compatibles.
+- Registrar cantidad.
+- Completar checklist.
+- Mostrar validaciones del backend.
+
+============================================================
+7. EVIDENCIAS
+============================================================
+
+Modelo: ServiceEvidence
+
+Tipos:
+- before
+- after
+- general
+- meter
+- part
+
+Campos:
+- service_order
+- stage
+- file
+- captured_by
+- captured_at
+- latitude
+- longitude
+- accuracy_meters
+- device_id
+- is_mock_location
+- sequence
+- notes
+
+La interfaz debe:
+- Cargar fotografías.
+- Separar Antes, Después, General, Contador y Repuesto.
+- Mostrar miniaturas y progreso.
+- Mantener secuencia.
+- Mostrar ubicación y precisión.
+- Advertir ubicación simulada.
+- No modificar la lógica actual sin revisar archivos reales.
+
+============================================================
+8. CONTADORES
+============================================================
+
+Modelo: ServiceMeterReading
+
+Campos:
+- initial_total_meter
+- initial_black_meter
+- initial_color_meter
+- initial_scan_meter
+- final_total_meter
+- final_black_meter
+- final_color_meter
+- final_scan_meter
+- initial_reading_at
+- final_reading_at
+- initial_unavailable_reason
+- final_unavailable_reason
+
+La interfaz debe:
+- Mostrar iniciales y finales.
+- Mostrar BN, color, total y escáner.
+- No aceptar negativos.
+- No permitir final menor que inicial.
+- Mostrar errores exactos del backend.
+- Permitir justificar lectura no disponible.
+
+============================================================
+9. TRACKING GPS
+============================================================
+
+Modelos:
+- ServiceTrackingSession
+- ServiceTrackingPoint
+
+Estados de sesión:
+- active
+- completed
+- cancelled
+- interrupted
+
+Eventos:
+- periodic
+- route_start
+- geofence_entry
+- arrival
+- service_start
+- service_end
+- route_end
+
+La interfaz del técnico debe:
+- Iniciar tracking.
+- Registrar puntos.
+- Mostrar sesión activa.
+- Mostrar hora de inicio.
+- Mostrar llegada a geocerca.
+- Mostrar distancia y tiempos.
+- Cerrar sesión al terminar.
+
+No modificar lógica GPS sin revisar archivos reales.
+
+============================================================
+10. PEDIDOS DE REPUESTOS
+============================================================
+
+Modelo principal: ServicePartRequest
+
+Estados reales:
+- draft
+- submitted_to_management
+- management_review
+- information_requested
+- information_answered
+- management_reassessment
+- approved
+- rejected
+- pending_stock_review
+- stock_confirmed
+- partial_stock
+- out_of_stock
+- pending_logistics
+- preparing
+- ready_for_installation
+- installation_order_created
+- delivered
+- cancelled
+
+Áreas responsables:
+- technical
+- management
+- sales
+- logistics
+- installation
+- closed
+
+Campos de interfaz:
+- code
+- service_order
+- installation_service_order
+- status
+- current_responsible_area
+- current_responsible_user
+- requested_by
+- submitted_by
+- management_reviewed_by
+- fechas por etapa
+- observaciones
+- motivo de rechazo
+- referencias relacionadas
+
+La lista debe mostrar:
+- Código del pedido.
+- Código de OS.
+- Equipo y serie.
+- Cliente.
+- Técnico.
+- Estado.
+- Área y usuario responsable.
+- Fecha.
+- Prioridad.
+- Cantidad de ítems.
+- Estado de stock.
+- Estado de instalación.
+
+============================================================
+11. DETALLE DEL PEDIDO
+============================================================
+
+Modelo: ServicePartRequestItem
+
+Tipos:
+- spare_part
+- consumable
+- toner
+- unit
+- part
+- accessory
+- external_item
+- other
+
+Urgencia:
+- normal
+- high
+- critical
+
+Decisión de gerencia:
+- pending
+- approved
+- partial
+- rejected
+- information_required
+
+Método de abastecimiento:
+- pending
+- stock
+- reusable_part
+- donor_equipment
+- purchase
+- external_repair
+- not_available
+
+Campos:
+- checklist_item
+- source_component
+- item_type
+- parent_component_name
+- component_code
+- component_name
+- manufacturer_code
+- color
+- custom_name
+- custom_code
+- custom_description
+- requested_quantity
+- approved_quantity
+- supplied_quantity
+- installed_quantity
+- urgency
+- management_decision
+- supply_method
+- notas técnicas
+- notas de gerencia
+- notas de almacén
+
+UI:
+- Mostrar código y nombre del catálogo.
+- Para artículo libre usar custom_name/custom_code.
+- Mostrar color solo cuando aplique.
+- Mostrar unidad principal y subparte.
+- Mostrar cantidades solicitada, aprobada, disponible, entregada e instalada.
+- Usar badges para urgencia, decisión y abastecimiento.
+
+============================================================
+12. FLUJO COMPLETO DE REPUESTOS
+============================================================
+
+1. Técnico realiza checklist.
+2. Marca requiere cambio.
+3. Selecciona subpartes compatibles.
+4. Indica cantidad.
+5. Se genera o actualiza pedido.
+6. Técnico envía a gerencia.
+7. Gerencia revisa.
+8. Gerencia aprueba, aprueba parcialmente, rechaza o solicita información.
+9. Área responsable responde.
+10. Gerencia reevalúa.
+11. Pasa a revisión de stock.
+12. Almacén confirma disponible, parcial, sin stock, reutilizable, equipo donante, compra o reparación externa.
+13. Logística prepara.
+14. Queda listo para instalación.
+15. Se crea nueva OS de instalación.
+16. Se asigna técnico instalador.
+17. Técnico instala.
+18. Se registra historial por equipo.
+19. Pedido se entrega o finaliza.
+
+Cada vista debe mostrar solo acciones válidas para el estado actual.
+
+============================================================
+13. DECISIONES DE GERENCIA
+============================================================
+
+Modelo: ServicePartRequestDecision
+
+Opciones:
+- pending
+- approved
+- partially_approved
+- rejected
+- information_required
+
+Campos:
+- request
+- request_item
+- decision
+- requested_quantity
+- approved_quantity
+- decided_by
+- decided_at
+- reason
+- information_required
+- previous_decision
+- is_final
+- metadata
+
+La interfaz debe permitir decidir por pedido o por ítem, indicar cantidad aprobada, motivo e información requerida. No permitir cantidad aprobada mayor a la solicitada.
+
+============================================================
+14. SOLICITUDES DE INFORMACIÓN
+============================================================
+
+Modelo: ServicePartRequestInformation
+
+Estados:
+- pending
+- answered
+- closed
+- cancelled
+
+Áreas:
+- technical
+- sales
+- logistics
+- management
+- other
+
+Mostrar:
+- Pregunta.
+- Área y usuario responsable.
+- Fecha y vencimiento.
+- Respuesta.
+- Usuario y fecha de respuesta.
+- Estado.
+- Observaciones de cierre.
+
+Debe existir bandeja de pendientes por usuario o área.
+
+============================================================
+15. REVISIÓN DE STOCK
+============================================================
+
+Modelo: ServicePartStockReview
+
+Estados:
+- pending
+- available
+- partial
+- out_of_stock
+- reusable_available
+- donor_equipment_available
+- purchase_required
+- external_repair_required
+- cancelled
+
+Campos:
+- request
+- request_item
+- status
+- reviewed_by
+- reviewed_at
+- requested_quantity
+- available_quantity
+- reserved_quantity
+- reusable_part
+- expected_available_at
+- purchase_reference
+- warehouse_location
+- notes
+
+La interfaz de almacén debe permitir revisar, reservar, seleccionar reutilizable, registrar ubicación, fecha estimada, referencia de compra y observaciones.
+
+============================================================
+16. PARTES REUTILIZABLES
+============================================================
+
+Modelo: ServiceReusablePart
+
+Condiciones:
+- new
+- used_operational
+- used_with_notes
+- repaired
+- to_review
+- defective
+- incomplete
+- not_usable
+
+Estados:
+- available
+- reserved
+- pending_removal
+- in_custody
+- pending_reception
+- ready_for_installation
+- installed
+- returned
+- lost
+- discarded
+
+Origen:
+- warehouse
+- donor_equipment
+- purchase
+- repaired
+- returned
+- other
+
+Vista de almacén:
+- Listar y filtrar por componente, estado, condición y ubicación.
+- Reservar.
+- Asignar equipo donante.
+- Registrar retiro.
+- Registrar custodia.
+- Marcar lista para instalar.
+- Marcar instalada, devuelta, perdida o descartada.
+
+============================================================
+17. TRASLADOS
+============================================================
+
+Modelo: ServicePartTransfer
+
+Estados:
+- pending_decision
+- approved
+- assigned_for_removal
+- removed
+- in_transit
+- pending_reception
+- received
+- ready_for_installation
+- installed
+- returned
+- rejected
+- cancelled
+
+Condición de retiro:
+- operational
+- operational_with_notes
+- to_review
+- repaired
+- defective
+- incomplete
+- not_usable
+
+La interfaz debe permitir aprobar, elegir reutilizable, seleccionar origen, mostrar destino, asignar técnico, programar retiro, registrar condición, custodia, recepción e instalación.
+
+============================================================
+18. INSTALACIÓN
+============================================================
+
+Modelo: ServiceInstallationItem
+
+Resultados:
+- pending
+- installed
+- partially_installed
+- not_installed
+- returned
+- damaged
+- not_compatible
+- requires_review
+
+Contador de referencia:
+- total
+- black
+- color
+- scan
+- none
+
+Campos:
+- service_order
+- part_request_item
+- transfer
+- planned_quantity
+- installed_quantity
+- returned_quantity
+- result
+- installed_by
+- installed_at
+- meter_type
+- total_meter
+- black_meter
+- color_meter
+- scan_meter
+- reference_meter
+- observations
+
+La interfaz debe registrar cantidades, resultado, contadores, evidencias y observaciones.
+
+============================================================
+19. HISTORIAL DEL REPUESTO POR EQUIPO
+============================================================
+
+Modelo: EquipmentInstalledItem
+
+Estados:
+- installed
+- removed
+- replaced
+- returned
+- discarded
+
+Tipos:
+- spare_part
+- consumable
+- toner
+- unit
+- part
+- accessory
+- external_item
+- other
+
+Origen:
+- stock
+- reusable_part
+- donor_equipment
+- purchase
+- external_repair
+- other
+
+Agregar al detalle del equipo una sección “Historial de repuestos instalados” con:
+- Repuesto.
+- Código.
+- Serie.
+- Tipo.
+- Origen.
+- OS.
+- Pedido.
+- Cantidad.
+- Fecha.
+- Técnico.
+- Contador.
+- Estado actual.
+- Fecha y motivo de retiro.
+- Repuesto reemplazante.
+- Evidencias.
+
+Este historial debe mantenerse por equipo aunque se registre desde una OS.
+
+============================================================
+20. COMENTARIOS, ADJUNTOS Y NOTIFICACIONES
+============================================================
+
+Comentarios: ServicePartRequestComment
+Tipos:
+- general
+- technical
+- management
+- sales
+- logistics
+- stock
+- information_request
+- information_response
+- decision
+- installation
+- internal_note
+
+Permitir comentarios, respuestas, menciones, edición e internos.
+
+Adjuntos: ServicePartRequestAttachment
+Tipos:
+- general
+- technical_evidence
+- quotation
+- purchase_document
+- stock_evidence
+- donor_equipment
+- reusable_part
+- management_support
+- sales_response
+- logistics_evidence
+- installation_support
+- other
+
+Permitir asociar al pedido o ítem, mostrar tipo, título, descripción, nombre, tamaño y usuario.
+
+Notificaciones: ServicePartRequestNotification
+Canales:
+- in_app
+- email
+- push
+
+Estados:
+- pending
+- sent
+- delivered
+- read
+- failed
+- cancelled
+
+Agregar campana, contador de no leídas, lista, marcar como leída y navegación al recurso.
+
+============================================================
+21. HISTORIALES
+============================================================
+
+Modelos:
+- ServicePartRequestStatusHistory
+- ServicePartStockReviewHistory
+- ServiceReusablePartHistory
+- ServicePartTransferHistory
+- ServiceStatusHistory
+- ServiceAssignmentHistory
+
+Cada detalle debe tener pestaña Historial mostrando evento, estado anterior/nuevo, responsables, usuario, fecha, comentario, origen, cantidades, ubicación y condición cuando aplique.
+
+============================================================
+22. VISTAS VUE NECESARIAS
+============================================================
+
+- ServicesDashboardView.vue
+- ServiceOrdersListView.vue
+- ServiceOrderDetailView.vue
+- ServiceOrderFormView.vue
+- ServiceChecklistView.vue
+- ServicePartRequestsListView.vue
+- ServicePartRequestDetailView.vue
+- ServicePartRequestManagementView.vue
+- ServicePartStockReviewView.vue
+- ServiceReusablePartsView.vue
+- ServicePartTransfersView.vue
+- ServiceInstallationView.vue
+- ServiceNotificationsView.vue
+
+============================================================
+23. COMPONENTES REUTILIZABLES
+============================================================
+
+- ServiceStatusBadge.vue
+- ServicePriorityBadge.vue
+- PartRequestStatusBadge.vue
+- PartUrgencyBadge.vue
+- ResponsibleAreaBadge.vue
+- SupplyMethodBadge.vue
+- StockStatusBadge.vue
+- ReusablePartStatusBadge.vue
+- ReusablePartConditionBadge.vue
+- TransferStatusBadge.vue
+- InstallationResultBadge.vue
+- ServiceTimeline.vue
+- PartRequestTimeline.vue
+- ServiceOrderHeader.vue
+- EquipmentSummaryCard.vue
+- CustomerSummaryCard.vue
+- TechnicianSummaryCard.vue
+- ChecklistSection.vue
+- ChecklistItemCard.vue
+- CompatibleSubpartsSelector.vue
+- PartRequestItemsTable.vue
+- PartDecisionForm.vue
+- InformationRequestPanel.vue
+- StockReviewForm.vue
+- ReusablePartSelector.vue
+- TransferProgress.vue
+- InstallationItemForm.vue
+- EvidenceUploader.vue
+- MeterReadingForm.vue
+- CommentsPanel.vue
+- AttachmentsPanel.vue
+- NotificationsBell.vue
+- ConfirmActionModal.vue
+
+============================================================
+24. SERVICIO JAVASCRIPT
+============================================================
+
+Revisar rutas reales antes de crear funciones en:
+frontend/src/services/services.service.js
+
+Funciones aproximadas:
+
+Órdenes:
+- listServiceOrders
+- getServiceOrder
+- createServiceOrder
+- updateServiceOrder
+- assignTechnician
+- changeServiceOrderStatus
+
+Checklist:
+- getServiceChecklist
+- createServiceChecklist
+- updateChecklistItem
+- loadCompatibleSubparts
+- completeChecklist
+
+Evidencias:
+- listServiceEvidences
+- uploadServiceEvidence
+- deleteServiceEvidence
+
+Contadores:
+- getServiceMeterReading
+- saveServiceMeterReading
+
+Tracking:
+- startTrackingSession
+- addTrackingPoint
+- closeTrackingSession
+
+Pedidos:
+- listPartRequests
+- getPartRequest
+- createPartRequest
+- submitPartRequest
+- startManagementReview
+- approvePartRequest
+- partiallyApprovePartRequest
+- rejectPartRequest
+- requestInformation
+- answerInformation
+
+Stock:
+- listStockReviews
+- getStockReview
+- saveStockReview
+- confirmStock
+- markPartialStock
+- markOutOfStock
+- selectReusablePart
+- selectDonorEquipment
+
+Reutilizables:
+- listReusableParts
+- getReusablePart
+- createReusablePart
+- updateReusablePart
+- reserveReusablePart
+- registerRemoval
+- assignCustody
+- registerReception
+- markReadyForInstallation
+
+Traslados:
+- listPartTransfers
+- getPartTransfer
+- approvePartTransfer
+- assignRemovalTechnician
+- registerPartRemoval
+- markPartInTransit
+- registerPartReception
+- markTransferReadyForInstallation
+
+Instalación:
+- listInstallationItems
+- getInstallationItem
+- updateInstallationItem
+- completeInstallation
+
+Comentarios, adjuntos y notificaciones:
+- listPartRequestComments
+- createPartRequestComment
+- updatePartRequestComment
+- listPartRequestAttachments
+- uploadPartRequestAttachment
+- deletePartRequestAttachment
+- listServiceNotifications
+- markNotificationRead
+
+Estos nombres son sugeridos para frontend. Las rutas exactas deben salir de urls.py y de los @action reales.
+
+============================================================
+25. DISEÑO
+============================================================
+
+- Sin sidebar fijo.
+- Menú superior.
+- Cards compactos.
+- Listas densas.
+- No repetir datos del equipo.
+- Badges de colores.
+- Nombres en español.
+- Acciones según permiso y estado.
+- Modales para acciones irreversibles.
+- Mostrar errores del backend.
+- Diseño responsive.
+- Preparar flujo del técnico para futura app Flutter.
+- Animaciones suaves.
+
+============================================================
+26. ROLES
+============================================================
+
+Técnico:
+- Mis órdenes.
+- Aceptar.
+- Iniciar ruta.
+- Registrar llegada.
+- Iniciar servicio.
+- Checklist.
+- Evidencias.
+- Contadores.
+- Solicitar repuestos.
+- Responder información.
+- Instalar.
+- Finalizar.
+
+Jefe de taller:
+- Ver todas.
+- Asignar/reasignar.
+- Revisar avance.
+- Revisar checklists.
+- Ver pedidos y demoras.
+
+Gerencia:
+- Revisar pedidos.
+- Aprobar, parcial, rechazar o pedir información.
+- Ver historial y adjuntos.
+
+Almacén:
+- Revisar stock.
+- Reservar.
+- Ubicación.
+- Reutilizable.
+- Equipo donante.
+- Confirmar disponibilidad.
+- Preparar entrega.
+
+Logística:
+- Preparar.
+- Coordinar traslado.
+- Registrar entrega.
+- Adjuntar evidencia.
+- Marcar listo para instalar.
+
+Ventas:
+- Ver estado.
+- Ver datos del cliente.
+- Responder solicitudes.
+- No modificar decisiones técnicas o gerenciales.
+
+============================================================
+27. VALIDACIONES FRONTEND
+============================================================
+
+- No enviar estados inventados.
+- No cambiar estados sin acción correcta.
+- No aprobar más de lo solicitado.
+- No instalar más de lo disponible.
+- No completar checklist con obligatorios pendientes.
+- No finalizar instalación sin resultado.
+- No asignar tracking a técnico diferente.
+- No registrar contador final menor al inicial.
+- No seleccionar subpartes si no requiere cambio.
+- No eliminar evidencias o tracking sin revisar permisos.
+- No borrar historial de repuestos del equipo.
+
+============================================================
+28. PUNTOS PENDIENTES
+============================================================
+
+1. Revisar service_resources.py.
+Existe un problema conocido: después de obtener o crear un pedido, una función de eliminación podría borrar un pedido vacío antes de crear los ítems.
+Función relacionada: _delete_linked_request_items(item)
+No modificar sin abrir el archivo real.
+
+2. Confirmar rutas reales en urls.py.
+
+3. Confirmar permisos finales.
+
+4. Confirmar filtros de cada ViewSet.
+
+5. Confirmar paginación DRF.
+
+6. No inventar campos *_display; usar solo los existentes en serializers.
+
+============================================================
+29. ORDEN RECOMENDADO PARA EL FRONTEND
+============================================================
+
+FASE 1:
+- Revisar urls.py, views/__init__.py y serializers/__init__.py.
+- Documentar endpoints reales.
+
+FASE 2:
+- Actualizar services.service.js.
+- Crear badges y utilidades.
+- Lista y detalle de órdenes.
+
+FASE 3:
+- Checklist, subpartes, evidencias y contadores.
+
+FASE 4:
+- Lista y detalle de pedidos.
+- Gerencia e información.
+
+FASE 5:
+- Stock, reutilizables, traslados e instalación.
+
+FASE 6:
+- Historial, comentarios, adjuntos y notificaciones.
+
+FASE 7:
+- Permisos, responsive y preparación para Flutter.
+
+============================================================
+30. INSTRUCCIONES PARA EL SIGUIENTE CHAT
+============================================================
+
+1. No inventar código.
+2. Pedir archivos reales.
+3. Trabajar uno por uno.
+4. Entregar archivos completos.
+5. Mostrar ruta, nombre y código.
+6. No modificar evidencias ni tracking sin revisar.
+7. No crear rutas frontend sin revisar urls.py.
+8. No modificar modelos; ahora corresponde interfaz.
+9. Mantener diseño compacto y profesional.
+10. Usar colores de Copier OS.
+11. No usar sidebar fijo.
+12. No repetir información del equipo.
+13. Separar CSS cuando convenga.
+14. Probar cada flujo antes de continuar.
+
+============================================================
+31. PRIMEROS ARCHIVOS QUE SE DEBEN PEDIR
+============================================================
+
+Backend:
+- backend/apps/services/urls.py
+- backend/apps/services/views/__init__.py
+- backend/apps/services/views/service_order.py
+- backend/apps/services/views/service_resources.py
+- backend/apps/services/serializers/__init__.py
+- backend/apps/services/serializers/service_order.py
+- backend/apps/services/serializers/service_checklist.py
+- backend/apps/services/serializers/service_part_request.py
+
+Frontend:
+- frontend/src/router/index.js
+- frontend/src/services/services.service.js
+- frontend/src/views/services/
+- frontend/src/components/services/
+- componente principal de navegación
+- CSS global
+
+Primer orden de trabajo:
+1. ServicesDashboardView.vue
+2. ServiceOrdersListView.vue
+3. ServiceOrderDetailView.vue
+4. ServicePartRequestsListView.vue
+5. ServicePartRequestDetailView.vue
+
+FIN DEL DOCUMENTO
