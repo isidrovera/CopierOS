@@ -1,0 +1,525 @@
+COPIER OS
+RESUMEN DE CONTINUIDAD – MÓDULO REPARACIONES
+BACKEND DJANGO / DRF
+Fecha: 29-07-2026
+
+==================================================
+1. ESTADO GENERAL
+==================================================
+
+El módulo Reparaciones ya contaba con:
+
+- Reparaciones
+- Asignaciones
+- Historial de estados
+- Diagnósticos
+- Checklist
+- Ítems de checklist
+- Componentes de reparación
+- Fotos
+- Pruebas
+- Validaciones SNMP
+
+Se agregó una nueva arquitectura para gestionar solicitudes de partes, repuestos, accesorios, unidades, componentes, retiros de máquinas donantes, entregas y reposiciones.
+
+La migración fue creada y aplicada correctamente:
+
+repairs.0004_repairpartrequest_repairpartrequestitem_and_more
+
+Resultado:
+
+- Migración aplicada: OK
+- python manage.py check: sin errores
+- System check identified no issues
+
+==================================================
+2. FLUJO DE NEGOCIO DEFINIDO
+==================================================
+
+Flujo directo a gerencia:
+
+- Disco duro
+- Cable de poder
+- Ruedas o base
+- Accesorios simples
+- Otros artículos definidos como aprobación directa
+
+Flujo con revisión del jefe de área:
+
+- Tapas
+- Paneles
+- Unidades completas
+- Subpartes
+- Componentes técnicos
+- Piezas que podrían retirarse de otra máquina
+
+El jefe de área debe evaluar:
+
+- Stock de componentes
+- Almacén de alquiler
+- Máquina para partes
+- Máquina con problemas
+- Máquina operativa
+- Compra externa
+- Reparación externa
+- Sin disponibilidad
+
+Después:
+
+- Gerencia aprueba, aprueba parcialmente, rechaza o solicita información.
+- Se reserva o selecciona el origen.
+- Se autoriza retiro cuando corresponde.
+- Logística prepara y entrega.
+- El técnico confirma recepción.
+- Luego se instala, devuelve o repone según el caso.
+
+==================================================
+3. MODELOS NUEVOS CREADOS
+==================================================
+
+Ruta:
+
+backend/apps/repairs/models/
+
+Archivos nuevos:
+
+repair_part_request.py
+repair_part_request_item.py
+repair_part_request_review.py
+repair_part_request_decision.py
+repair_part_source.py
+repair_part_withdrawal.py
+repair_part_delivery.py
+repair_part_replacement.py
+repair_part_request_history.py
+repair_part_request_comment.py
+repair_part_request_attachment.py
+repair_part_request_notification.py
+
+Modelos:
+
+RepairPartRequest
+RepairPartRequestItem
+RepairPartRequestReview
+RepairPartRequestDecision
+RepairPartSource
+RepairPartWithdrawal
+RepairPartDelivery
+RepairPartReplacement
+RepairPartRequestHistory
+RepairPartRequestComment
+RepairPartRequestAttachment
+RepairPartRequestNotification
+
+==================================================
+4. SERIALIZERS NUEVOS
+==================================================
+
+Ruta:
+
+backend/apps/repairs/serializers/
+
+Archivos:
+
+repair_part_request.py
+repair_part_request_item.py
+repair_part_request_review.py
+repair_part_request_decision.py
+repair_part_source.py
+repair_part_withdrawal.py
+repair_part_delivery.py
+repair_part_replacement.py
+repair_part_request_history.py
+repair_part_request_comment.py
+repair_part_request_attachment.py
+repair_part_request_notification.py
+
+Se agregaron serializers para:
+
+- Listado
+- Detalle
+- Creación
+- Actualización
+- Envío
+- Cancelación
+- Cierre
+- Archivado
+- Aprobaciones
+- Revisiones
+- Autorizaciones
+- Entregas
+- Recepciones
+- Reposición
+- Lectura de notificaciones
+
+==================================================
+5. SERVICES NUEVOS
+==================================================
+
+Ruta:
+
+backend/apps/repairs/services/
+
+Archivos:
+
+repair_part_request.py
+repair_part_request_item.py
+repair_part_request_review.py
+repair_part_request_decision.py
+repair_part_source.py
+repair_part_withdrawal.py
+repair_part_delivery.py
+repair_part_replacement.py
+repair_part_request_history.py
+repair_part_request_notification.py
+
+Lógica creada:
+
+- Enviar solicitud
+- Cancelar solicitud
+- Cerrar solicitud
+- Archivar y restaurar solicitud
+- Archivar y restaurar ítems
+- Revisar ítems por jefe de área
+- Registrar decisión de gerencia
+- Confirmar origen de abastecimiento
+- Autorizar retiro
+- Confirmar retiro
+- Confirmar recepción de retiro
+- Preparar entrega
+- Entregar parte
+- Confirmar recepción
+- Completar reposición
+- Registrar historial
+- Crear notificaciones internas
+
+==================================================
+6. VIEWS NUEVAS
+==================================================
+
+Ruta:
+
+backend/apps/repairs/views/
+
+Archivos:
+
+repair_part_request.py
+repair_part_request_item.py
+repair_part_request_review.py
+repair_part_request_decision.py
+repair_part_source.py
+repair_part_withdrawal.py
+repair_part_delivery.py
+repair_part_replacement.py
+repair_part_request_history.py
+repair_part_request_comment.py
+repair_part_request_attachment.py
+repair_part_request_notification.py
+
+Se crearon ViewSets separados para cada recurso.
+
+==================================================
+7. ARCHIVOS EXISTENTES ACTUALIZADOS
+==================================================
+
+backend/apps/repairs/models/__init__.py
+backend/apps/repairs/serializers/__init__.py
+backend/apps/repairs/services/__init__.py
+backend/apps/repairs/views/__init__.py
+backend/apps/repairs/urls.py
+backend/apps/repairs/admin.py
+
+==================================================
+8. ENDPOINTS NUEVOS
+==================================================
+
+Base:
+
+/api/repairs/
+
+Recursos:
+
+part-requests/
+part-request-items/
+part-request-reviews/
+part-request-decisions/
+part-sources/
+part-withdrawals/
+part-deliveries/
+part-replacements/
+part-request-history/
+part-request-comments/
+part-request-attachments/
+part-request-notifications/
+
+Acciones principales:
+
+POST /api/repairs/part-requests/{id}/submit/
+POST /api/repairs/part-requests/{id}/cancel/
+POST /api/repairs/part-requests/{id}/close/
+POST /api/repairs/part-requests/{id}/archive/
+POST /api/repairs/part-requests/{id}/restore/
+
+POST /api/repairs/part-request-items/{id}/archive/
+POST /api/repairs/part-request-items/{id}/restore/
+
+POST /api/repairs/part-withdrawals/{id}/authorize/
+POST /api/repairs/part-withdrawals/{id}/confirm-withdrawal/
+POST /api/repairs/part-withdrawals/{id}/receive/
+
+POST /api/repairs/part-deliveries/{id}/prepare/
+POST /api/repairs/part-deliveries/{id}/deliver/
+POST /api/repairs/part-deliveries/{id}/receive/
+
+POST /api/repairs/part-replacements/{id}/complete/
+
+POST /api/repairs/part-request-notifications/{id}/mark-read/
+
+==================================================
+9. RELACIONES IMPORTANTES
+==================================================
+
+RepairPartRequest:
+
+- Pertenece a Repair.
+- Tiene muchos RepairPartRequestItem.
+- Conserva estado general, prioridad y área responsable.
+- Registra solicitante, aprobación, rechazo y cierre.
+
+RepairPartRequestItem:
+
+- Pertenece a una solicitud.
+- Puede vincularse a RepairChecklistItem.
+- Puede vincularse a EquipmentComponent.
+- Puede usar ComponentInventory.
+- Puede seleccionar Equipment como máquina donante.
+- Puede seleccionar RentalEquipment cuando el equipo pertenece al módulo alquileres.
+- Cada ítem puede tener flujo y origen independiente.
+
+RepairPartSource:
+
+- Define de dónde se obtiene la parte.
+- Puede usar stock, almacén, equipo donante, compra o reparación externa.
+
+RepairPartWithdrawal:
+
+- Controla autorización y retiro físico desde una máquina o almacén.
+
+RepairPartDelivery:
+
+- Controla preparación, entrega y confirmación de recepción.
+
+RepairPartReplacement:
+
+- Controla devolución, reposición, préstamo temporal o reparación externa.
+
+==================================================
+10. PENDIENTES DEL BACKEND
+==================================================
+
+Antes de desarrollar frontend se debe probar toda la API.
+
+Pendiente principal:
+
+1. Verificar importaciones reales de todos los archivos nuevos.
+2. Probar creación de una solicitud.
+3. Probar creación de ítems.
+4. Probar envío de solicitud.
+5. Probar revisión del jefe de área.
+6. Probar decisión de gerencia.
+7. Probar selección y confirmación de origen.
+8. Probar retiro desde máquina donante.
+9. Probar entrega por logística.
+10. Probar recepción por técnico.
+11. Probar reposición.
+12. Probar comentarios y adjuntos.
+13. Probar notificaciones.
+14. Revisar permisos por grupos.
+15. Integrar con RepairComponent.
+16. Integrar con RepairChecklistItem.
+17. Crear automáticamente RepairComponent cuando una parte sea entregada o recibida.
+18. Registrar movimientos de inventario.
+19. Registrar movimientos del equipo donante.
+20. Evitar retirar partes de una máquina no autorizada.
+21. Validar disponibilidad y cantidades antes de reservar.
+22. Validar que un ítem rechazado no pueda continuar.
+23. Validar que una solicitud no cierre con reposiciones pendientes.
+24. Añadir pruebas automatizadas.
+
+==================================================
+11. INTEGRACIÓN PENDIENTE CON REPAIRCOMPONENT
+==================================================
+
+RepairComponent sigue manejando el ciclo físico del componente:
+
+- solicitado
+- reservado
+- entregado
+- instalado
+- retirado
+- devuelto
+- consumido
+- descartado
+
+La nueva solicitud administrativa debe conectarse a RepairComponent.
+
+Regla propuesta:
+
+Cuando un RepairPartRequestItem llegue a RECEIVED:
+
+- Crear o vincular un RepairComponent.
+- Asignar repair.
+- Asignar component.
+- Asignar inventory cuando exista.
+- Registrar cantidad entregada.
+- Mantener referencia al ítem de solicitud.
+
+No modificar RepairComponent hasta revisar su archivo completo y decidir el campo exacto de relación.
+
+==================================================
+12. INTEGRACIÓN PENDIENTE CON CHECKLIST
+==================================================
+
+Cuando un RepairChecklistItem tenga:
+
+- requiere cambio
+- subcomponentes seleccionados
+- cantidades
+
+Debe poder generar RepairPartRequestItem.
+
+La solicitud debe conservar:
+
+- checklist_item
+- component
+- cantidad
+- motivo técnico
+- origen checklist
+- técnico solicitante
+
+No modificar repair_checklist.py hasta revisar la lógica completa actual.
+
+==================================================
+13. PERMISOS PENDIENTES
+==================================================
+
+Se deben definir permisos por grupos Django.
+
+Técnico:
+
+- Crear solicitud.
+- Crear ítems.
+- Enviar solicitud.
+- Ver estado.
+- Confirmar recepción.
+- Agregar comentarios y evidencias.
+
+Jefe de área:
+
+- Revisar solicitudes.
+- Buscar origen.
+- Seleccionar máquina donante.
+- Proponer compra externa.
+- Solicitar información.
+- Recomendar reposición.
+
+Gerencia:
+
+- Aprobar.
+- Aprobar parcialmente.
+- Rechazar.
+- Solicitar información.
+- Autorizar decisiones económicas.
+
+Almacén / logística:
+
+- Reservar.
+- Preparar.
+- Entregar.
+- Confirmar retiro.
+- Registrar documentos.
+
+Compras:
+
+- Registrar proveedor.
+- Registrar referencia.
+- Actualizar estado de compra.
+
+Administrador:
+
+- Acceso completo.
+- Archivar y restaurar.
+
+==================================================
+14. COMANDOS UTILIZADOS EN MAC
+==================================================
+
+Ruta:
+
+cd ~/Documents/GitHub/CopierOS/backend
+
+Activar entorno virtual:
+
+source .venv/bin/activate
+
+Migraciones:
+
+python manage.py makemigrations repairs
+python manage.py migrate
+
+Validación:
+
+python manage.py check
+
+Servidor:
+
+python manage.py runserver
+
+==================================================
+15. ESTADO ACTUAL CONFIRMADO
+==================================================
+
+Entorno virtual activo.
+
+Migración aplicada:
+
+repairs.0004_repairpartrequest_repairpartrequestitem_and_more
+
+Resultado:
+
+OK
+
+Comprobación Django:
+
+System check identified no issues (0 silenced).
+
+==================================================
+16. SIGUIENTE PASO RECOMENDADO
+==================================================
+
+Continuar en backend con pruebas de API, una por una.
+
+Orden recomendado:
+
+1. Levantar servidor.
+2. Probar GET de todos los endpoints nuevos.
+3. Crear RepairPartRequest.
+4. Crear RepairPartRequestItem.
+5. Enviar solicitud.
+6. Revisar solicitud.
+7. Aprobar.
+8. Seleccionar origen.
+9. Entregar o retirar.
+10. Confirmar recepción.
+11. Crear integración con RepairComponent.
+12. Integrar checklist.
+13. Agregar permisos.
+14. Crear pruebas automatizadas.
+
+IMPORTANTE:
+
+- No crear frontend todavía.
+- No modificar RepairComponent ni RepairChecklistItem sin revisar sus archivos completos.
+- No inventar nombres de campos.
+- Probar cada flujo con datos reales antes de avanzar.
+- Trabajar los cambios uno por uno.
