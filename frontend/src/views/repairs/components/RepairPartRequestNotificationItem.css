@@ -1,0 +1,35 @@
+.part-request-notification {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e1e7ed;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.part-request-notification.unread {
+  border-color: #efb8c4;
+  background: #fff8fa;
+}
+
+.part-request-notification > button:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.part-request-notification strong {
+  color: #34475c;
+  font-size: 10px;
+}
+
+.part-request-notification small,
+.part-request-notification span {
+  color: #667588;
+  font-size: 9px;
+}

@@ -27,6 +27,7 @@ const user = getStoredUser()
 
 const profileOpen = ref(false)
 const radialMenuOpen = ref(false)
+const activeSubmenuKey = ref("")
 
 
 const navigationItems = [
@@ -115,11 +116,23 @@ const navigationItems = [
   },
   {
     key: "repairs",
-    label: "Reparaciones",
-    description: "Taller y reparación",
+    label: "Taller",
+    description: "Reparaciones y repuestos",
     color: "#e11d48",
-    comingSoon: true,
-    routeNames: [],
+    children: [
+      {
+        label: "Reparaciones",
+        path: "/reparaciones",
+      },
+      {
+        label: "Pedidos",
+        path: "/reparaciones/pedidos",
+      },
+      {
+        label: "Configuración",
+        path: "/reparaciones/configuracion",
+      },
+    ],
   },
   {
     key: "settings",
@@ -142,6 +155,15 @@ const navigationItems = [
     ],
   },
 ]
+
+
+const activeSubmenuItem = computed(() =>
+  navigationItems.find(
+    item =>
+      item.key === activeSubmenuKey.value &&
+      Array.isArray(item.children)
+  ) || null
+)
 
 
 const userName = computed(() => {
@@ -193,9 +215,23 @@ const initials = computed(() => {
 
 
 function isNavigationActive(item) {
-  return item.routeNames.includes(
-    route.name
-  )
+  if (Array.isArray(item.routeNames)) {
+    return item.routeNames.includes(
+      route.name
+    )
+  }
+
+  if (Array.isArray(item.children)) {
+    return item.children.some(
+      child =>
+        route.path === child.path ||
+        route.path.startsWith(
+          `${child.path}/`
+        )
+    )
+  }
+
+  return false
 }
 
 
@@ -204,11 +240,16 @@ function toggleRadialMenu() {
     !radialMenuOpen.value
 
   profileOpen.value = false
+
+  if (!radialMenuOpen.value) {
+    activeSubmenuKey.value = ""
+  }
 }
 
 
 function closeRadialMenu() {
   radialMenuOpen.value = false
+  activeSubmenuKey.value = ""
 }
 
 
@@ -217,6 +258,7 @@ function toggleProfileMenu() {
     !profileOpen.value
 
   radialMenuOpen.value = false
+  activeSubmenuKey.value = ""
 }
 
 
@@ -226,6 +268,18 @@ function closeProfileMenu() {
 
 
 async function selectNavigationItem(item) {
+  if (
+    Array.isArray(item.children) &&
+    item.children.length
+  ) {
+    activeSubmenuKey.value =
+      activeSubmenuKey.value === item.key
+        ? ""
+        : item.key
+
+    return
+  }
+
   closeRadialMenu()
 
   if (item.comingSoon) {
@@ -244,9 +298,17 @@ async function selectNavigationItem(item) {
 }
 
 
+async function selectSubmenuItem(child) {
+  closeRadialMenu()
+
+  await router.push(child.path)
+}
+
+
 async function logout() {
   profileOpen.value = false
   radialMenuOpen.value = false
+  activeSubmenuKey.value = ""
 
   clearSession()
 
@@ -279,6 +341,7 @@ function handleDocumentClick(event) {
 
   if (!radialContainer) {
     radialMenuOpen.value = false
+    activeSubmenuKey.value = ""
   }
 
   if (!profileContainer) {
@@ -294,6 +357,7 @@ function handleEscape(event) {
 
   radialMenuOpen.value = false
   profileOpen.value = false
+  activeSubmenuKey.value = ""
 }
 
 
@@ -302,6 +366,7 @@ watch(
   () => {
     radialMenuOpen.value = false
     profileOpen.value = false
+    activeSubmenuKey.value = ""
   }
 )
 
@@ -636,45 +701,43 @@ onBeforeUnmount(() => {
                   />
                 </svg>
 
-                <!-- Reparaciones -->
+                <!-- Taller -->
                 <svg
                   v-else-if="
                     item.key === 'repairs'
                   "
+                  class="workshop-icon"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
                 >
                   <path
-                    d="M6 2h12v6H6z"
-                  />
-
-                  <path
                     d="
-                      M5 8h14
-                      a2 2 0 0 1 2 2v5
-                      a2 2 0 0 1-2 2h-1
-                    "
-                  />
-
-                  <path
-                    d="
-                      M6 17H5
-                      a2 2 0 0 1-2-2v-5
-                      a2 2 0 0 1 2-2
+                      M8 7V5
+                      a2 2 0 0 1 2-2h4
+                      a2 2 0 0 1 2 2v2
                     "
                   />
 
                   <rect
-                    x="6"
-                    y="14"
-                    width="12"
-                    height="8"
-                    rx="1"
+                    x="3"
+                    y="7"
+                    width="18"
+                    height="13"
+                    rx="2"
                   />
 
+                  <path d="M3 12h18" />
+                  <path d="M9 12v2h6v-2" />
+
                   <path
-                    d="m9 18 2 2 4-4"
+                    d="
+                      M15.8 15.2
+                      a2.1 2.1 0 0 1-2.7 2.7
+                      l-2.6 2.6
+                    "
                   />
+
+                  <path d="M14.1 14.1l1.8 1.8" />
                 </svg>
 
                 <!-- Configuración -->
@@ -755,6 +818,45 @@ onBeforeUnmount(() => {
                 <small>{{ item.description }}</small>
               </span>
             </button>
+
+            <Transition name="radial-submenu">
+              <div
+                v-if="
+                  radialMenuOpen &&
+                  activeSubmenuItem
+                "
+                class="radial-submenu"
+              >
+                <header>
+                  <strong>
+                    {{ activeSubmenuItem.label }}
+                  </strong>
+
+                  <small>
+                    {{ activeSubmenuItem.description }}
+                  </small>
+                </header>
+
+                <button
+                  v-for="child in activeSubmenuItem.children"
+                  :key="child.path"
+                  type="button"
+                  :class="{
+                    active:
+                      route.path === child.path ||
+                      route.path.startsWith(
+                        `${child.path}/`
+                      ),
+                  }"
+                  @click.stop="
+                    selectSubmenuItem(child)
+                  "
+                >
+                  <span>{{ child.label }}</span>
+                  <strong>›</strong>
+                </button>
+              </div>
+            </Transition>
           </div>
         </div>
 

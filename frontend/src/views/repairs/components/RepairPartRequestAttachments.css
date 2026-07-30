@@ -1,0 +1,65 @@
+.part-request-attachments {
+  padding: 16px;
+  border: 1px solid #e1e7ed;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.part-request-attachments > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #edf1f4;
+}
+
+.part-request-attachments > header strong {
+  color: #31445a;
+  font-size: 13px;
+}
+
+.part-request-attachments > header button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #e11d48;
+  border-radius: 9px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.part-request-attachments__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.part-request-attachments__list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.part-request-attachments__list article > button:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid #e1e7ed;
+  border-radius: 10px;
+  background: #fbfcfd;
+  text-align: left;
+}
+
+.part-request-attachments__list strong {
+  color: #34475c;
+  font-size: 10px;
+}
+
+.part-request-attachments__list small {
+  color: #8995a3;
+  font-size: 8px;
+}

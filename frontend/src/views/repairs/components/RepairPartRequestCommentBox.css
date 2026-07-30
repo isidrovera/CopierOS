@@ -1,0 +1,49 @@
+.part-request-comment-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #e1e7ed;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.part-request-comment-box select,
+.part-request-comment-box textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d9e2e9;
+  border-radius: 10px;
+  background: #fbfcfd;
+  color: #33455a;
+  font: inherit;
+  font-size: 12px;
+}
+
+.part-request-comment-box textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.part-request-comment-box footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.part-request-comment-box footer label {
+  color: #667588;
+  font-size: 10px;
+}
+
+.part-request-comment-box button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid #e11d48;
+  border-radius: 9px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 750;
+}

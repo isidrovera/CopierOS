@@ -1,0 +1,30 @@
+.repair-part-delivery-card {
+  padding: 14px;
+  border: 1px solid #e1e7ed;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.repair-part-delivery-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.repair-part-delivery-card header strong {
+  color: #34475c;
+  font-size: 12px;
+}
+
+.repair-part-delivery-card > div {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+
+.repair-part-delivery-card small {
+  color: #8995a3;
+  font-size: 9px;
+}

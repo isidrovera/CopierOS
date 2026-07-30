@@ -31,6 +31,42 @@ const SNMP_VALIDATIONS_URL =
 const STATUS_HISTORY_URL =
   `${API_ROOT}/status-history`
 
+const PART_REQUESTS_URL =
+  `${API_ROOT}/part-requests`
+
+const PART_REQUEST_ITEMS_URL =
+  `${API_ROOT}/part-request-items`
+
+const PART_REQUEST_REVIEWS_URL =
+  `${API_ROOT}/part-request-reviews`
+
+const PART_REQUEST_DECISIONS_URL =
+  `${API_ROOT}/part-request-decisions`
+
+const PART_SOURCES_URL =
+  `${API_ROOT}/part-sources`
+
+const PART_WITHDRAWALS_URL =
+  `${API_ROOT}/part-withdrawals`
+
+const PART_DELIVERIES_URL =
+  `${API_ROOT}/part-deliveries`
+
+const PART_REPLACEMENTS_URL =
+  `${API_ROOT}/part-replacements`
+
+const PART_REQUEST_COMMENTS_URL =
+  `${API_ROOT}/part-request-comments`
+
+const PART_REQUEST_ATTACHMENTS_URL =
+  `${API_ROOT}/part-request-attachments`
+
+const PART_REQUEST_HISTORY_URL =
+  `${API_ROOT}/part-request-history`
+
+const PART_REQUEST_NOTIFICATIONS_URL =
+  `${API_ROOT}/part-request-notifications`
+
 
 import {
   clearSession,
@@ -2317,3 +2353,1103 @@ export async function getRepairStatusHistoryItem(
     historyId
   )
 }
+
+
+/* ============================================================= */
+/* SOLICITUDES DE PARTES Y REPUESTOS                             */
+/* ============================================================= */
+
+export async function getRepairPartRequests({
+  search = "",
+  includeArchived = false,
+  repair = "",
+  status = "",
+  priority = "",
+  requestedBy = "",
+  currentResponsibleArea = "",
+  currentResponsibleUser = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(
+    params,
+    "search",
+    search
+  )
+
+  addArchivedParam(
+    params,
+    includeArchived
+  )
+
+  addParam(
+    params,
+    "repair",
+    repair
+  )
+
+  addParam(
+    params,
+    "status",
+    status
+  )
+
+  addParam(
+    params,
+    "priority",
+    priority
+  )
+
+  addParam(
+    params,
+    "requested_by",
+    requestedBy
+  )
+
+  addParam(
+    params,
+    "current_responsible_area",
+    currentResponsibleArea
+  )
+
+  addParam(
+    params,
+    "current_responsible_user",
+    currentResponsibleUser
+  )
+
+  addParam(
+    params,
+    "ordering",
+    ordering
+  )
+
+  return request(
+    buildUrl(
+      `${PART_REQUESTS_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartRequest(
+  requestId
+) {
+  return getResource(
+    PART_REQUESTS_URL,
+    requestId
+  )
+}
+
+
+export async function createRepairPartRequest(
+  requestData
+) {
+  return createResource(
+    PART_REQUESTS_URL,
+    requestData
+  )
+}
+
+
+export async function updateRepairPartRequest(
+  requestId,
+  requestData
+) {
+  return updateResource(
+    PART_REQUESTS_URL,
+    requestId,
+    requestData
+  )
+}
+
+
+export async function deleteRepairPartRequest(
+  requestId
+) {
+  return deleteResource(
+    PART_REQUESTS_URL,
+    requestId
+  )
+}
+
+
+export async function submitRepairPartRequest(
+  requestId,
+  submitData = {}
+) {
+  return resourceAction(
+    PART_REQUESTS_URL,
+    requestId,
+    "submit",
+    submitData
+  )
+}
+
+
+export async function cancelRepairPartRequest(
+  requestId,
+  cancellationData
+) {
+  return resourceAction(
+    PART_REQUESTS_URL,
+    requestId,
+    "cancel",
+    cancellationData
+  )
+}
+
+
+export async function closeRepairPartRequest(
+  requestId,
+  closeData = {}
+) {
+  return resourceAction(
+    PART_REQUESTS_URL,
+    requestId,
+    "close",
+    closeData
+  )
+}
+
+
+export async function archiveRepairPartRequest(
+  requestId,
+  reason = ""
+) {
+  return resourceAction(
+    PART_REQUESTS_URL,
+    requestId,
+    "archive",
+    {
+      reason,
+    }
+  )
+}
+
+
+export async function restoreRepairPartRequest(
+  requestId
+) {
+  return resourceAction(
+    PART_REQUESTS_URL,
+    requestId,
+    "restore"
+  )
+}
+
+
+/* ============================================================= */
+/* ÍTEMS DE SOLICITUDES DE PARTES                                */
+/* ============================================================= */
+
+export async function getRepairPartRequestItems({
+  search = "",
+  includeArchived = false,
+  request: requestId = "",
+  repair = "",
+  status = "",
+  urgency = "",
+  approvalRoute = "",
+  sourceType = "",
+  component = "",
+  requestedBy = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "request", requestId)
+  addParam(params, "repair", repair)
+  addParam(params, "status", status)
+  addParam(params, "urgency", urgency)
+  addParam(
+    params,
+    "approval_route",
+    approvalRoute
+  )
+  addParam(
+    params,
+    "source_type",
+    sourceType
+  )
+  addParam(params, "component", component)
+  addParam(
+    params,
+    "requested_by",
+    requestedBy
+  )
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_REQUEST_ITEMS_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartRequestItem(
+  itemId
+) {
+  return getResource(
+    PART_REQUEST_ITEMS_URL,
+    itemId
+  )
+}
+
+
+export async function createRepairPartRequestItem(
+  itemData
+) {
+  return createResource(
+    PART_REQUEST_ITEMS_URL,
+    itemData
+  )
+}
+
+
+export async function updateRepairPartRequestItem(
+  itemId,
+  itemData
+) {
+  return updateResource(
+    PART_REQUEST_ITEMS_URL,
+    itemId,
+    itemData
+  )
+}
+
+
+export async function deleteRepairPartRequestItem(
+  itemId
+) {
+  return deleteResource(
+    PART_REQUEST_ITEMS_URL,
+    itemId
+  )
+}
+
+
+export async function archiveRepairPartRequestItem(
+  itemId,
+  reason = ""
+) {
+  return resourceAction(
+    PART_REQUEST_ITEMS_URL,
+    itemId,
+    "archive",
+    {
+      reason,
+    }
+  )
+}
+
+
+export async function restoreRepairPartRequestItem(
+  itemId
+) {
+  return resourceAction(
+    PART_REQUEST_ITEMS_URL,
+    itemId,
+    "restore"
+  )
+}
+
+
+/* ============================================================= */
+/* REVISIONES DEL JEFE DE ÁREA                                   */
+/* ============================================================= */
+
+export async function getRepairPartRequestReviews({
+  search = "",
+  includeArchived = false,
+  item = "",
+  request: requestId = "",
+  result = "",
+  reviewedBy = "",
+  isCurrent = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "item", item)
+  addParam(params, "request", requestId)
+  addParam(params, "result", result)
+  addParam(
+    params,
+    "reviewed_by",
+    reviewedBy
+  )
+  addBooleanParam(
+    params,
+    "is_current",
+    isCurrent
+  )
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_REQUEST_REVIEWS_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartRequestReview(
+  reviewId
+) {
+  return getResource(
+    PART_REQUEST_REVIEWS_URL,
+    reviewId
+  )
+}
+
+
+export async function createRepairPartRequestReview(
+  reviewData
+) {
+  return createResource(
+    PART_REQUEST_REVIEWS_URL,
+    reviewData
+  )
+}
+
+
+/* ============================================================= */
+/* DECISIONES DE GERENCIA                                        */
+/* ============================================================= */
+
+export async function getRepairPartRequestDecisions({
+  search = "",
+  includeArchived = false,
+  request: requestId = "",
+  item = "",
+  decision = "",
+  decidedBy = "",
+  isFinal = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "request", requestId)
+  addParam(params, "item", item)
+  addParam(params, "decision", decision)
+  addParam(
+    params,
+    "decided_by",
+    decidedBy
+  )
+  addBooleanParam(
+    params,
+    "is_final",
+    isFinal
+  )
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_REQUEST_DECISIONS_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartRequestDecision(
+  decisionId
+) {
+  return getResource(
+    PART_REQUEST_DECISIONS_URL,
+    decisionId
+  )
+}
+
+
+export async function createRepairPartRequestDecision(
+  decisionData
+) {
+  return createResource(
+    PART_REQUEST_DECISIONS_URL,
+    decisionData
+  )
+}
+
+
+/* ============================================================= */
+/* ORÍGENES DE PARTES                                            */
+/* ============================================================= */
+
+export async function getRepairPartSources({
+  search = "",
+  includeArchived = false,
+  item = "",
+  request: requestId = "",
+  sourceType = "",
+  inventory = "",
+  donorEquipment = "",
+  rentalWarehouse = "",
+  isConfirmed = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "item", item)
+  addParam(params, "request", requestId)
+  addParam(
+    params,
+    "source_type",
+    sourceType
+  )
+  addParam(params, "inventory", inventory)
+  addParam(
+    params,
+    "donor_equipment",
+    donorEquipment
+  )
+  addParam(
+    params,
+    "rental_warehouse",
+    rentalWarehouse
+  )
+  addBooleanParam(
+    params,
+    "is_confirmed",
+    isConfirmed
+  )
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_SOURCES_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartSource(
+  sourceId
+) {
+  return getResource(
+    PART_SOURCES_URL,
+    sourceId
+  )
+}
+
+
+export async function createRepairPartSource(
+  sourceData
+) {
+  return createResource(
+    PART_SOURCES_URL,
+    sourceData
+  )
+}
+
+
+export async function updateRepairPartSource(
+  sourceId,
+  sourceData
+) {
+  return updateResource(
+    PART_SOURCES_URL,
+    sourceId,
+    sourceData
+  )
+}
+
+
+/* ============================================================= */
+/* RETIROS DE PARTES                                             */
+/* ============================================================= */
+
+export async function getRepairPartWithdrawals({
+  search = "",
+  includeArchived = false,
+  item = "",
+  request: requestId = "",
+  status = "",
+  authorizedPerson = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "item", item)
+  addParam(params, "request", requestId)
+  addParam(params, "status", status)
+  addParam(
+    params,
+    "authorized_person",
+    authorizedPerson
+  )
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_WITHDRAWALS_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartWithdrawal(
+  withdrawalId
+) {
+  return getResource(
+    PART_WITHDRAWALS_URL,
+    withdrawalId
+  )
+}
+
+
+export async function createRepairPartWithdrawal(
+  withdrawalData
+) {
+  return createResource(
+    PART_WITHDRAWALS_URL,
+    withdrawalData
+  )
+}
+
+
+export async function authorizeRepairPartWithdrawal(
+  withdrawalId,
+  authorizationData
+) {
+  return resourceAction(
+    PART_WITHDRAWALS_URL,
+    withdrawalId,
+    "authorize",
+    authorizationData
+  )
+}
+
+
+export async function confirmRepairPartWithdrawal(
+  withdrawalId,
+  confirmationData = {}
+) {
+  return resourceAction(
+    PART_WITHDRAWALS_URL,
+    withdrawalId,
+    "confirm-withdrawal",
+    confirmationData
+  )
+}
+
+
+export async function receiveRepairPartWithdrawal(
+  withdrawalId,
+  receptionData = {}
+) {
+  return resourceAction(
+    PART_WITHDRAWALS_URL,
+    withdrawalId,
+    "receive",
+    receptionData
+  )
+}
+
+
+/* ============================================================= */
+/* ENTREGAS DE PARTES                                            */
+/* ============================================================= */
+
+export async function getRepairPartDeliveries({
+  search = "",
+  includeArchived = false,
+  item = "",
+  request: requestId = "",
+  status = "",
+  deliveredTo = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "item", item)
+  addParam(params, "request", requestId)
+  addParam(params, "status", status)
+  addParam(
+    params,
+    "delivered_to",
+    deliveredTo
+  )
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_DELIVERIES_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartDelivery(
+  deliveryId
+) {
+  return getResource(
+    PART_DELIVERIES_URL,
+    deliveryId
+  )
+}
+
+
+export async function createRepairPartDelivery(
+  deliveryData
+) {
+  return createResource(
+    PART_DELIVERIES_URL,
+    deliveryData
+  )
+}
+
+
+export async function prepareRepairPartDelivery(
+  deliveryId,
+  preparationData = {}
+) {
+  return resourceAction(
+    PART_DELIVERIES_URL,
+    deliveryId,
+    "prepare",
+    preparationData
+  )
+}
+
+
+export async function deliverRepairPart(
+  deliveryId,
+  deliveryData
+) {
+  return resourceAction(
+    PART_DELIVERIES_URL,
+    deliveryId,
+    "deliver",
+    deliveryData
+  )
+}
+
+
+export async function receiveRepairPartDelivery(
+  deliveryId,
+  receptionData
+) {
+  return resourceAction(
+    PART_DELIVERIES_URL,
+    deliveryId,
+    "receive",
+    receptionData
+  )
+}
+
+
+/* ============================================================= */
+/* REPOSICIONES                                                  */
+/* ============================================================= */
+
+export async function getRepairPartReplacements({
+  search = "",
+  includeArchived = false,
+  item = "",
+  request: requestId = "",
+  status = "",
+  replacementType = "",
+  sourceEquipment = "",
+  responsibleUser = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "item", item)
+  addParam(params, "request", requestId)
+  addParam(params, "status", status)
+  addParam(
+    params,
+    "replacement_type",
+    replacementType
+  )
+  addParam(
+    params,
+    "source_equipment",
+    sourceEquipment
+  )
+  addParam(
+    params,
+    "responsible_user",
+    responsibleUser
+  )
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_REPLACEMENTS_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartReplacement(
+  replacementId
+) {
+  return getResource(
+    PART_REPLACEMENTS_URL,
+    replacementId
+  )
+}
+
+
+export async function createRepairPartReplacement(
+  replacementData
+) {
+  return createResource(
+    PART_REPLACEMENTS_URL,
+    replacementData
+  )
+}
+
+
+export async function updateRepairPartReplacement(
+  replacementId,
+  replacementData
+) {
+  return updateResource(
+    PART_REPLACEMENTS_URL,
+    replacementId,
+    replacementData
+  )
+}
+
+
+export async function completeRepairPartReplacement(
+  replacementId,
+  completionData = {}
+) {
+  return resourceAction(
+    PART_REPLACEMENTS_URL,
+    replacementId,
+    "complete",
+    completionData
+  )
+}
+
+
+/* ============================================================= */
+/* COMENTARIOS                                                   */
+/* ============================================================= */
+
+export async function getRepairPartRequestComments({
+  search = "",
+  includeArchived = false,
+  request: requestId = "",
+  item = "",
+  author = "",
+  commentType = "",
+  isInternal = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "request", requestId)
+  addParam(params, "item", item)
+  addParam(params, "author", author)
+  addParam(
+    params,
+    "comment_type",
+    commentType
+  )
+  addBooleanParam(
+    params,
+    "is_internal",
+    isInternal
+  )
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_REQUEST_COMMENTS_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartRequestComment(
+  commentId
+) {
+  return getResource(
+    PART_REQUEST_COMMENTS_URL,
+    commentId
+  )
+}
+
+
+export async function createRepairPartRequestComment(
+  commentData
+) {
+  return createResource(
+    PART_REQUEST_COMMENTS_URL,
+    commentData
+  )
+}
+
+
+export async function deleteRepairPartRequestComment(
+  commentId
+) {
+  return deleteResource(
+    PART_REQUEST_COMMENTS_URL,
+    commentId
+  )
+}
+
+
+/* ============================================================= */
+/* ADJUNTOS                                                      */
+/* ============================================================= */
+
+export function buildRepairPartRequestAttachmentFormData(
+  attachmentData
+) {
+  const formData =
+    new FormData()
+
+  for (
+    const [
+      key,
+      value,
+    ]
+    of Object.entries(
+      attachmentData || {}
+    )
+  ) {
+    if (
+      value === undefined ||
+      value === null ||
+      value === ""
+    ) {
+      continue
+    }
+
+    formData.append(
+      key,
+      value
+    )
+  }
+
+  return formData
+}
+
+
+export async function getRepairPartRequestAttachments({
+  search = "",
+  includeArchived = false,
+  request: requestId = "",
+  item = "",
+  attachmentType = "",
+  uploadedBy = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "request", requestId)
+  addParam(params, "item", item)
+  addParam(
+    params,
+    "attachment_type",
+    attachmentType
+  )
+  addParam(
+    params,
+    "uploaded_by",
+    uploadedBy
+  )
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_REQUEST_ATTACHMENTS_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartRequestAttachment(
+  attachmentId
+) {
+  return getResource(
+    PART_REQUEST_ATTACHMENTS_URL,
+    attachmentId
+  )
+}
+
+
+export async function createRepairPartRequestAttachment(
+  attachmentData
+) {
+  const formData =
+    attachmentData instanceof FormData
+      ? attachmentData
+      : buildRepairPartRequestAttachmentFormData(
+          attachmentData
+        )
+
+  return request(
+    `${PART_REQUEST_ATTACHMENTS_URL}/`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  )
+}
+
+
+export async function deleteRepairPartRequestAttachment(
+  attachmentId
+) {
+  return deleteResource(
+    PART_REQUEST_ATTACHMENTS_URL,
+    attachmentId
+  )
+}
+
+
+/* ============================================================= */
+/* HISTORIAL DE SOLICITUDES                                      */
+/* ============================================================= */
+
+export async function getRepairPartRequestHistory({
+  search = "",
+  includeArchived = false,
+  request: requestId = "",
+  item = "",
+  event = "",
+  changedBy = "",
+  source = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "request", requestId)
+  addParam(params, "item", item)
+  addParam(params, "event", event)
+  addParam(
+    params,
+    "changed_by",
+    changedBy
+  )
+  addParam(params, "source", source)
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_REQUEST_HISTORY_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartRequestHistoryItem(
+  historyId
+) {
+  return getResource(
+    PART_REQUEST_HISTORY_URL,
+    historyId
+  )
+}
+
+
+/* ============================================================= */
+/* NOTIFICACIONES DE SOLICITUDES                                 */
+/* ============================================================= */
+
+export async function getRepairPartRequestNotifications({
+  search = "",
+  includeArchived = false,
+  request: requestId = "",
+  item = "",
+  event = "",
+  channel = "",
+  status = "",
+  ordering = "",
+} = {}) {
+  const params =
+    new URLSearchParams()
+
+  addParam(params, "search", search)
+  addArchivedParam(params, includeArchived)
+  addParam(params, "request", requestId)
+  addParam(params, "item", item)
+  addParam(params, "event", event)
+  addParam(params, "channel", channel)
+  addParam(params, "status", status)
+  addParam(params, "ordering", ordering)
+
+  return request(
+    buildUrl(
+      `${PART_REQUEST_NOTIFICATIONS_URL}/`,
+      params
+    )
+  )
+}
+
+
+export async function getRepairPartRequestNotification(
+  notificationId
+) {
+  return getResource(
+    PART_REQUEST_NOTIFICATIONS_URL,
+    notificationId
+  )
+}
+
+
+export async function markRepairPartRequestNotificationRead(
+  notificationId
+) {
+  return resourceAction(
+    PART_REQUEST_NOTIFICATIONS_URL,
+    notificationId,
+    "mark-read"
+  )
+}
+

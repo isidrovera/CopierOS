@@ -1,0 +1,36 @@
+.part-request-decision-panel {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #e1e7ed;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.part-request-decision-panel select,
+.part-request-decision-panel input,
+.part-request-decision-panel textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d9e2e9;
+  border-radius: 10px;
+  background: #fbfcfd;
+  font: inherit;
+  font-size: 12px;
+}
+
+.part-request-decision-panel textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.part-request-decision-panel button {
+  min-height: 39px;
+  border: 1px solid #52a176;
+  border-radius: 9px;
+  background: #edf9f2;
+  color: #27784e;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+}

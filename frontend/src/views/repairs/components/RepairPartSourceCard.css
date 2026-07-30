@@ -1,0 +1,39 @@
+.repair-part-source-card {
+  padding: 14px;
+  border: 1px solid #e1e7ed;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.repair-part-source-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.repair-part-source-card header strong {
+  color: #34475c;
+  font-size: 12px;
+}
+
+.repair-part-source-card header span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #edf1f4;
+  color: #687585;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.repair-part-source-card > div {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+
+.repair-part-source-card small {
+  color: #8995a3;
+  font-size: 9px;
+}

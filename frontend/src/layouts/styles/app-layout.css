@@ -1019,3 +1019,115 @@ button {
       0.01ms !important;
   }
 }
+
+/* ============================================================= */
+/* ICONO DEL MÓDULO TALLER                                       */
+/* ============================================================= */
+
+.radial-item-icon .workshop-icon {
+  width: 25px;
+  height: 25px;
+  stroke-width: 1.85;
+}
+
+/* ============================================================= */
+/* SUBMENÚ DEL MÓDULO TALLER                                     */
+/* ============================================================= */
+
+.radial-submenu {
+  position: absolute;
+  z-index: 12;
+  top: 215px;
+  left: 105px;
+  width: 220px;
+  overflow: hidden;
+  border: 1px solid #efb8c4;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow:
+    0 18px 38px rgba(31, 50, 73, 0.18);
+}
+
+.radial-submenu > header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 13px;
+  border-bottom: 1px solid #f2dce2;
+  background:
+    linear-gradient(
+      135deg,
+      #fff6f8,
+      #fff
+    );
+}
+
+.radial-submenu > header strong {
+  color: #be123c;
+  font-size: 12px;
+}
+
+.radial-submenu > header small {
+  color: #8a6670;
+  font-size: 8px;
+}
+
+.radial-submenu > button {
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 13px;
+  border-bottom: 1px solid #f2eef0;
+  background: transparent;
+  color: #526174;
+  font-size: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    padding-left 0.18s ease;
+}
+
+.radial-submenu > button:last-child {
+  border-bottom: 0;
+}
+
+.radial-submenu > button:hover,
+.radial-submenu > button.active {
+  padding-left: 17px;
+  background: #fff1f4;
+  color: #be123c;
+}
+
+.radial-submenu > button strong {
+  color: inherit;
+  font-size: 16px;
+}
+
+.radial-submenu-enter-active,
+.radial-submenu-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.radial-submenu-enter-from,
+.radial-submenu-leave-to {
+  opacity: 0;
+  transform:
+    translateX(-8px)
+    scale(0.97);
+}
+
+@media (max-width: 700px) {
+  .radial-submenu {
+    top: 195px;
+    left: 72px;
+    width: 205px;
+  }
+}
+

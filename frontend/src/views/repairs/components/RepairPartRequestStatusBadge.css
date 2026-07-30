@@ -1,0 +1,65 @@
+.part-request-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 24px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #edf1f4;
+  color: #687585;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.part-request-status.draft,
+.part-request-status.submitted {
+  background: #fff3e5;
+  color: #a76625;
+}
+
+.part-request-status.in_review,
+.part-request-status.pending_area_review,
+.part-request-status.source_evaluation,
+.part-request-status.pending_management,
+.part-request-status.information_requested {
+  background: #e9f1f8;
+  color: #326f9a;
+}
+
+.part-request-status.approved,
+.part-request-status.partially_approved,
+.part-request-status.partially_attended,
+.part-request-status.attended,
+.part-request-status.authorized_for_withdrawal,
+.part-request-status.withdrawn,
+.part-request-status.prepared,
+.part-request-status.delivered,
+.part-request-status.received,
+.part-request-status.installed,
+.part-request-status.completed,
+.part-request-status.closed {
+  background: #e7f6ed;
+  color: #277d4c;
+}
+
+.part-request-status.pending_reservation,
+.part-request-status.pending_purchase,
+.part-request-status.pending_external_repair,
+.part-request-status.pending_withdrawal,
+.part-request-status.pending_logistics,
+.part-request-status.pending_return,
+.part-request-status.pending_replacement {
+  background: #fff2d9;
+  color: #9e691d;
+}
+
+.part-request-status.rejected,
+.part-request-status.cancelled,
+.part-request-status.failed,
+.part-request-status.overdue {
+  background: #fff0ed;
+  color: #ae4f43;
+}

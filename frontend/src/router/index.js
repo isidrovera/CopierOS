@@ -23,6 +23,10 @@ import PartnersListView from "../views/partners/PartnersListView.vue"
 import RepairDetailView from "../views/repairs/RepairDetailView.vue"
 import RepairFormView from "../views/repairs/RepairFormView.vue"
 import RepairsListView from "../views/repairs/RepairsListView.vue"
+import RepairPartRequestsListView from "../views/repairs/RepairPartRequestsListView.vue"
+import RepairPartRequestFormView from "../views/repairs/RepairPartRequestFormView.vue"
+import RepairPartRequestDetailView from "../views/repairs/RepairPartRequestDetailView.vue"
+import RepairSettingsView from "../views/repairs/RepairSettingsView.vue"
 
 import SecurityView from "../views/security/SecurityView.vue"
 
@@ -278,6 +282,56 @@ const routes = [
         meta: {
           requiresAuth: true,
           title: "Editar reparación",
+        },
+      },
+
+      /* ========================================================= */
+      /* PEDIDOS DE REPUESTOS DE REPARACIONES                     */
+      /* ========================================================= */
+
+      {
+        path: "reparaciones/pedidos",
+        name: "repair-part-requests",
+        component: RepairPartRequestsListView,
+        meta: {
+          requiresAuth: true,
+          title: "Pedidos de repuestos",
+        },
+      },
+      {
+        path: "reparaciones/pedidos/nuevo",
+        name: "repair-part-request-create",
+        component: RepairPartRequestFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Nueva solicitud de repuestos",
+        },
+      },
+      {
+        path: "reparaciones/pedidos/:id",
+        name: "repair-part-request-detail",
+        component: RepairPartRequestDetailView,
+        meta: {
+          requiresAuth: true,
+          title: "Detalle de solicitud de repuestos",
+        },
+      },
+      {
+        path: "reparaciones/pedidos/:id/editar",
+        name: "repair-part-request-edit",
+        component: RepairPartRequestFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Editar solicitud de repuestos",
+        },
+      },
+      {
+        path: "reparaciones/configuracion",
+        name: "repair-settings",
+        component: RepairSettingsView,
+        meta: {
+          requiresAuth: true,
+          title: "Configuración de reparaciones",
         },
       },
 

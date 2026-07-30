@@ -1,0 +1,107 @@
+.repair-module-menu {
+  position: absolute;
+  z-index: 60;
+  top: 74px;
+  left: 18px;
+  width: min(360px, calc(100vw - 36px));
+  overflow: hidden;
+  border: 1px solid #e1e7ed;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgb(24 39 56 / 22%);
+}
+
+.repair-module-menu__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 17px;
+  border-bottom: 1px solid #edf1f4;
+}
+
+.repair-module-menu__header div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.repair-module-menu__header span {
+  color: #e11d48;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.repair-module-menu__header strong {
+  color: #26384d;
+  font-size: 15px;
+}
+
+.repair-module-menu__header button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e3e8ed;
+  border-radius: 9px;
+  background: #fff;
+  color: #667588;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.repair-module-menu__options {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px;
+}
+
+.repair-module-menu__options button {
+  width: 100%;
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repair-module-menu__options button:hover,
+.repair-module-menu__options button.active {
+  border-color: #efb8c4;
+  background: #fff1f4;
+}
+
+.repair-module-menu__content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.repair-module-menu__content strong {
+  color: #33465b;
+  font-size: 12px;
+}
+
+.repair-module-menu__content small {
+  color: #83909f;
+  font-size: 9px;
+}
+
+.repair-module-menu-enter-active,
+.repair-module-menu-leave-active {
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.repair-module-menu-enter-from,
+.repair-module-menu-leave-to {
+  opacity: 0;
+  transform: translateY(-7px) scale(.98);
+}

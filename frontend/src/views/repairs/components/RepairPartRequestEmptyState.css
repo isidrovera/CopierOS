@@ -1,0 +1,25 @@
+.part-request-empty-state {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 28px;
+  border: 1px dashed #ced9e1;
+  border-radius: 13px;
+  background: #fbfcfd;
+  text-align: center;
+}
+
+.part-request-empty-state strong {
+  color: #34445a;
+  font-size: 14px;
+}
+
+.part-request-empty-state p {
+  max-width: 430px;
+  margin: 6px 0 15px;
+  color: #8995a3;
+  font-size: 11px;
+  line-height: 1.5;
+}

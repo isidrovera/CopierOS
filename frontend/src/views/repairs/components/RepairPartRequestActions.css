@@ -1,0 +1,38 @@
+.part-request-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.part-request-actions button {
+  min-height: 39px;
+  padding: 0 13px;
+  border: 1px solid #d9e1e8;
+  border-radius: 9px;
+  background: #fff;
+  color: #526174;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.part-request-actions .primary {
+  border-color: #e11d48;
+  background: #e11d48;
+  color: #fff;
+}
+
+.part-request-actions .success {
+  border-color: #52a176;
+  background: #edf9f2;
+  color: #27784e;
+}
+
+.part-request-actions .danger {
+  border-color: #efc4c4;
+  background: #fff6f6;
+  color: #a64545;
+}
