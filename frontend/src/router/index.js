@@ -26,6 +26,7 @@ import RepairsListView from "../views/repairs/RepairsListView.vue"
 import RepairPartRequestsListView from "../views/repairs/RepairPartRequestsListView.vue"
 import RepairPartRequestFormView from "../views/repairs/RepairPartRequestFormView.vue"
 import RepairPartRequestDetailView from "../views/repairs/RepairPartRequestDetailView.vue"
+import RepairPartRequestItemDetailView from "../views/repairs/RepairPartRequestItemDetailView.vue"
 import RepairSettingsView from "../views/repairs/RepairSettingsView.vue"
 
 import SecurityView from "../views/security/SecurityView.vue"
@@ -194,26 +195,136 @@ const routes = [
         },
       },
 
-
       /* ========================================================= */
       /* ALQUILERES                                                */
       /* ========================================================= */
 
-      { path: "alquileres", name: "rentals-dashboard", component: RentalsDashboardView, meta: { requiresAuth: true, title: "Alquileres" } },
-      { path: "alquileres/equipos", name: "rental-equipment-list", component: RentalEquipmentListView, meta: { requiresAuth: true, title: "Flota de alquiler" } },
-      { path: "alquileres/equipos/nuevo", name: "rental-equipment-create", component: RentalEquipmentFormView, meta: { requiresAuth: true, title: "Nuevo equipo de alquiler" } },
-      { path: "alquileres/equipos/:id/editar", name: "rental-equipment-edit", component: RentalEquipmentFormView, meta: { requiresAuth: true, title: "Editar equipo de alquiler" } },
-      { path: "alquileres/contratos", name: "rental-contract-list", component: RentalContractListView, meta: { requiresAuth: true, title: "Contratos de alquiler" } },
-      { path: "alquileres/contratos/nuevo", name: "rental-contract-create", component: RentalContractFormView, meta: { requiresAuth: true, title: "Nuevo contrato" } },
-      { path: "alquileres/contratos/:id/editar", name: "rental-contract-edit", component: RentalContractFormView, meta: { requiresAuth: true, title: "Editar contrato" } },
-      { path: "alquileres/asignaciones", name: "rental-assignment-list", component: RentalAssignmentListView, meta: { requiresAuth: true, title: "Asignaciones de alquiler" } },
-      { path: "alquileres/asignaciones/nueva", name: "rental-assignment-create", component: RentalAssignmentFormView, meta: { requiresAuth: true, title: "Nueva asignación" } },
-      { path: "alquileres/asignaciones/:id/editar", name: "rental-assignment-edit", component: RentalAssignmentFormView, meta: { requiresAuth: true, title: "Editar asignación" } },
-      { path: "alquileres/almacenes", name: "rental-warehouse-list", component: RentalWarehouseListView, meta: { requiresAuth: true, title: "Almacenes de alquiler" } },
-      { path: "alquileres/almacenes/nuevo", name: "rental-warehouse-create", component: RentalWarehouseFormView, meta: { requiresAuth: true, title: "Nuevo almacén" } },
-      { path: "alquileres/almacenes/:id/editar", name: "rental-warehouse-edit", component: RentalWarehouseFormView, meta: { requiresAuth: true, title: "Editar almacén" } },
-      { path: "alquileres/operaciones", name: "rental-operations", component: RentalOperationsView, meta: { requiresAuth: true, title: "Operaciones de alquiler" } },
-
+      {
+        path: "alquileres",
+        name: "rentals-dashboard",
+        component: RentalsDashboardView,
+        meta: {
+          requiresAuth: true,
+          title: "Alquileres",
+        },
+      },
+      {
+        path: "alquileres/equipos",
+        name: "rental-equipment-list",
+        component: RentalEquipmentListView,
+        meta: {
+          requiresAuth: true,
+          title: "Flota de alquiler",
+        },
+      },
+      {
+        path: "alquileres/equipos/nuevo",
+        name: "rental-equipment-create",
+        component: RentalEquipmentFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Nuevo equipo de alquiler",
+        },
+      },
+      {
+        path: "alquileres/equipos/:id/editar",
+        name: "rental-equipment-edit",
+        component: RentalEquipmentFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Editar equipo de alquiler",
+        },
+      },
+      {
+        path: "alquileres/contratos",
+        name: "rental-contract-list",
+        component: RentalContractListView,
+        meta: {
+          requiresAuth: true,
+          title: "Contratos de alquiler",
+        },
+      },
+      {
+        path: "alquileres/contratos/nuevo",
+        name: "rental-contract-create",
+        component: RentalContractFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Nuevo contrato",
+        },
+      },
+      {
+        path: "alquileres/contratos/:id/editar",
+        name: "rental-contract-edit",
+        component: RentalContractFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Editar contrato",
+        },
+      },
+      {
+        path: "alquileres/asignaciones",
+        name: "rental-assignment-list",
+        component: RentalAssignmentListView,
+        meta: {
+          requiresAuth: true,
+          title: "Asignaciones de alquiler",
+        },
+      },
+      {
+        path: "alquileres/asignaciones/nueva",
+        name: "rental-assignment-create",
+        component: RentalAssignmentFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Nueva asignación",
+        },
+      },
+      {
+        path: "alquileres/asignaciones/:id/editar",
+        name: "rental-assignment-edit",
+        component: RentalAssignmentFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Editar asignación",
+        },
+      },
+      {
+        path: "alquileres/almacenes",
+        name: "rental-warehouse-list",
+        component: RentalWarehouseListView,
+        meta: {
+          requiresAuth: true,
+          title: "Almacenes de alquiler",
+        },
+      },
+      {
+        path: "alquileres/almacenes/nuevo",
+        name: "rental-warehouse-create",
+        component: RentalWarehouseFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Nuevo almacén",
+        },
+      },
+      {
+        path: "alquileres/almacenes/:id/editar",
+        name: "rental-warehouse-edit",
+        component: RentalWarehouseFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Editar almacén",
+        },
+      },
+      {
+        path: "alquileres/operaciones",
+        name: "rental-operations",
+        component: RentalOperationsView,
+        meta: {
+          requiresAuth: true,
+          title: "Operaciones de alquiler",
+        },
+      },
 
       /* ========================================================= */
       /* ÓRDENES DE SERVICIO                                      */
@@ -223,25 +334,37 @@ const routes = [
         path: "servicios",
         name: "service-orders",
         component: ServiceOrdersListView,
-        meta: { requiresAuth: true, title: "Órdenes de servicio" },
+        meta: {
+          requiresAuth: true,
+          title: "Órdenes de servicio",
+        },
       },
       {
         path: "servicios/nueva",
         name: "service-order-create",
         component: ServiceOrderFormView,
-        meta: { requiresAuth: true, title: "Nueva orden de servicio" },
+        meta: {
+          requiresAuth: true,
+          title: "Nueva orden de servicio",
+        },
       },
       {
         path: "servicios/:id",
         name: "service-order-detail",
         component: ServiceOrderDetailView,
-        meta: { requiresAuth: true, title: "Detalle de orden de servicio" },
+        meta: {
+          requiresAuth: true,
+          title: "Detalle de orden de servicio",
+        },
       },
       {
         path: "servicios/:id/editar",
         name: "service-order-edit",
         component: ServiceOrderFormView,
-        meta: { requiresAuth: true, title: "Editar orden de servicio" },
+        meta: {
+          requiresAuth: true,
+          title: "Editar orden de servicio",
+        },
       },
 
       /* ========================================================= */
@@ -264,24 +387,6 @@ const routes = [
         meta: {
           requiresAuth: true,
           title: "Nueva reparación",
-        },
-      },
-      {
-        path: "reparaciones/:id",
-        name: "repair-detail",
-        component: RepairDetailView,
-        meta: {
-          requiresAuth: true,
-          title: "Detalle de reparación",
-        },
-      },
-      {
-        path: "reparaciones/:id/editar",
-        name: "repair-edit",
-        component: RepairFormView,
-        meta: {
-          requiresAuth: true,
-          title: "Editar reparación",
         },
       },
 
@@ -308,12 +413,12 @@ const routes = [
         },
       },
       {
-        path: "reparaciones/pedidos/:id",
-        name: "repair-part-request-detail",
-        component: RepairPartRequestDetailView,
+        path: "reparaciones/pedidos/items/:id",
+        name: "repair-part-request-item-detail",
+        component: RepairPartRequestItemDetailView,
         meta: {
           requiresAuth: true,
-          title: "Detalle de solicitud de repuestos",
+          title: "Proceso del repuesto solicitado",
         },
       },
       {
@@ -326,12 +431,44 @@ const routes = [
         },
       },
       {
+        path: "reparaciones/pedidos/:id",
+        name: "repair-part-request-detail",
+        component: RepairPartRequestDetailView,
+        meta: {
+          requiresAuth: true,
+          title: "Detalle de solicitud de repuestos",
+        },
+      },
+      {
         path: "reparaciones/configuracion",
         name: "repair-settings",
         component: RepairSettingsView,
         meta: {
           requiresAuth: true,
           title: "Configuración de reparaciones",
+        },
+      },
+
+      /* ========================================================= */
+      /* DETALLE Y EDICIÓN DE REPARACIONES                         */
+      /* ========================================================= */
+
+      {
+        path: "reparaciones/:id/editar",
+        name: "repair-edit",
+        component: RepairFormView,
+        meta: {
+          requiresAuth: true,
+          title: "Editar reparación",
+        },
+      },
+      {
+        path: "reparaciones/:id",
+        name: "repair-detail",
+        component: RepairDetailView,
+        meta: {
+          requiresAuth: true,
+          title: "Detalle de reparación",
         },
       },
 

@@ -1,0 +1,983 @@
+.repair-part-item-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  padding: 18px;
+  background:
+    linear-gradient(
+      180deg,
+      #f7f9fb 0%,
+      #f3f6f8 100%
+    );
+  color: #263548;
+}
+
+.repair-part-item-detail *,
+.repair-part-item-detail *::before,
+.repair-part-item-detail *::after {
+  box-sizing: border-box;
+}
+
+
+/* ============================================================= */
+/* ESTADOS DE CARGA                                              */
+/* ============================================================= */
+
+.repair-part-item-detail__state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  padding: 30px;
+  border: 1px dashed #cad4dd;
+  border-radius: 16px;
+  background: #fff;
+  color: #718093;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+/* ============================================================= */
+/* CABECERA                                                      */
+/* ============================================================= */
+
+.repair-part-item-detail__header {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 17px 18px;
+  border: 1px solid #dde5eb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow:
+    0 7px 22px rgba(34, 48, 65, 0.045);
+}
+
+.repair-part-item-detail__back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid #dce4ea;
+  border-radius: 9px;
+  background: #f8fafb;
+  color: #536477;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.repair-part-item-detail__back:hover {
+  border-color: #bfcbd5;
+  background: #fff;
+  color: #25384d;
+  transform: translateX(-2px);
+}
+
+.repair-part-item-detail__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+}
+
+.repair-part-item-detail__heading > div {
+  min-width: 0;
+}
+
+.repair-part-item-detail__heading > div > span {
+  display: block;
+  margin-bottom: 4px;
+  color: #c91845;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.repair-part-item-detail__heading h1 {
+  margin: 0;
+  color: #24364a;
+  font-size: clamp(20px, 2.5vw, 29px);
+  line-height: 1.18;
+}
+
+.repair-part-item-detail__heading p {
+  max-width: 850px;
+  margin: 7px 0 0;
+  color: #708093;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+
+/* ============================================================= */
+/* MENSAJES                                                      */
+/* ============================================================= */
+
+.repair-part-item-detail__message {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid;
+  border-radius: 11px;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.repair-part-item-detail__message.error {
+  border-color: #f1b7c3;
+  background: #fff1f4;
+  color: #b7163d;
+}
+
+.repair-part-item-detail__message.success {
+  border-color: #b6dfc5;
+  background: #effaf3;
+  color: #237448;
+}
+
+
+/* ============================================================= */
+/* ACCIÓN PENDIENTE                                              */
+/* ============================================================= */
+
+.repair-part-item-detail__pending-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 112px;
+  padding: 18px 20px;
+  border: 1px solid;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow:
+    0 8px 22px rgba(34, 48, 65, 0.045);
+}
+
+.repair-part-item-detail__pending-action > div:first-child {
+  min-width: 0;
+}
+
+.repair-part-item-detail__pending-action > div:first-child > span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.repair-part-item-detail__pending-action strong {
+  display: block;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.repair-part-item-detail__pending-action p {
+  max-width: 720px;
+  margin: 5px 0 0;
+  color: inherit;
+  font-size: 10px;
+  line-height: 1.55;
+  opacity: 0.82;
+}
+
+.repair-part-item-detail__pending-action.tone-neutral {
+  border-color: #dce4ea;
+  background: #f8fafb;
+  color: #506174;
+}
+
+.repair-part-item-detail__pending-action.tone-info {
+  border-color: #b9d7f8;
+  background: #eef6ff;
+  color: #245f9e;
+}
+
+.repair-part-item-detail__pending-action.tone-warning {
+  border-color: #efd69a;
+  background: #fff9e9;
+  color: #896508;
+}
+
+.repair-part-item-detail__pending-action.tone-success {
+  border-color: #b8e0c6;
+  background: #effaf3;
+  color: #27764b;
+}
+
+.repair-part-item-detail__pending-action.tone-danger {
+  border-color: #f0b9c4;
+  background: #fff1f4;
+  color: #b5173d;
+}
+
+.repair-part-item-detail__progress {
+  flex: 0 0 min(280px, 32%);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.repair-part-item-detail__progress > span {
+  color: inherit;
+  font-size: 8px;
+  font-weight: 850;
+  text-align: right;
+}
+
+.repair-part-item-detail__progress > div {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 0 0 1px rgba(75, 88, 104, 0.09);
+}
+
+.repair-part-item-detail__progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      #e11d48,
+      #f59e0b,
+      #22a65a
+    );
+  transition: width 0.35s ease;
+}
+
+
+/* ============================================================= */
+/* RESUMEN DE CANTIDADES                                         */
+/* ============================================================= */
+
+.repair-part-item-detail__summary {
+  display: grid;
+  grid-template-columns:
+    repeat(6, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.repair-part-item-detail__summary article {
+  position: relative;
+  overflow: hidden;
+  min-height: 78px;
+  padding: 13px 14px;
+  border: 1px solid #dee6ec;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow:
+    0 5px 15px rgba(33, 48, 66, 0.035);
+}
+
+.repair-part-item-detail__summary article::after {
+  content: "";
+  position: absolute;
+  right: -15px;
+  bottom: -20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #f2f5f7;
+}
+
+.repair-part-item-detail__summary article:nth-child(1) {
+  border-top: 3px solid #64748b;
+}
+
+.repair-part-item-detail__summary article:nth-child(2) {
+  border-top: 3px solid #8b5cf6;
+}
+
+.repair-part-item-detail__summary article:nth-child(3) {
+  border-top: 3px solid #06b6d4;
+}
+
+.repair-part-item-detail__summary article:nth-child(4) {
+  border-top: 3px solid #f59e0b;
+}
+
+.repair-part-item-detail__summary article:nth-child(5) {
+  border-top: 3px solid #3b82f6;
+}
+
+.repair-part-item-detail__summary article:nth-child(6) {
+  border-top: 3px solid #22a65a;
+}
+
+.repair-part-item-detail__summary small {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-bottom: 5px;
+  color: #83909d;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.repair-part-item-detail__summary strong {
+  position: relative;
+  z-index: 1;
+  display: block;
+  color: #26394e;
+  font-size: 19px;
+  line-height: 1;
+}
+
+
+/* ============================================================= */
+/* DISTRIBUCIÓN GENERAL                                          */
+/* ============================================================= */
+
+.repair-part-item-detail__layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.65fr)
+    minmax(280px, 0.65fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.repair-part-item-detail__main,
+.repair-part-item-detail__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.repair-part-item-detail__sidebar {
+  position: sticky;
+  top: 15px;
+}
+
+
+/* ============================================================= */
+/* TARJETAS                                                      */
+/* ============================================================= */
+
+.repair-part-item-detail__card {
+  min-width: 0;
+  overflow: visible;
+  border: 1px solid #dee6ec;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow:
+    0 6px 18px rgba(34, 48, 65, 0.04);
+}
+
+.repair-part-item-detail__card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 52px;
+  padding: 12px 15px;
+  border-bottom: 1px solid #edf1f4;
+}
+
+.repair-part-item-detail__card > header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.repair-part-item-detail__card > header span {
+  color: #9a6875;
+  font-size: 7.5px;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.repair-part-item-detail__card > header strong {
+  color: #304257;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.repair-part-item-detail__card > header em,
+.repair-part-item-detail__card > header > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f2f5f7;
+  color: #68788a;
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.repair-part-item-detail__card.action-card {
+  border-color: #e5c7cf;
+  box-shadow:
+    0 7px 22px rgba(116, 34, 58, 0.045);
+}
+
+.repair-part-item-detail__card.action-card > header {
+  border-bottom-color: #f1dde2;
+  background:
+    linear-gradient(
+      90deg,
+      #fff5f7,
+      #fff
+    );
+  border-radius: 14px 14px 0 0;
+}
+
+.repair-part-item-detail__card > footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 15px;
+  border-top: 1px solid #edf1f4;
+  background: #fafbfc;
+  border-radius: 0 0 14px 14px;
+}
+
+.repair-part-item-detail__card > footer.multiple-actions {
+  flex-wrap: wrap;
+}
+
+
+/* ============================================================= */
+/* FORMULARIOS                                                   */
+/* ============================================================= */
+
+.repair-part-item-detail__form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 15px;
+}
+
+.repair-part-item-detail__form-grid > label,
+.repair-part-item-detail__search > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.repair-part-item-detail__form-grid label > span,
+.repair-part-item-detail__search label > span {
+  color: #5e6f81;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.repair-part-item-detail__form-grid .span-2,
+.repair-part-item-detail__search.span-2 {
+  grid-column: 1 / -1;
+}
+
+.repair-part-item-detail input,
+.repair-part-item-detail select,
+.repair-part-item-detail textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d8e0e6;
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+  color: #2d4054;
+  font-family: inherit;
+  font-size: 10px;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.repair-part-item-detail input,
+.repair-part-item-detail select {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.repair-part-item-detail textarea {
+  min-height: 78px;
+  padding: 10px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.repair-part-item-detail input::placeholder,
+.repair-part-item-detail textarea::placeholder {
+  color: #adb7c0;
+}
+
+.repair-part-item-detail input:hover,
+.repair-part-item-detail select:hover,
+.repair-part-item-detail textarea:hover {
+  border-color: #becad4;
+}
+
+.repair-part-item-detail input:focus,
+.repair-part-item-detail select:focus,
+.repair-part-item-detail textarea:focus {
+  border-color: #df6b87;
+  box-shadow:
+    0 0 0 3px rgba(225, 29, 72, 0.09);
+}
+
+.repair-part-item-detail input:disabled,
+.repair-part-item-detail select:disabled,
+.repair-part-item-detail textarea:disabled {
+  background: #f2f4f6;
+  color: #909ba6;
+  cursor: not-allowed;
+}
+
+.repair-part-item-detail__form-grid .check-field {
+  align-self: end;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #dfe6eb;
+  border-radius: 9px;
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+.repair-part-item-detail__form-grid .check-field input {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  min-height: auto;
+  padding: 0;
+  accent-color: #e11d48;
+}
+
+.repair-part-item-detail__form-grid .check-field span {
+  color: #46586b;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+
+/* ============================================================= */
+/* BÚSQUEDAS                                                     */
+/* ============================================================= */
+
+.repair-part-item-detail__search {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #e1e7ec;
+  border-radius: 11px;
+  background: #fafbfc;
+}
+
+.repair-part-item-detail__search label > div {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+  gap: 7px;
+}
+
+.repair-part-item-detail__search select {
+  background: #fff;
+}
+
+
+/* ============================================================= */
+/* BOTONES                                                       */
+/* ============================================================= */
+
+.repair-part-item-detail button {
+  border: 0;
+  font-family: inherit;
+}
+
+.repair-part-item-detail__card > footer button,
+.repair-part-item-detail__search button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow:
+    0 5px 12px rgba(225, 29, 72, 0.14);
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.repair-part-item-detail__card > footer button:hover,
+.repair-part-item-detail__search button:hover {
+  background: #c91845;
+  transform: translateY(-1px);
+  box-shadow:
+    0 7px 16px rgba(225, 29, 72, 0.2);
+}
+
+.repair-part-item-detail__card > footer button:disabled,
+.repair-part-item-detail__search button:disabled {
+  background: #c6cdd4;
+  color: #f8fafb;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.repair-part-item-detail__search button {
+  min-width: 78px;
+  min-height: 38px;
+  padding-inline: 12px;
+  background: #40566f;
+  box-shadow: none;
+}
+
+.repair-part-item-detail__search button:hover {
+  background: #30465e;
+  box-shadow: none;
+}
+
+
+/* ============================================================= */
+/* LISTAS DE DEFINICIÓN                                          */
+/* ============================================================= */
+
+.repair-part-item-detail__card > dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 5px 15px 12px;
+}
+
+.repair-part-item-detail__card > dl > div {
+  display: grid;
+  grid-template-columns:
+    minmax(100px, 0.85fr)
+    minmax(0, 1.15fr);
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #edf1f4;
+}
+
+.repair-part-item-detail__card > dl > div:last-child {
+  border-bottom: 0;
+}
+
+.repair-part-item-detail__card dt {
+  color: #8995a1;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.repair-part-item-detail__card dd {
+  min-width: 0;
+  margin: 0;
+  color: #394b5f;
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+
+/* ============================================================= */
+/* REGISTROS                                                     */
+/* ============================================================= */
+
+.repair-part-item-detail__records {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.repair-part-item-detail__records > article {
+  padding: 10px;
+  border: 1px solid #e2e8ed;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.repair-part-item-detail__records > article > strong {
+  display: block;
+  color: #33475c;
+  font-size: 9px;
+}
+
+.repair-part-item-detail__records > article > small {
+  display: block;
+  margin-top: 3px;
+  color: #8b97a4;
+  font-size: 7.5px;
+}
+
+.repair-part-item-detail__records > article > p {
+  margin: 7px 0 0;
+  color: #647487;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.repair-part-item-detail__records > p,
+.repair-part-item-detail__timeline > p {
+  margin: 0;
+  padding: 14px 8px;
+  color: #8a96a2;
+  font-size: 8.5px;
+  text-align: center;
+}
+
+
+/* ============================================================= */
+/* HISTORIAL                                                     */
+/* ============================================================= */
+
+.repair-part-item-detail__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 12px;
+}
+
+.repair-part-item-detail__timeline > article {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  min-height: 58px;
+}
+
+.repair-part-item-detail__timeline > article::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  bottom: -4px;
+  left: 7px;
+  width: 1px;
+  background: #dce4e9;
+}
+
+.repair-part-item-detail__timeline > article:last-child::before {
+  display: none;
+}
+
+.repair-part-item-detail__timeline > article > i {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #e11d48;
+  box-shadow:
+    0 0 0 1px #e4b3bf;
+}
+
+.repair-part-item-detail__timeline > article > div {
+  min-width: 0;
+  padding-bottom: 12px;
+}
+
+.repair-part-item-detail__timeline strong {
+  display: block;
+  color: #34475b;
+  font-size: 8.5px;
+  text-transform: capitalize;
+}
+
+.repair-part-item-detail__timeline span {
+  display: block;
+  margin-top: 3px;
+  color: #718092;
+  font-size: 7.5px;
+  line-height: 1.4;
+}
+
+.repair-part-item-detail__timeline small {
+  display: block;
+  margin-top: 4px;
+  color: #9ca6af;
+  font-size: 7px;
+}
+
+
+/* ============================================================= */
+/* TABLET                                                        */
+/* ============================================================= */
+
+@media (max-width: 1180px) {
+  .repair-part-item-detail__summary {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .repair-part-item-detail__layout {
+    grid-template-columns:
+      minmax(0, 1.35fr)
+      minmax(260px, 0.65fr);
+  }
+}
+
+@media (max-width: 920px) {
+  .repair-part-item-detail {
+    padding: 14px;
+  }
+
+  .repair-part-item-detail__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .repair-part-item-detail__sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .repair-part-item-detail__sidebar
+  .repair-part-item-detail__card:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .repair-part-item-detail__pending-action {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .repair-part-item-detail__progress {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .repair-part-item-detail__progress > span {
+    text-align: left;
+  }
+}
+
+
+/* ============================================================= */
+/* MÓVIL                                                         */
+/* ============================================================= */
+
+@media (max-width: 650px) {
+  .repair-part-item-detail {
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .repair-part-item-detail__header {
+    padding: 14px;
+  }
+
+  .repair-part-item-detail__heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .repair-part-item-detail__heading h1 {
+    font-size: 20px;
+  }
+
+  .repair-part-item-detail__pending-action {
+    min-height: auto;
+    padding: 15px;
+  }
+
+  .repair-part-item-detail__summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .repair-part-item-detail__summary article {
+    min-height: 72px;
+  }
+
+  .repair-part-item-detail__form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .repair-part-item-detail__form-grid .span-2,
+  .repair-part-item-detail__search.span-2 {
+    grid-column: auto;
+  }
+
+  .repair-part-item-detail__sidebar {
+    display: flex;
+  }
+
+  .repair-part-item-detail__search label > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .repair-part-item-detail__search button {
+    width: 100%;
+  }
+
+  .repair-part-item-detail__card > footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .repair-part-item-detail__card > footer button {
+    width: 100%;
+  }
+
+  .repair-part-item-detail__card > dl > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+@media (max-width: 390px) {
+  .repair-part-item-detail__summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

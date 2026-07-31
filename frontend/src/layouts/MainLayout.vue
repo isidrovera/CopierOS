@@ -157,15 +157,6 @@ const navigationItems = [
 ]
 
 
-const activeSubmenuItem = computed(() =>
-  navigationItems.find(
-    item =>
-      item.key === activeSubmenuKey.value &&
-      Array.isArray(item.children)
-  ) || null
-)
-
-
 const userName = computed(() => {
   if (!user) {
     return "Usuario"
@@ -240,10 +231,6 @@ function toggleRadialMenu() {
     !radialMenuOpen.value
 
   profileOpen.value = false
-
-  if (!radialMenuOpen.value) {
-    activeSubmenuKey.value = ""
-  }
 }
 
 
@@ -267,11 +254,43 @@ function closeProfileMenu() {
 }
 
 
-async function selectNavigationItem(item) {
-  if (
+function hasChildren(item) {
+  return (
     Array.isArray(item.children) &&
-    item.children.length
+    item.children.length > 0
+  )
+}
+
+
+function openSubmenu(item) {
+  if (!hasChildren(item)) {
+    return
+  }
+
+  activeSubmenuKey.value = item.key
+}
+
+
+function closeSubmenu(item) {
+  if (
+    activeSubmenuKey.value === item.key
   ) {
+    activeSubmenuKey.value = ""
+  }
+}
+
+
+function isSubmenuOpen(item) {
+  return (
+    radialMenuOpen.value &&
+    activeSubmenuKey.value === item.key &&
+    hasChildren(item)
+  )
+}
+
+
+async function selectNavigationItem(item) {
+  if (hasChildren(item)) {
     activeSubmenuKey.value =
       activeSubmenuKey.value === item.key
         ? ""
@@ -491,24 +510,33 @@ onBeforeUnmount(() => {
               ></span>
             </div>
 
-            <button
+            <div
               v-for="(item, index) in navigationItems"
               :key="item.key"
-              class="radial-item"
+              class="radial-item-group"
               :class="[
                 `radial-item-${index + 1}`,
                 {
                   active:
                     isNavigationActive(item),
+                  'submenu-open':
+                    isSubmenuOpen(item),
+                  'has-children':
+                    hasChildren(item),
                 },
               ]"
               :style="{
                 '--item-index': index,
                 '--item-color': item.color,
               }"
-              type="button"
-              @click="selectNavigationItem(item)"
+              @mouseenter="openSubmenu(item)"
+              @mouseleave="closeSubmenu(item)"
             >
+              <button
+                class="radial-item"
+                type="button"
+                @click.stop="selectNavigationItem(item)"
+              >
               <span class="radial-item-icon">
                 <!-- Dashboard -->
                 <svg
@@ -817,46 +845,134 @@ onBeforeUnmount(() => {
                 <strong>{{ item.label }}</strong>
                 <small>{{ item.description }}</small>
               </span>
-            </button>
 
-            <Transition name="radial-submenu">
-              <div
-                v-if="
-                  radialMenuOpen &&
-                  activeSubmenuItem
-                "
-                class="radial-submenu"
-              >
-                <header>
-                  <strong>
-                    {{ activeSubmenuItem.label }}
-                  </strong>
+              </button>
 
-                  <small>
-                    {{ activeSubmenuItem.description }}
-                  </small>
-                </header>
-
-                <button
-                  v-for="child in activeSubmenuItem.children"
-                  :key="child.path"
-                  type="button"
-                  :class="{
-                    active:
-                      route.path === child.path ||
-                      route.path.startsWith(
-                        `${child.path}/`
-                      ),
-                  }"
-                  @click.stop="
-                    selectSubmenuItem(child)
-                  "
+              <Transition name="workshop-submenu">
+                <div
+                  v-if="isSubmenuOpen(item)"
+                  class="workshop-submenu"
                 >
-                  <span>{{ child.label }}</span>
-                  <strong>›</strong>
-                </button>
-              </div>
-            </Transition>
+                  <button
+                    v-for="child in item.children"
+                    :key="child.path"
+                    type="button"
+                    :class="{
+                      active:
+                        route.path === child.path ||
+                        route.path.startsWith(
+                          `${child.path}/`
+                        ),
+                    }"
+                    @click.stop="
+                      selectSubmenuItem(child)
+                    "
+                  >
+                    <span class="workshop-submenu-icon">
+                      <svg
+                        v-if="child.label === 'Reparaciones'"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="
+                            M14.7 6.3
+                            a1 1 0 0 0 0 1.4
+                            l1.6 1.6
+                            a1 1 0 0 0 1.4 0
+                            l3.8-3.8
+                            a6 6 0 0 1-7.9 7.9
+                            l-6.9 6.9
+                            a2.1 2.1 0 0 1-3-3
+                            l6.9-6.9
+                            a6 6 0 0 1 7.9-7.9z
+                          "
+                        />
+                      </svg>
+
+                      <svg
+                        v-else-if="child.label === 'Pedidos'"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="
+                            M9 5H6
+                            a2 2 0 0 0-2 2v13
+                            a2 2 0 0 0 2 2h12
+                            a2 2 0 0 0 2-2V7
+                            a2 2 0 0 0-2-2h-3
+                          "
+                        />
+
+                        <rect
+                          x="9"
+                          y="3"
+                          width="6"
+                          height="4"
+                          rx="1"
+                        />
+
+                        <path d="M8 12h8" />
+                        <path d="M8 16h5" />
+                      </svg>
+
+                      <svg
+                        v-else
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="3"
+                        />
+
+                        <path
+                          d="
+                            M19.4 15
+                            a1.7 1.7 0 0 0 .34 1.88
+                            l.06.06
+                            a2 2 0 1 1-2.83 2.83
+                            l-.06-.06
+                            a1.7 1.7 0 0 0-1.88-.34
+                            a1.7 1.7 0 0 0-1.03 1.56V21
+                            a2 2 0 1 1-4 0v-.09
+                            A1.7 1.7 0 0 0 9 19.35
+                            a1.7 1.7 0 0 0-1.88.34
+                            l-.06.06
+                            a2 2 0 1 1-2.83-2.83
+                            l.06-.06
+                            A1.7 1.7 0 0 0 4.63 15
+                            a1.7 1.7 0 0 0-1.56-1H3
+                            a2 2 0 1 1 0-4h.09
+                            A1.7 1.7 0 0 0 4.65 9
+                            a1.7 1.7 0 0 0-.34-1.88
+                            l-.06-.06
+                            a2 2 0 1 1 2.83-2.83
+                            l.06.06
+                            A1.7 1.7 0 0 0 9 4.63h.02
+                            A1.7 1.7 0 0 0 10 3.07V3
+                            a2 2 0 1 1 4 0v.09
+                            A1.7 1.7 0 0 0 15 4.65
+                            a1.7 1.7 0 0 0 1.88-.34
+                            l.06-.06
+                            a2 2 0 1 1 2.83 2.83
+                            l-.06.06
+                            A1.7 1.7 0 0 0 19.37 9v.02
+                            A1.7 1.7 0 0 0 20.93 10H21
+                            a2 2 0 1 1 0 4h-.09
+                            A1.7 1.7 0 0 0 19.4 15z
+                          "
+                        />
+                      </svg>
+                    </span>
+
+                    <span>{{ child.label }}</span>
+                  </button>
+                </div>
+              </Transition>
+            </div>
           </div>
         </div>
 

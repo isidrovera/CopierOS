@@ -2166,6 +2166,186 @@ export async function restoreComponentCompatibility(compatibilityId) {
 }
 
 
+
+/* ============================================================= */
+/* INVENTARIO DE COMPONENTES Y REPUESTOS                         */
+/* ============================================================= */
+
+export async function getComponentInventories({
+  search = "",
+  includeArchived = false,
+  component = "",
+  condition = "",
+  status = "",
+  warehouseLocation = "",
+  serialNumber = "",
+  hasAvailableStock = "",
+  isReserved = "",
+  isActive = "",
+  ordering = "",
+} = {}) {
+  const params = new URLSearchParams()
+
+  addParam(
+    params,
+    "search",
+    search
+  )
+
+  if (includeArchived) {
+    params.set(
+      "include_archived",
+      "true"
+    )
+  }
+
+  addParam(
+    params,
+    "component",
+    component
+  )
+
+  addParam(
+    params,
+    "condition",
+    condition
+  )
+
+  addParam(
+    params,
+    "status",
+    status
+  )
+
+  addParam(
+    params,
+    "warehouse_location",
+    warehouseLocation
+  )
+
+  addParam(
+    params,
+    "serial_number",
+    serialNumber
+  )
+
+  addBooleanParam(
+    params,
+    "has_available_stock",
+    hasAvailableStock
+  )
+
+  addBooleanParam(
+    params,
+    "is_reserved",
+    isReserved
+  )
+
+  addBooleanParam(
+    params,
+    "is_active",
+    isActive
+  )
+
+  addParam(
+    params,
+    "ordering",
+    ordering
+  )
+
+  return request(
+    buildUrl(
+      `${API_URL}/component-inventory/`,
+      params
+    )
+  )
+}
+
+
+export async function getComponentInventory(
+  inventoryId
+) {
+  return request(
+    `${API_URL}/component-inventory/${inventoryId}/`
+  )
+}
+
+
+export async function createComponentInventory(
+  inventoryData
+) {
+  return request(
+    `${API_URL}/component-inventory/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+      body: JSON.stringify(
+        inventoryData
+      ),
+    }
+  )
+}
+
+
+export async function updateComponentInventory(
+  inventoryId,
+  inventoryData
+) {
+  return request(
+    `${API_URL}/component-inventory/${inventoryId}/`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+      body: JSON.stringify(
+        inventoryData
+      ),
+    }
+  )
+}
+
+
+export async function archiveComponentInventory(
+  inventoryId,
+  reason = ""
+) {
+  return request(
+    `${API_URL}/component-inventory/${inventoryId}/archive/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+      body: JSON.stringify({
+        reason,
+      }),
+    }
+  )
+}
+
+
+export async function restoreComponentInventory(
+  inventoryId
+) {
+  return request(
+    `${API_URL}/component-inventory/${inventoryId}/restore/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+    }
+  )
+}
+
+
 /* ============================================================= */
 /* ALIAS                                                         */
 /* ============================================================= */
