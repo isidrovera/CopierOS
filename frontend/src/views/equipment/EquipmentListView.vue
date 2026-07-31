@@ -16,6 +16,8 @@ import {
   restoreEquipment,
 } from "../../services/equipment.service"
 
+import "./styles/equipment-list.css"
+
 
 const router = useRouter()
 
@@ -34,9 +36,53 @@ const selectedCondition = ref("")
 const selectedOwnership = ref("")
 const selectedColorMode = ref("")
 const expandedRows = ref(new Set())
+const showColumnMenu = ref(false)
+
+const columnOptions = [
+  { key: "equipment", label: "Equipo", locked: true },
+  { key: "identifiers", label: "Serie / código" },
+  { key: "condition", label: "Condición" },
+  { key: "technical", label: "Estado técnico" },
+  { key: "commercial", label: "Estado comercial" },
+  { key: "location", label: "Cliente / ubicación" },
+  { key: "meters", label: "Contadores" },
+  { key: "availability", label: "Disponibilidad" },
+  { key: "updated", label: "Actualizado" },
+]
+
+const defaultVisibleColumns = {
+  equipment: true,
+  identifiers: true,
+  condition: false,
+  technical: true,
+  commercial: true,
+  location: true,
+  meters: true,
+  availability: true,
+  updated: false,
+}
+
+const visibleColumns = ref({ ...defaultVisibleColumns })
 
 let searchTimeout = null
 
+
+const visibleColumnCount = computed(() => {
+  return Object.values(visibleColumns.value).filter(Boolean).length + 1
+})
+
+const activeFilterCount = computed(() => {
+  return [
+    search.value,
+    selectedTechnicalStatus.value,
+    selectedCommercialStatus.value,
+    selectedAvailability.value,
+    selectedCondition.value,
+    selectedOwnership.value,
+    selectedColorMode.value,
+    includeArchived.value,
+  ].filter(Boolean).length
+})
 
 const totalEquipment = computed(() => {
   return equipment.value.length
@@ -158,6 +204,58 @@ function handleSearch() {
   }, 350)
 }
 
+
+function toggleColumnMenu() {
+  showColumnMenu.value = !showColumnMenu.value
+}
+
+function closeColumnMenu() {
+  showColumnMenu.value = false
+}
+
+function resetColumns() {
+  visibleColumns.value = { ...defaultVisibleColumns }
+  window.localStorage.setItem(
+    "equipment-list-columns",
+    JSON.stringify(visibleColumns.value),
+  )
+}
+
+function toggleColumn(columnKey) {
+  if (columnKey === "equipment") {
+    return
+  }
+
+  visibleColumns.value = {
+    ...visibleColumns.value,
+    [columnKey]: !visibleColumns.value[columnKey],
+  }
+
+  window.localStorage.setItem(
+    "equipment-list-columns",
+    JSON.stringify(visibleColumns.value),
+  )
+}
+
+function restoreColumnPreferences() {
+  try {
+    const saved = window.localStorage.getItem(
+      "equipment-list-columns",
+    )
+
+    if (!saved) {
+      return
+    }
+
+    visibleColumns.value = {
+      ...defaultVisibleColumns,
+      ...JSON.parse(saved),
+      equipment: true,
+    }
+  } catch {
+    visibleColumns.value = { ...defaultVisibleColumns }
+  }
+}
 
 function clearMessages() {
   errorMessage.value = ""
@@ -628,6 +726,7 @@ function formatDate(value) {
 
 
 onMounted(() => {
+  restoreColumnPreferences()
   loadEquipment()
 })
 
@@ -753,6 +852,50 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="equipment-panel">
+      <div class="panel-toolbar">
+        <div class="panel-toolbar__title">
+          <strong>Listado de equipos</strong>
+          <span>{{ totalEquipment }} resultados</span>
+        </div>
+
+        <div class="column-selector" @mouseleave="closeColumnMenu">
+          <button
+            class="columns-button"
+            type="button"
+            :aria-expanded="showColumnMenu"
+            @click="toggleColumnMenu"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+              <path d="M8 4v4M14 10v4M18 16v4" />
+            </svg>
+            Columnas
+          </button>
+
+          <div v-if="showColumnMenu" class="columns-menu">
+            <div class="columns-menu__header">
+              <strong>Campos visibles</strong>
+              <button type="button" @click="resetColumns">Restablecer</button>
+            </div>
+
+            <label
+              v-for="column in columnOptions"
+              :key="column.key"
+              class="column-option"
+              :class="{ locked: column.locked }"
+            >
+              <input
+                type="checkbox"
+                :checked="visibleColumns[column.key]"
+                :disabled="column.locked"
+                @change="toggleColumn(column.key)"
+              />
+              <span>{{ column.label }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div class="filters">
         <label class="search-field">
           <span>⌕</span>
@@ -960,6 +1103,9 @@ onBeforeUnmount(() => {
           @click="clearFilters"
         >
           Limpiar
+          <span v-if="activeFilterCount" class="filter-count">
+            {{ activeFilterCount }}
+          </span>
         </button>
       </div>
 
@@ -1021,35 +1167,35 @@ onBeforeUnmount(() => {
                 Equipo
               </th>
 
-              <th>
+              <th v-if="visibleColumns.identifiers">
                 Serie / código
               </th>
 
-              <th>
+              <th v-if="visibleColumns.condition">
                 Condición
               </th>
 
-              <th>
+              <th v-if="visibleColumns.technical">
                 Estado técnico
               </th>
 
-              <th>
+              <th v-if="visibleColumns.commercial">
                 Estado comercial
               </th>
 
-              <th>
+              <th v-if="visibleColumns.location">
                 Cliente / ubicación
               </th>
 
-              <th>
+              <th v-if="visibleColumns.meters">
                 Contadores
               </th>
 
-              <th>
+              <th v-if="visibleColumns.availability">
                 Disponibilidad
               </th>
 
-              <th>
+              <th v-if="visibleColumns.updated">
                 Actualizado
               </th>
 
@@ -1105,7 +1251,7 @@ onBeforeUnmount(() => {
                 </div>
               </td>
 
-              <td>
+              <td v-if="visibleColumns.identifiers">
                 <div class="identifier-information">
                   <strong>
                     {{
@@ -1130,7 +1276,7 @@ onBeforeUnmount(() => {
                 </div>
               </td>
 
-              <td>
+              <td v-if="visibleColumns.condition">
                 <span class="condition-badge">
                   {{
                     getPhysicalConditionName(
@@ -1148,7 +1294,7 @@ onBeforeUnmount(() => {
                 </small>
               </td>
 
-              <td>
+              <td v-if="visibleColumns.technical">
                 <span
                   class="state-badge"
                   :class="
@@ -1176,7 +1322,7 @@ onBeforeUnmount(() => {
                 </small>
               </td>
 
-              <td>
+              <td v-if="visibleColumns.commercial">
                 <span
                   class="state-badge"
                   :class="
@@ -1204,7 +1350,7 @@ onBeforeUnmount(() => {
                 </small>
               </td>
 
-              <td>
+              <td v-if="visibleColumns.location">
                 <div class="location-information">
                   <strong>
                     {{ getCustomerName(item) }}
@@ -1229,7 +1375,7 @@ onBeforeUnmount(() => {
                 </div>
               </td>
 
-              <td>
+              <td v-if="visibleColumns.meters">
                 <div class="meters-container">
                   <span>
                     Total:
@@ -1266,7 +1412,7 @@ onBeforeUnmount(() => {
                 </div>
               </td>
 
-              <td>
+              <td v-if="visibleColumns.availability">
                 <div class="availability-container">
                   <span
                     v-if="item.is_archived"
@@ -1292,7 +1438,7 @@ onBeforeUnmount(() => {
                 </div>
               </td>
 
-              <td>
+              <td v-if="visibleColumns.updated" class="updated-cell">
                 {{
                   formatDate(
                     item.updated_at
@@ -1405,7 +1551,7 @@ onBeforeUnmount(() => {
                 v-if="isRowExpanded(item)"
                 class="equipment-expanded-row"
               >
-                <td colspan="10">
+                <td :colspan="visibleColumnCount">
                   <div class="expanded-information-grid">
                     <article>
                       <small>Importación</small>
@@ -1485,735 +1631,3 @@ onBeforeUnmount(() => {
     </div>
   </section>
 </template>
-
-<style scoped>
-button,
-input,
-select {
-  font: inherit;
-}
-
-.equipment-page {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.page-kicker {
-  display: block;
-  margin-bottom: 6px;
-  color: #2c82a8;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.page-header h2 {
-  margin: 0;
-  color: #17283f;
-  font-size: 28px;
-}
-
-.page-header p {
-  margin: 8px 0 0;
-  color: #768396;
-  font-size: 14px;
-}
-
-.primary-button {
-  min-height: 43px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 10px 17px;
-  border: 0;
-  border-radius: 10px;
-  background: #277fa6;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.primary-button:hover {
-  background: #216f91;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(6, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.summary-card {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 17px;
-  border: 1px solid #e3e9ef;
-  border-radius: 14px;
-  background: white;
-}
-
-.summary-icon {
-  width: 43px;
-  height: 43px;
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #e9f4f8;
-  color: #277fa6;
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.summary-icon.available {
-  background: #eaf7ef;
-  color: #288653;
-}
-
-.summary-icon.warehouse {
-  background: #e9f1fb;
-  color: #396da8;
-}
-
-.summary-icon.review {
-  background: #fff5e7;
-  color: #b06b21;
-}
-
-.summary-icon.sold {
-  background: #f3effb;
-  color: #6b55a5;
-}
-
-.summary-icon.archived {
-  background: #f0f2f5;
-  color: #687586;
-}
-
-.summary-card small,
-.summary-card strong {
-  display: block;
-}
-
-.summary-card small {
-  overflow: hidden;
-  margin-bottom: 4px;
-  color: #8793a1;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.summary-card strong {
-  color: #1b2c42;
-  font-size: 23px;
-}
-
-.equipment-panel {
-  overflow: hidden;
-  border: 1px solid #e2e8ee;
-  border-radius: 15px;
-  background: white;
-}
-
-.filters {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 17px;
-  border-bottom: 1px solid #edf1f4;
-}
-
-.search-field {
-  min-width: 300px;
-  min-height: 42px;
-  display: flex;
-  flex: 1 1 420px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 13px;
-  border: 1px solid #dce4eb;
-  border-radius: 10px;
-  background: #fbfcfd;
-}
-
-.search-field span {
-  color: #8a96a4;
-  font-size: 19px;
-}
-
-.search-field input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #25364b;
-}
-
-.search-field input::placeholder {
-  color: #9aa5b0;
-}
-
-.filter-select {
-  min-height: 42px;
-  max-width: 220px;
-  padding: 0 11px;
-  border: 1px solid #dce4eb;
-  border-radius: 10px;
-  outline: none;
-  background: white;
-  color: #526174;
-}
-
-.archive-filter {
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: #647286;
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.archive-filter input {
-  width: 16px;
-  height: 16px;
-  accent-color: #277fa6;
-}
-
-.refresh-button,
-.clear-button {
-  min-height: 42px;
-  padding: 0 13px;
-  border: 1px solid #dce4eb;
-  border-radius: 10px;
-  background: white;
-  color: #42708a;
-  cursor: pointer;
-}
-
-.refresh-button:hover,
-.clear-button:hover {
-  background: #f3f7f9;
-}
-
-.clear-button {
-  color: #697789;
-}
-
-.refresh-button:disabled,
-.clear-button:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
-
-.message {
-  margin: 16px 17px 0;
-  padding: 11px 13px;
-  border-radius: 9px;
-  font-size: 13px;
-}
-
-.success-message {
-  border: 1px solid #c8ead4;
-  background: #edf9f1;
-  color: #287344;
-}
-
-.error-message {
-  border: 1px solid #f0cccc;
-  background: #fff1f1;
-  color: #a43f3f;
-}
-
-.loading-state,
-.empty-state {
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #7a8796;
-}
-
-.loading-state {
-  gap: 10px;
-}
-
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 3px solid #d9e5eb;
-  border-top-color: #277fa6;
-  border-radius: 50%;
-  animation: rotate 0.8s linear infinite;
-}
-
-@keyframes rotate {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.empty-state {
-  flex-direction: column;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.empty-state > span {
-  margin-bottom: 12px;
-  color: #9aa6b2;
-  font-size: 42px;
-}
-
-.empty-state strong {
-  color: #34445a;
-  font-size: 16px;
-}
-
-.empty-state p {
-  max-width: 480px;
-  margin: 7px 0 16px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.empty-create-button {
-  min-height: 39px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 9px;
-  background: #277fa6;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.table-container {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  min-width: 1750px;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: 14px 15px;
-  border-bottom: 1px solid #edf1f4;
-  text-align: left;
-  vertical-align: middle;
-}
-
-th {
-  background: #fafbfd;
-  color: #7b8797;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-  text-transform: uppercase;
-}
-
-td {
-  color: #4b5a6e;
-  font-size: 13px;
-}
-
-tbody tr:hover {
-  background: #fafcfd;
-}
-
-.equipment-row {
-  cursor: pointer;
-  transition:
-    background 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.equipment-row:focus-visible {
-  outline: 2px solid #77b7d2;
-  outline-offset: -2px;
-}
-
-.equipment-row.expanded-row {
-  background: #f7fafc;
-}
-
-.equipment-expanded-row td {
-  padding: 0;
-  background: #fbfcfd;
-}
-
-.expanded-information-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-  gap: 1px;
-  padding: 12px 16px 16px;
-  border-top: 1px solid #e8edf1;
-  background: #e8edf1;
-}
-
-.expanded-information-grid article {
-  min-width: 0;
-  padding: 12px 14px;
-  background: white;
-}
-
-.expanded-information-grid small,
-.expanded-information-grid strong {
-  display: block;
-}
-
-.expanded-information-grid small {
-  margin-bottom: 5px;
-  color: #8390a0;
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
-.expanded-information-grid strong {
-  overflow: hidden;
-  color: #324257;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.archived-row {
-  opacity: 0.7;
-}
-
-.unavailable-row:not(.archived-row) {
-  background: #fffaf7;
-}
-
-.equipment-cell {
-  min-width: 245px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-}
-
-.equipment-avatar {
-  width: 42px;
-  height: 42px;
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #e7f2f7;
-  color: #257ca3;
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.equipment-information,
-.identifier-information,
-.location-information {
-  min-width: 0;
-}
-
-.equipment-information strong,
-.equipment-information span,
-.equipment-information small,
-.identifier-information strong,
-.identifier-information span,
-.identifier-information small,
-.location-information strong,
-.location-information span,
-.location-information small {
-  display: block;
-}
-
-.equipment-information strong,
-.identifier-information strong,
-.location-information strong {
-  color: #2d3c50;
-  font-size: 13px;
-}
-
-.equipment-information strong {
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.equipment-information span,
-.identifier-information span,
-.location-information span {
-  margin-top: 3px;
-  color: #8792a0;
-  font-size: 11px;
-}
-
-.equipment-information small,
-.identifier-information small,
-.location-information small {
-  margin-top: 3px;
-  color: #6b7889;
-  font-size: 11px;
-}
-
-.condition-badge,
-.state-badge,
-.availability-badge {
-  display: inline-flex;
-  padding: 5px 8px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.condition-badge {
-  background: #e9f1f8;
-  color: #3f6c8c;
-}
-
-.ownership-label,
-.reason-label {
-  display: block;
-  max-width: 180px;
-  margin-top: 5px;
-  overflow: hidden;
-  color: #8792a0;
-  font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.state-badge.neutral {
-  background: #edf0f4;
-  color: #687585;
-}
-
-.state-badge.pending {
-  background: #fff3e5;
-  color: #a76625;
-}
-
-.state-badge.review {
-  background: #e8f2fa;
-  color: #326f9a;
-}
-
-.state-badge.success {
-  background: #e7f6ed;
-  color: #277d4c;
-}
-
-.state-badge.warning {
-  background: #fff0e8;
-  color: #b45e32;
-}
-
-.state-badge.danger {
-  background: #fff0ed;
-  color: #ae4f43;
-}
-
-.state-badge.assigned {
-  background: #f2edfa;
-  color: #6b55a5;
-}
-
-.state-badge.sold {
-  background: #eaf0fb;
-  color: #416ca1;
-}
-
-.meters-container {
-  min-width: 135px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.meters-container span {
-  color: #7d8997;
-  font-size: 10px;
-}
-
-.meters-container strong {
-  color: #34445a;
-  font-size: 11px;
-}
-
-.availability-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
-}
-
-.availability-badge.available {
-  background: #e7f6ed;
-  color: #277d4c;
-}
-
-.availability-badge.unavailable {
-  background: #fff0e8;
-  color: #b45e32;
-}
-
-.availability-badge.archived {
-  background: #eceff3;
-  color: #657181;
-}
-
-.availability-container small {
-  color: #8a96a3;
-  font-size: 10px;
-}
-
-.actions-column {
-  text-align: right;
-}
-
-.row-actions {
-  min-width: 180px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
-.action-button {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid #dce4ea;
-  border-radius: 8px;
-  background: white;
-  color: #4e6073;
-  cursor: pointer;
-}
-
-.action-button svg {
-  width: 17px;
-  height: 17px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
-.action-button.expand svg path {
-  transform-origin: center;
-  transition: transform 0.2s ease;
-}
-
-.action-button.expand svg path.rotated {
-  transform: rotate(180deg);
-}
-
-.action-button:hover {
-  background: #f3f7f9;
-}
-
-.action-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.action-button.detail {
-  border-color: #d6dee5;
-  color: #586b7e;
-}
-
-.action-button.edit {
-  border-color: #c7dfeb;
-  color: #277fa6;
-}
-
-.action-button.archive {
-  border-color: #f0d2c6;
-  color: #ad5c3b;
-}
-
-.action-button.restore {
-  border-color: #c8e4d3;
-  color: #2b8050;
-}
-
-@media (max-width: 1450px) {
-  .summary-grid {
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1100px) {
-  .expanded-information-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 900px) {
-  .summary-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-  .filters {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .search-field {
-    min-width: 0;
-    flex-basis: auto;
-  }
-
-  .filter-select {
-    width: 100%;
-    max-width: none;
-  }
-
-  .archive-filter {
-    min-height: 34px;
-  }
-}
-
-@media (max-width: 620px) {
-  .page-header {
-    flex-direction: column;
-  }
-
-  .primary-button {
-    width: 100%;
-  }
-
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
