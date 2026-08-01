@@ -74,7 +74,13 @@ class ComponentCompatibilityListCreateView(
                     component__name__icontains=search,
                 )
                 | Q(
-                    manufacturer_reference__icontains=search,
+                    component__manufacturer_code__icontains=search,
+                )
+                | Q(
+                    component__alternative_code__icontains=search,
+                )
+                | Q(
+                    manufacturer_code_override__icontains=search,
                 )
                 | Q(
                     technical_notes__icontains=search,
@@ -83,7 +89,13 @@ class ComponentCompatibilityListCreateView(
                     equipment_family__name__icontains=search,
                 )
                 | Q(
+                    equipment_family__code__icontains=search,
+                )
+                | Q(
                     equipment_model__name__icontains=search,
+                )
+                | Q(
+                    equipment_model__code__icontains=search,
                 )
                 | Q(
                     equipment_family__brand__name__icontains=search,
@@ -129,24 +141,12 @@ class ComponentCompatibilityListCreateView(
                 equipment_model_id=equipment_model_id,
             )
 
-        compatibility_type = str(
-            self.request.query_params.get(
-                "compatibility_type",
-                "",
-            )
-        ).strip()
-
-        if compatibility_type:
-            queryset = queryset.filter(
-                compatibility_type=compatibility_type,
-            )
-
         position = str(
             self.request.query_params.get(
                 "position",
                 "",
             )
-        ).strip()
+        ).strip().lower()
 
         if position:
             queryset = queryset.filter(
@@ -162,12 +162,7 @@ class ComponentCompatibilityListCreateView(
 
         if brand_id:
             queryset = queryset.filter(
-                Q(
-                    equipment_family__brand_id=brand_id,
-                )
-                | Q(
-                    equipment_model__brand_id=brand_id,
-                )
+                equipment_family__brand_id=brand_id,
             )
 
         equipment_type_id = str(
@@ -179,40 +174,20 @@ class ComponentCompatibilityListCreateView(
 
         if equipment_type_id:
             queryset = queryset.filter(
-                Q(
-                    equipment_family__equipment_type_id=(
-                        equipment_type_id
-                    ),
-                )
-                | Q(
-                    equipment_model__equipment_type_id=(
-                        equipment_type_id
-                    ),
-                )
+                equipment_family__equipment_type_id=(
+                    equipment_type_id
+                ),
             )
 
-        requires_adjustment = (
-            parse_boolean_query_param(
-                self.request.query_params.get(
-                    "requires_adjustment"
-                )
-            )
-        )
-
-        if requires_adjustment is not None:
-            queryset = queryset.filter(
-                requires_adjustment=requires_adjustment,
-            )
-
-        is_preferred = parse_boolean_query_param(
+        is_required = parse_boolean_query_param(
             self.request.query_params.get(
-                "is_preferred"
+                "is_required"
             )
         )
 
-        if is_preferred is not None:
+        if is_required is not None:
             queryset = queryset.filter(
-                is_preferred=is_preferred,
+                is_required=is_required,
             )
 
         is_active = parse_boolean_query_param(
@@ -227,7 +202,8 @@ class ComponentCompatibilityListCreateView(
             )
 
         return queryset.order_by(
-            "-is_preferred",
+            "equipment_family__brand__name",
+            "equipment_family__name",
             "display_order",
             "component__name",
         )

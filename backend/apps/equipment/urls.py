@@ -4,7 +4,6 @@ from django.urls import path
 from .views import (
     ApplyMeterReadingView,
     ArchiveComponentCompatibilityView,
-    ArchiveComponentInventoryView,
     ArchiveComponentTypeView,
     ArchiveEquipmentBrandView,
     ArchiveEquipmentComponentView,
@@ -21,10 +20,6 @@ from .views import (
     ChangeImportBatchStatusView,
     ComponentCompatibilityDetailUpdateView,
     ComponentCompatibilityListCreateView,
-    ComponentInventoryDetailUpdateView,
-    ComponentInventoryListCreateView,
-    ComponentInventoryMovementDetailView,
-    ComponentInventoryMovementListCreateView,
     ComponentTypeDetailUpdateView,
     ComponentTypeListCreateView,
     EquipmentBrandDetailUpdateView,
@@ -52,7 +47,6 @@ from .views import (
     RegisterInitialEquipmentMetersView,
     RemoveEquipmentDocumentVerificationView,
     RestoreComponentCompatibilityView,
-    RestoreComponentInventoryView,
     RestoreComponentTypeView,
     RestoreEquipmentBrandView,
     RestoreEquipmentComponentView,
@@ -254,38 +248,6 @@ urlpatterns = [
         "component-compatibilities/<uuid:compatibility_id>/restore/",
         RestoreComponentCompatibilityView.as_view(),
         name="component-compatibility-restore",
-    ),
-
-    path(
-        "component-inventory/",
-        ComponentInventoryListCreateView.as_view(),
-        name="component-inventory-list-create",
-    ),
-    path(
-        "component-inventory/<uuid:id>/",
-        ComponentInventoryDetailUpdateView.as_view(),
-        name="component-inventory-detail-update",
-    ),
-    path(
-        "component-inventory/<uuid:inventory_id>/archive/",
-        ArchiveComponentInventoryView.as_view(),
-        name="component-inventory-archive",
-    ),
-    path(
-        "component-inventory/<uuid:inventory_id>/restore/",
-        RestoreComponentInventoryView.as_view(),
-        name="component-inventory-restore",
-    ),
-
-    path(
-        "component-inventory-movements/",
-        ComponentInventoryMovementListCreateView.as_view(),
-        name="component-inventory-movement-list-create",
-    ),
-    path(
-        "component-inventory-movements/<uuid:id>/",
-        ComponentInventoryMovementDetailView.as_view(),
-        name="component-inventory-movement-detail",
     ),
 
     path(

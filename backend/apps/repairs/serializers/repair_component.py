@@ -5,13 +5,9 @@ from django.core.exceptions import (
     ValidationError as DjangoValidationError,
 )
 from django.db import transaction
-from django.utils import timezone
 from rest_framework import serializers
 
-from apps.equipment.models import (
-    ComponentInventory,
-    EquipmentComponent,
-)
+from apps.equipment.models import EquipmentComponent
 
 from ..models import RepairComponent
 from .common import (
@@ -56,18 +52,6 @@ class RepairComponentListSerializer(
     component_color_name = serializers.CharField(
         source="component.get_color_display",
         read_only=True,
-    )
-
-    inventory_internal_code = serializers.CharField(
-        source="inventory.internal_code",
-        read_only=True,
-        allow_null=True,
-    )
-
-    inventory_serial_number = serializers.CharField(
-        source="inventory.serial_number",
-        read_only=True,
-        allow_null=True,
     )
 
     movement_type_name = serializers.CharField(
@@ -116,9 +100,7 @@ class RepairComponentListSerializer(
             "component_code",
             "component_color",
             "component_color_name",
-            "inventory",
-            "inventory_internal_code",
-            "inventory_serial_number",
+            "serial_number",
             "movement_type",
             "movement_type_name",
             "status",
@@ -188,26 +170,6 @@ class RepairComponentDetailSerializer(
         read_only=True,
     )
 
-    inventory_internal_code = serializers.CharField(
-        source="inventory.internal_code",
-        read_only=True,
-        allow_null=True,
-    )
-
-    inventory_serial_number = serializers.CharField(
-        source="inventory.serial_number",
-        read_only=True,
-        allow_null=True,
-    )
-
-    inventory_available_quantity = serializers.DecimalField(
-        source="inventory.available_quantity",
-        max_digits=12,
-        decimal_places=2,
-        read_only=True,
-        allow_null=True,
-    )
-
     removed_component_name = serializers.CharField(
         source="removed_component.name",
         read_only=True,
@@ -216,12 +178,6 @@ class RepairComponentDetailSerializer(
 
     removed_component_code = serializers.CharField(
         source="removed_component.code",
-        read_only=True,
-        allow_null=True,
-    )
-
-    removed_inventory_internal_code = serializers.CharField(
-        source="removed_inventory.internal_code",
         read_only=True,
         allow_null=True,
     )
@@ -320,10 +276,7 @@ class RepairComponentDetailSerializer(
             "component_code",
             "component_type_name",
             "component_color_name",
-            "inventory",
-            "inventory_internal_code",
-            "inventory_serial_number",
-            "inventory_available_quantity",
+            "serial_number",
             "movement_type",
             "movement_type_name",
             "status",
@@ -337,8 +290,6 @@ class RepairComponentDetailSerializer(
             "removed_component",
             "removed_component_name",
             "removed_component_code",
-            "removed_inventory",
-            "removed_inventory_internal_code",
             "removed_serial_number",
             "removed_part_disposition",
             "removed_part_disposition_name",
@@ -389,10 +340,9 @@ class RepairComponentCreateUpdateSerializer(
         fields = (
             "repair",
             "component",
-            "inventory",
+            "serial_number",
             "quantity",
             "removed_component",
-            "removed_inventory",
             "removed_serial_number",
             "removed_part_disposition",
             "unit_cost",
@@ -426,21 +376,10 @@ class RepairComponentCreateUpdateSerializer(
 
         return value
 
-    def validate_inventory(self, value):
-        if value is None:
-            return value
-
-        if value.archived_at is not None:
-            raise serializers.ValidationError(
-                "El registro de inventario está archivado."
-            )
-
-        if not value.is_active:
-            raise serializers.ValidationError(
-                "El registro de inventario está inactivo."
-            )
-
-        return value
+    def validate_serial_number(self, value):
+        return str(
+            value or ""
+        ).strip().upper()
 
     def validate_quantity(self, value):
         if value <= 0:
@@ -477,12 +416,12 @@ class RepairComponentCreateUpdateSerializer(
             ),
         )
 
-        inventory = attrs.get(
-            "inventory",
+        serial_number = attrs.get(
+            "serial_number",
             getattr(
                 instance,
-                "inventory",
-                None,
+                "serial_number",
+                "",
             ),
         )
 
@@ -504,12 +443,12 @@ class RepairComponentCreateUpdateSerializer(
             ),
         )
 
-        removed_inventory = attrs.get(
-            "removed_inventory",
+        removed_serial_number = attrs.get(
+            "removed_serial_number",
             getattr(
                 instance,
-                "removed_inventory",
-                None,
+                "removed_serial_number",
+                "",
             ),
         )
 
@@ -527,30 +466,9 @@ class RepairComponentCreateUpdateSerializer(
                 {
                     "component": (
                         "Debes seleccionar un componente."
-                    )
+                    ),
                 }
             )
-
-        if inventory:
-            if inventory.component_id != component.id:
-                raise serializers.ValidationError(
-                    {
-                        "inventory": (
-                            "El inventario no corresponde "
-                            "al componente seleccionado."
-                        )
-                    }
-                )
-
-            if inventory.available_quantity < quantity:
-                raise serializers.ValidationError(
-                    {
-                        "quantity": (
-                            "La cantidad solicitada supera "
-                            "la existencia disponible."
-                        )
-                    }
-                )
 
         if (
             component.requires_individual_serial
@@ -561,23 +479,36 @@ class RepairComponentCreateUpdateSerializer(
                     "quantity": (
                         "Los componentes serializados deben "
                         "registrarse con cantidad igual a uno."
-                    )
+                    ),
                 }
             )
 
-        if removed_inventory and removed_component:
-            if (
-                removed_inventory.component_id
-                != removed_component.id
-            ):
-                raise serializers.ValidationError(
-                    {
-                        "removed_inventory": (
-                            "El inventario retirado no corresponde "
-                            "al componente retirado."
-                        )
-                    }
-                )
+        if (
+            component.requires_individual_serial
+            and serial_number
+            and quantity != Decimal("1")
+        ):
+            raise serializers.ValidationError(
+                {
+                    "serial_number": (
+                        "Una serie individual solo puede corresponder "
+                        "a una unidad."
+                    ),
+                }
+            )
+
+        if (
+            removed_component
+            and removed_component.requires_individual_serial
+            and not removed_serial_number
+        ):
+            raise serializers.ValidationError(
+                {
+                    "removed_serial_number": (
+                        "Debes indicar la serie del componente retirado."
+                    ),
+                }
+            )
 
         if (
             removed_part_disposition
@@ -588,7 +519,7 @@ class RepairComponentCreateUpdateSerializer(
                 {
                     "removed_component": (
                         "Debes indicar el componente retirado."
-                    )
+                    ),
                 }
             )
 
@@ -640,7 +571,7 @@ class RepairComponentCreateUpdateSerializer(
                     "status": (
                         "Solo pueden modificarse componentes "
                         "pendientes o solicitados."
-                    )
+                    ),
                 }
             )
 
@@ -696,7 +627,7 @@ class RequestRepairComponentSerializer(
                 {
                     "status": (
                         "Solo un componente pendiente puede solicitarse."
-                    )
+                    ),
                 }
             )
 
@@ -706,11 +637,10 @@ class RequestRepairComponentSerializer(
 class ReserveRepairComponentSerializer(
     serializers.Serializer
 ):
-    inventory = serializers.PrimaryKeyRelatedField(
-        queryset=ComponentInventory.objects.filter(
-            archived_at__isnull=True,
-            is_active=True,
-        ),
+    serial_number = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=150,
     )
 
     quantity = serializers.DecimalField(
@@ -724,6 +654,11 @@ class ReserveRepairComponentSerializer(
         allow_blank=True,
         max_length=5000,
     )
+
+    def validate_serial_number(self, value):
+        return str(
+            value or ""
+        ).strip().upper()
 
     def validate(self, attrs):
         repair_component = self.context.get(
@@ -747,43 +682,25 @@ class ReserveRepairComponentSerializer(
             raise serializers.ValidationError(
                 {
                     "status": (
-                        "El componente no puede reservarse "
+                        "El componente no puede prepararse "
                         "desde su estado actual."
-                    )
+                    ),
                 }
             )
 
-        inventory = attrs["inventory"]
         quantity = attrs["quantity"]
-
-        if (
-            inventory.component_id
-            != repair_component.component_id
-        ):
-            raise serializers.ValidationError(
-                {
-                    "inventory": (
-                        "El inventario no corresponde al componente."
-                    )
-                }
-            )
+        serial_number = attrs.get(
+            "serial_number",
+            "",
+        )
 
         if quantity > repair_component.quantity:
             raise serializers.ValidationError(
                 {
                     "quantity": (
-                        "La cantidad reservada no puede superar "
+                        "La cantidad preparada no puede superar "
                         "la cantidad solicitada."
-                    )
-                }
-            )
-
-        if inventory.available_quantity < quantity:
-            raise serializers.ValidationError(
-                {
-                    "quantity": (
-                        "No existe suficiente cantidad disponible."
-                    )
+                    ),
                 }
             )
 
@@ -794,9 +711,22 @@ class ReserveRepairComponentSerializer(
             raise serializers.ValidationError(
                 {
                     "quantity": (
-                        "Un componente serializado debe reservarse "
+                        "Un componente serializado debe prepararse "
                         "con cantidad igual a uno."
-                    )
+                    ),
+                }
+            )
+
+        if (
+            repair_component.component.requires_individual_serial
+            and not serial_number
+        ):
+            raise serializers.ValidationError(
+                {
+                    "serial_number": (
+                        "Debes registrar la serie física "
+                        "del componente."
+                    ),
                 }
             )
 
@@ -832,8 +762,8 @@ class DeliverRepairComponentSerializer(
             raise serializers.ValidationError(
                 {
                     "status": (
-                        "Solo un componente reservado puede entregarse."
-                    )
+                        "Solo un componente preparado puede entregarse."
+                    ),
                 }
             )
 
@@ -844,8 +774,8 @@ class DeliverRepairComponentSerializer(
                 {
                     "quantity": (
                         "La cantidad entregada no puede superar "
-                        "la cantidad reservada."
-                    )
+                        "la cantidad preparada."
+                    ),
                 }
             )
 
@@ -863,15 +793,6 @@ class InstallRepairComponentSerializer(
 
     removed_component = serializers.PrimaryKeyRelatedField(
         queryset=EquipmentComponent.objects.filter(
-            archived_at__isnull=True,
-            is_active=True,
-        ),
-        required=False,
-        allow_null=True,
-    )
-
-    removed_inventory = serializers.PrimaryKeyRelatedField(
-        queryset=ComponentInventory.objects.filter(
             archived_at__isnull=True,
             is_active=True,
         ),
@@ -902,6 +823,11 @@ class InstallRepairComponentSerializer(
         max_length=5000,
     )
 
+    def validate_removed_serial_number(self, value):
+        return str(
+            value or ""
+        ).strip().upper()
+
     def validate(self, attrs):
         repair_component = self.context.get(
             "repair_component"
@@ -919,9 +845,9 @@ class InstallRepairComponentSerializer(
             raise serializers.ValidationError(
                 {
                     "status": (
-                        "El componente debe estar reservado "
+                        "El componente debe estar preparado "
                         "o entregado antes de instalarse."
-                    )
+                    ),
                 }
             )
 
@@ -938,7 +864,7 @@ class InstallRepairComponentSerializer(
                     "quantity": (
                         "La cantidad instalada supera "
                         "la cantidad disponible."
-                    )
+                    ),
                 }
             )
 
@@ -946,8 +872,9 @@ class InstallRepairComponentSerializer(
             "removed_component"
         )
 
-        removed_inventory = attrs.get(
-            "removed_inventory"
+        removed_serial_number = attrs.get(
+            "removed_serial_number",
+            "",
         )
 
         disposition = attrs.get(
@@ -956,15 +883,14 @@ class InstallRepairComponentSerializer(
         )
 
         if (
-            repair_component.component
-            .requires_removed_part_tracking
+            repair_component.component.requires_removed_part_tracking
             and not removed_component
         ):
             raise serializers.ValidationError(
                 {
                     "removed_component": (
                         "Debes registrar el componente retirado."
-                    )
+                    ),
                 }
             )
 
@@ -977,23 +903,22 @@ class InstallRepairComponentSerializer(
                 {
                     "removed_part_disposition": (
                         "Debes indicar el destino de la pieza retirada."
-                    )
+                    ),
                 }
             )
 
-        if removed_inventory and removed_component:
-            if (
-                removed_inventory.component_id
-                != removed_component.id
-            ):
-                raise serializers.ValidationError(
-                    {
-                        "removed_inventory": (
-                            "El inventario retirado no corresponde "
-                            "al componente retirado."
-                        )
-                    }
-                )
+        if (
+            removed_component
+            and removed_component.requires_individual_serial
+            and not removed_serial_number
+        ):
+            raise serializers.ValidationError(
+                {
+                    "removed_serial_number": (
+                        "Debes registrar la serie de la pieza retirada."
+                    ),
+                }
+            )
 
         return attrs
 
@@ -1030,9 +955,9 @@ class ReturnRepairComponentSerializer(
             raise serializers.ValidationError(
                 {
                     "status": (
-                        "El componente no puede retornarse "
+                        "El componente no puede devolverse "
                         "desde su estado actual."
-                    )
+                    ),
                 }
             )
 
@@ -1047,9 +972,9 @@ class ReturnRepairComponentSerializer(
             raise serializers.ValidationError(
                 {
                     "quantity": (
-                        "La cantidad retornada supera "
+                        "La cantidad devuelta supera "
                         "la cantidad disponible."
-                    )
+                    ),
                 }
             )
 
@@ -1074,6 +999,12 @@ class ConsumeRepairComponentSerializer(
         allow_null=True,
     )
 
+    removed_serial_number = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=150,
+    )
+
     removed_part_disposition = serializers.ChoiceField(
         choices=RepairComponent.RemovedPartDisposition.choices,
         required=False,
@@ -1084,6 +1015,11 @@ class ConsumeRepairComponentSerializer(
         allow_blank=True,
         max_length=5000,
     )
+
+    def validate_removed_serial_number(self, value):
+        return str(
+            value or ""
+        ).strip().upper()
 
     def validate(self, attrs):
         repair_component = self.context.get(
@@ -1102,9 +1038,9 @@ class ConsumeRepairComponentSerializer(
             raise serializers.ValidationError(
                 {
                     "status": (
-                        "El componente debe estar reservado "
+                        "El componente debe estar preparado "
                         "o entregado antes de consumirse."
-                    )
+                    ),
                 }
             )
 
@@ -1121,20 +1057,41 @@ class ConsumeRepairComponentSerializer(
                     "quantity": (
                         "La cantidad consumida supera "
                         "la cantidad disponible."
-                    )
+                    ),
                 }
             )
 
+        removed_component = attrs.get(
+            "removed_component"
+        )
+
+        removed_serial_number = attrs.get(
+            "removed_serial_number",
+            "",
+        )
+
         if (
-            repair_component.component
-            .requires_removed_part_tracking
-            and not attrs.get("removed_component")
+            repair_component.component.requires_removed_part_tracking
+            and not removed_component
         ):
             raise serializers.ValidationError(
                 {
                     "removed_component": (
                         "Debes registrar la pieza retirada."
-                    )
+                    ),
+                }
+            )
+
+        if (
+            removed_component
+            and removed_component.requires_individual_serial
+            and not removed_serial_number
+        ):
+            raise serializers.ValidationError(
+                {
+                    "removed_serial_number": (
+                        "Debes registrar la serie de la pieza retirada."
+                    ),
                 }
             )
 
@@ -1181,7 +1138,7 @@ class CancelRepairComponentSerializer(
                 {
                     "status": (
                         "El componente ya no puede cancelarse."
-                    )
+                    ),
                 }
             )
 

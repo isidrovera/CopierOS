@@ -51,7 +51,9 @@ class EquipmentComponentListSerializer(
 
     compatibility_count = serializers.SerializerMethodField()
 
-    inventory_count = serializers.SerializerMethodField()
+    assignment_count = serializers.SerializerMethodField()
+
+    subcomponent_count = serializers.SerializerMethodField()
 
     is_archived = serializers.BooleanField(
         read_only=True,
@@ -78,6 +80,7 @@ class EquipmentComponentListSerializer(
             "condition_control_name",
             "expected_life_meter",
             "expected_life_days",
+            "life_reference",
             "requires_individual_serial",
             "is_consumable",
             "is_reusable",
@@ -88,7 +91,8 @@ class EquipmentComponentListSerializer(
             "is_active",
             "display_order",
             "compatibility_count",
-            "inventory_count",
+            "assignment_count",
+            "subcomponent_count",
             "is_archived",
             "created_at",
             "updated_at",
@@ -101,8 +105,13 @@ class EquipmentComponentListSerializer(
             archived_at__isnull=True,
         ).count()
 
-    def get_inventory_count(self, obj):
-        return obj.inventory_records.filter(
+    def get_assignment_count(self, obj):
+        return obj.equipment_assignments.filter(
+            archived_at__isnull=True,
+        ).count()
+
+    def get_subcomponent_count(self, obj):
+        return obj.subcomponents.filter(
             archived_at__isnull=True,
         ).count()
 
@@ -131,6 +140,12 @@ class EquipmentComponentDetailSerializer(
         allow_null=True,
     )
 
+    parent_component_code = serializers.CharField(
+        source="parent_component.code",
+        read_only=True,
+        allow_null=True,
+    )
+
     color_name = serializers.CharField(
         source="get_color_display",
         read_only=True,
@@ -143,7 +158,9 @@ class EquipmentComponentDetailSerializer(
 
     compatibility_count = serializers.SerializerMethodField()
 
-    inventory_count = serializers.SerializerMethodField()
+    assignment_count = serializers.SerializerMethodField()
+
+    subcomponent_count = serializers.SerializerMethodField()
 
     is_archived = serializers.BooleanField(
         read_only=True,
@@ -178,6 +195,7 @@ class EquipmentComponentDetailSerializer(
             "category_name",
             "parent_component",
             "parent_component_name",
+            "parent_component_code",
             "code",
             "name",
             "manufacturer_code",
@@ -188,6 +206,7 @@ class EquipmentComponentDetailSerializer(
             "condition_control_name",
             "expected_life_meter",
             "expected_life_days",
+            "life_reference",
             "requires_individual_serial",
             "is_consumable",
             "is_reusable",
@@ -200,7 +219,8 @@ class EquipmentComponentDetailSerializer(
             "is_active",
             "display_order",
             "compatibility_count",
-            "inventory_count",
+            "assignment_count",
+            "subcomponent_count",
             "is_archived",
             "archived_at",
             "archived_reason",
@@ -220,10 +240,12 @@ class EquipmentComponentDetailSerializer(
             "category",
             "category_name",
             "parent_component_name",
+            "parent_component_code",
             "color_name",
             "condition_control_name",
             "compatibility_count",
-            "inventory_count",
+            "assignment_count",
+            "subcomponent_count",
             "is_archived",
             "archived_at",
             "archived_reason",
@@ -242,8 +264,13 @@ class EquipmentComponentDetailSerializer(
             archived_at__isnull=True,
         ).count()
 
-    def get_inventory_count(self, obj):
-        return obj.inventory_records.filter(
+    def get_assignment_count(self, obj):
+        return obj.equipment_assignments.filter(
+            archived_at__isnull=True,
+        ).count()
+
+    def get_subcomponent_count(self, obj):
+        return obj.subcomponents.filter(
             archived_at__isnull=True,
         ).count()
 
@@ -265,6 +292,7 @@ class EquipmentComponentCreateUpdateSerializer(
             "condition_control",
             "expected_life_meter",
             "expected_life_days",
+            "life_reference",
             "requires_individual_serial",
             "is_consumable",
             "is_reusable",
@@ -325,6 +353,11 @@ class EquipmentComponentCreateUpdateSerializer(
         return str(
             value or ""
         ).strip().upper()
+
+    def validate_life_reference(self, value):
+        return str(
+            value or ""
+        ).strip()
 
     def validate_unit_of_measure(self, value):
         unit = str(
@@ -484,28 +517,51 @@ class EquipmentComponentCreateUpdateSerializer(
                 {
                     "component_type": (
                         "Debes seleccionar un tipo de componente."
-                    )
+                    ),
                 }
             )
 
-        queryset = EquipmentComponent.objects.filter(
+        duplicate_queryset = EquipmentComponent.objects.filter(
             component_type=component_type,
-            name__iexact=str(name or "").strip(),
+            name__iexact=str(
+                name or ""
+            ).strip(),
             color=color,
         )
 
         if instance:
-            queryset = queryset.exclude(
+            duplicate_queryset = duplicate_queryset.exclude(
                 pk=instance.pk,
             )
 
-        if queryset.exists():
+        if duplicate_queryset.exists():
             raise serializers.ValidationError(
                 {
                     "name": (
                         "Ya existe un componente con este nombre, "
                         "tipo y color."
-                    )
+                    ),
+                }
+            )
+
+        if component_type.category == ComponentType.Category.SUBPART:
+            if not parent_component:
+                raise serializers.ValidationError(
+                    {
+                        "parent_component": (
+                            "Debes seleccionar la unidad o componente "
+                            "principal de esta subparte."
+                        ),
+                    }
+                )
+
+        elif parent_component:
+            raise serializers.ValidationError(
+                {
+                    "parent_component": (
+                        "Solo una subparte puede tener un "
+                        "componente principal."
+                    ),
                 }
             )
 
@@ -516,22 +572,27 @@ class EquipmentComponentCreateUpdateSerializer(
                         "parent_component": (
                             "Un componente no puede ser su propio "
                             "componente principal."
-                        )
+                        ),
                     }
                 )
 
-            if (
-                component_type.category
-                != ComponentType.Category.SUBPART
-            ):
-                raise serializers.ValidationError(
-                    {
-                        "parent_component": (
-                            "Solo una subparte puede tener un "
-                            "componente principal."
-                        )
-                    }
-                )
+            current_parent = parent_component
+
+            while current_parent is not None:
+                if (
+                    instance
+                    and current_parent.pk == instance.pk
+                ):
+                    raise serializers.ValidationError(
+                        {
+                            "parent_component": (
+                                "La relación genera una referencia "
+                                "circular entre componentes."
+                            ),
+                        }
+                    )
+
+                current_parent = current_parent.parent_component
 
         if (
             component_type.requires_color
@@ -541,7 +602,7 @@ class EquipmentComponentCreateUpdateSerializer(
                 {
                     "color": (
                         "Este tipo de componente requiere color."
-                    )
+                    ),
                 }
             )
 
@@ -553,39 +614,80 @@ class EquipmentComponentCreateUpdateSerializer(
                 {
                     "color": (
                         "Este tipo de componente no requiere color."
-                    )
+                    ),
+                }
+            )
+
+        if condition_control in (
+            EquipmentComponent.ConditionControl.METER,
+            EquipmentComponent.ConditionControl.DATE_AND_METER,
+        ):
+            if not expected_life_meter:
+                raise serializers.ValidationError(
+                    {
+                        "expected_life_meter": (
+                            "Debes indicar la duración estimada "
+                            "por contador."
+                        ),
+                    }
+                )
+
+        if condition_control in (
+            EquipmentComponent.ConditionControl.DATE,
+            EquipmentComponent.ConditionControl.DATE_AND_METER,
+        ):
+            if not expected_life_days:
+                raise serializers.ValidationError(
+                    {
+                        "expected_life_days": (
+                            "Debes indicar la duración estimada "
+                            "en días."
+                        ),
+                    }
+                )
+
+        if (
+            condition_control
+            == EquipmentComponent.ConditionControl.NONE
+            and (
+                expected_life_meter is not None
+                or expected_life_days is not None
+            )
+        ):
+            raise serializers.ValidationError(
+                {
+                    "condition_control": (
+                        "Debes seleccionar el tipo de duración "
+                        "cuando registras una duración estimada."
+                    ),
                 }
             )
 
         if (
             condition_control
-            in (
-                EquipmentComponent.ConditionControl.METER,
-                EquipmentComponent.ConditionControl.DATE_AND_METER,
-            )
-            and not expected_life_meter
+            == EquipmentComponent.ConditionControl.DATE
+            and expected_life_meter is not None
         ):
             raise serializers.ValidationError(
                 {
                     "expected_life_meter": (
-                        "Debes indicar la vida útil por contador."
-                    )
+                        "No debes registrar duración por contador "
+                        "cuando el control es únicamente por tiempo."
+                    ),
                 }
             )
 
         if (
             condition_control
-            in (
-                EquipmentComponent.ConditionControl.DATE,
-                EquipmentComponent.ConditionControl.DATE_AND_METER,
-            )
-            and not expected_life_days
+            == EquipmentComponent.ConditionControl.METER
+            and expected_life_days is not None
         ):
             raise serializers.ValidationError(
                 {
                     "expected_life_days": (
-                        "Debes indicar la vida útil en días."
-                    )
+                        "No debes registrar duración en días "
+                        "cuando el control es únicamente por contador."
+                    ),
                 }
             )
 
@@ -597,8 +699,8 @@ class EquipmentComponentCreateUpdateSerializer(
                 {
                     "requires_individual_serial": (
                         "El tipo seleccionado no permite "
-                        "control por serie."
-                    )
+                        "registrar una serie individual."
+                    ),
                 }
             )
 
@@ -606,8 +708,9 @@ class EquipmentComponentCreateUpdateSerializer(
             raise serializers.ValidationError(
                 {
                     "is_reusable": (
-                        "Un consumible no puede ser reutilizable."
-                    )
+                        "Un consumible no puede marcarse "
+                        "como reutilizable."
+                    ),
                 }
             )
 
@@ -615,8 +718,9 @@ class EquipmentComponentCreateUpdateSerializer(
             raise serializers.ValidationError(
                 {
                     "can_be_repaired": (
-                        "Para reparar el componente debe ser reutilizable."
-                    )
+                        "Para permitir reparación, el componente "
+                        "debe marcarse como reutilizable."
+                    ),
                 }
             )
 

@@ -5,8 +5,6 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from apps.equipment.models import ComponentInventory
-
 from ..models import RepairComponent
 
 
@@ -25,7 +23,7 @@ def normalize_quantity(value):
             {
                 "quantity": (
                     "La cantidad ingresada no es válida."
-                )
+                ),
             }
         ) from exc
 
@@ -34,11 +32,17 @@ def normalize_quantity(value):
             {
                 "quantity": (
                     "La cantidad debe ser mayor que cero."
-                )
+                ),
             }
         )
 
     return quantity
+
+
+def normalize_serial_number(value):
+    return str(
+        value or ""
+    ).strip().upper()
 
 
 def append_notes(
@@ -83,49 +87,12 @@ def validate_repair_component_active(
         )
 
 
-def validate_inventory_component(
-    repair_component,
-    inventory,
-):
-    if inventory.archived_at is not None:
-        raise ValidationError(
-            {
-                "inventory": (
-                    "El registro de inventario está archivado."
-                )
-            }
-        )
-
-    if not inventory.is_active:
-        raise ValidationError(
-            {
-                "inventory": (
-                    "El registro de inventario está inactivo."
-                )
-            }
-        )
-
-    if (
-        inventory.component_id
-        != repair_component.component_id
-    ):
-        raise ValidationError(
-            {
-                "inventory": (
-                    "El inventario no corresponde al "
-                    "componente solicitado."
-                )
-            }
-        )
-
-
 def validate_serialized_quantity(
     repair_component,
     quantity,
 ):
     if (
-        repair_component.component
-        .requires_individual_serial
+        repair_component.component.requires_individual_serial
         and quantity != Decimal("1.00")
     ):
         raise ValidationError(
@@ -133,20 +100,27 @@ def validate_serialized_quantity(
                 "quantity": (
                     "Los componentes serializados deben "
                     "manejarse con cantidad igual a uno."
-                )
+                ),
             }
         )
 
 
-def save_inventory(
-    inventory,
-    actor=None,
+def validate_component_serial(
+    repair_component,
+    serial_number,
 ):
-    if actor:
-        inventory.updated_by = actor
-
-    inventory.full_clean()
-    inventory.save()
+    if (
+        repair_component.component.requires_individual_serial
+        and not serial_number
+    ):
+        raise ValidationError(
+            {
+                "serial_number": (
+                    "Debe registrar la serie física "
+                    "del componente."
+                ),
+            }
+        )
 
 
 def save_repair_component(
@@ -190,7 +164,7 @@ def request_component(
                 "status": (
                     "Solo un componente pendiente "
                     "puede solicitarse."
-                )
+                ),
             }
         )
 
@@ -219,8 +193,8 @@ def request_component(
 def reserve_component(
     *,
     repair_component,
-    inventory,
     quantity,
+    serial_number="",
     actor=None,
     notes="",
 ):
@@ -234,31 +208,26 @@ def reserve_component(
         .get(pk=repair_component.pk)
     )
 
-    inventory = (
-        ComponentInventory.objects
-        .select_for_update()
-        .select_related(
-            "component",
-        )
-        .get(pk=inventory.pk)
-    )
-
     validate_repair_component_active(
         repair_component
-    )
-
-    validate_inventory_component(
-        repair_component,
-        inventory,
     )
 
     quantity = normalize_quantity(
         quantity
     )
 
+    serial_number = normalize_serial_number(
+        serial_number
+    )
+
     validate_serialized_quantity(
         repair_component,
         quantity,
+    )
+
+    validate_component_serial(
+        repair_component,
+        serial_number,
     )
 
     if repair_component.status not in (
@@ -268,9 +237,9 @@ def reserve_component(
         raise ValidationError(
             {
                 "status": (
-                    "El componente no puede reservarse "
+                    "El componente no puede prepararse "
                     "desde su estado actual."
-                )
+                ),
             }
         )
 
@@ -278,30 +247,13 @@ def reserve_component(
         raise ValidationError(
             {
                 "quantity": (
-                    "La cantidad reservada no puede superar "
+                    "La cantidad preparada no puede superar "
                     "la cantidad solicitada."
-                )
+                ),
             }
         )
 
-    if inventory.available_quantity < quantity:
-        raise ValidationError(
-            {
-                "quantity": (
-                    "No existe suficiente stock disponible."
-                )
-            }
-        )
-
-    inventory.available_quantity -= quantity
-    inventory.reserved_quantity += quantity
-
-    save_inventory(
-        inventory,
-        actor,
-    )
-
-    repair_component.inventory = inventory
+    repair_component.serial_number = serial_number
     repair_component.status = (
         RepairComponent.Status.RESERVED
     )
@@ -311,15 +263,6 @@ def reserve_component(
     repair_component.reserved_quantity = quantity
     repair_component.reserved_by = actor
     repair_component.reserved_at = timezone.now()
-
-    if (
-        repair_component.unit_cost is None
-        and inventory.unit_cost is not None
-    ):
-        repair_component.unit_cost = (
-            inventory.unit_cost
-        )
-
     repair_component.notes = append_notes(
         repair_component.notes,
         notes,
@@ -347,7 +290,6 @@ def deliver_component(
         .select_related(
             "repair",
             "component",
-            "inventory",
         )
         .get(pk=repair_component.pk)
     )
@@ -356,15 +298,6 @@ def deliver_component(
         repair_component
     )
 
-    if not repair_component.inventory_id:
-        raise ValidationError(
-            {
-                "inventory": (
-                    "El componente no tiene inventario reservado."
-                )
-            }
-        )
-
     if (
         repair_component.status
         != RepairComponent.Status.RESERVED
@@ -372,9 +305,9 @@ def deliver_component(
         raise ValidationError(
             {
                 "status": (
-                    "Solo un componente reservado "
+                    "Solo un componente preparado "
                     "puede entregarse."
-                )
+                ),
             }
         )
 
@@ -392,35 +325,10 @@ def deliver_component(
             {
                 "quantity": (
                     "La cantidad entregada supera "
-                    "la cantidad reservada pendiente."
-                )
+                    "la cantidad preparada pendiente."
+                ),
             }
         )
-
-    inventory = (
-        ComponentInventory.objects
-        .select_for_update()
-        .get(
-            pk=repair_component.inventory_id
-        )
-    )
-
-    if inventory.reserved_quantity < quantity:
-        raise ValidationError(
-            {
-                "quantity": (
-                    "El inventario no tiene suficiente "
-                    "cantidad reservada."
-                )
-            }
-        )
-
-    inventory.reserved_quantity -= quantity
-
-    save_inventory(
-        inventory,
-        actor,
-    )
 
     repair_component.delivered_quantity += quantity
     repair_component.status = (
@@ -451,7 +359,6 @@ def install_component(
     quantity,
     actor=None,
     removed_component=None,
-    removed_inventory=None,
     removed_serial_number="",
     removed_part_disposition=None,
     removed_part_notes="",
@@ -463,7 +370,6 @@ def install_component(
         .select_related(
             "repair",
             "component",
-            "inventory",
         )
         .get(pk=repair_component.pk)
     )
@@ -479,9 +385,9 @@ def install_component(
         raise ValidationError(
             {
                 "status": (
-                    "El componente debe estar reservado "
+                    "El componente debe estar preparado "
                     "o entregado antes de instalarse."
-                )
+                ),
             }
         )
 
@@ -494,20 +400,25 @@ def install_component(
         quantity,
     )
 
-    available_to_install = (
+    delivered_available = (
         repair_component.delivered_quantity
         - repair_component.installed_quantity
         - repair_component.returned_quantity
         - repair_component.consumed_quantity
     )
 
-    if available_to_install <= ZERO:
-        available_to_install = (
-            repair_component.reserved_quantity
-            - repair_component.installed_quantity
-            - repair_component.returned_quantity
-            - repair_component.consumed_quantity
-        )
+    reserved_available = (
+        repair_component.reserved_quantity
+        - repair_component.installed_quantity
+        - repair_component.returned_quantity
+        - repair_component.consumed_quantity
+    )
+
+    available_to_install = (
+        delivered_available
+        if delivered_available > ZERO
+        else reserved_available
+    )
 
     if quantity > available_to_install:
         raise ValidationError(
@@ -515,36 +426,39 @@ def install_component(
                 "quantity": (
                     "La cantidad instalada supera "
                     "la cantidad disponible."
-                )
+                ),
             }
         )
 
+    removed_serial_number = normalize_serial_number(
+        removed_serial_number
+    )
+
     if (
-        repair_component.component
-        .requires_removed_part_tracking
+        repair_component.component.requires_removed_part_tracking
         and not removed_component
     ):
         raise ValidationError(
             {
                 "removed_component": (
                     "Debes registrar el componente retirado."
-                )
+                ),
             }
         )
 
-    if removed_inventory and removed_component:
-        if (
-            removed_inventory.component_id
-            != removed_component.id
-        ):
-            raise ValidationError(
-                {
-                    "removed_inventory": (
-                        "El inventario retirado no corresponde "
-                        "al componente retirado."
-                    )
-                }
-            )
+    if (
+        removed_component
+        and removed_component.requires_individual_serial
+        and not removed_serial_number
+    ):
+        raise ValidationError(
+            {
+                "removed_serial_number": (
+                    "Debes registrar la serie del "
+                    "componente retirado."
+                ),
+            }
+        )
 
     disposition = (
         removed_part_disposition
@@ -569,7 +483,7 @@ def install_component(
                 "removed_part_disposition": (
                     "Debes indicar el destino "
                     "del componente retirado."
-                )
+                ),
             }
         )
 
@@ -583,23 +497,16 @@ def install_component(
     repair_component.installed_by = actor
     repair_component.installed_at = timezone.now()
 
-    repair_component.removed_component = (
-        removed_component
+    repair_component.removed_component = removed_component
+    repair_component.removed_serial_number = (
+        removed_serial_number
     )
-    repair_component.removed_inventory = (
-        removed_inventory
-    )
-    repair_component.removed_serial_number = str(
-        removed_serial_number or ""
-    ).strip().upper()
     repair_component.removed_part_disposition = (
         disposition
     )
-    repair_component.removed_part_notes = (
-        append_notes(
-            repair_component.removed_part_notes,
-            removed_part_notes,
-        )
+    repair_component.removed_part_notes = append_notes(
+        repair_component.removed_part_notes,
+        removed_part_notes,
     )
 
     if removed_component:
@@ -626,6 +533,7 @@ def consume_component(
     quantity,
     actor=None,
     removed_component=None,
+    removed_serial_number="",
     removed_part_disposition=None,
     notes="",
 ):
@@ -635,7 +543,6 @@ def consume_component(
         .select_related(
             "repair",
             "component",
-            "inventory",
         )
         .get(pk=repair_component.pk)
     )
@@ -651,9 +558,9 @@ def consume_component(
         raise ValidationError(
             {
                 "status": (
-                    "El componente debe estar reservado "
+                    "El componente debe estar preparado "
                     "o entregado antes de consumirse."
-                )
+                ),
             }
         )
 
@@ -661,20 +568,25 @@ def consume_component(
         quantity
     )
 
-    available_to_consume = (
+    delivered_available = (
         repair_component.delivered_quantity
         - repair_component.installed_quantity
         - repair_component.returned_quantity
         - repair_component.consumed_quantity
     )
 
-    if available_to_consume <= ZERO:
-        available_to_consume = (
-            repair_component.reserved_quantity
-            - repair_component.installed_quantity
-            - repair_component.returned_quantity
-            - repair_component.consumed_quantity
-        )
+    reserved_available = (
+        repair_component.reserved_quantity
+        - repair_component.installed_quantity
+        - repair_component.returned_quantity
+        - repair_component.consumed_quantity
+    )
+
+    available_to_consume = (
+        delivered_available
+        if delivered_available > ZERO
+        else reserved_available
+    )
 
     if quantity > available_to_consume:
         raise ValidationError(
@@ -682,20 +594,37 @@ def consume_component(
                 "quantity": (
                     "La cantidad consumida supera "
                     "la cantidad disponible."
-                )
+                ),
             }
         )
 
     if (
-        repair_component.component
-        .requires_removed_part_tracking
+        repair_component.component.requires_removed_part_tracking
         and not removed_component
     ):
         raise ValidationError(
             {
                 "removed_component": (
                     "Debes registrar la pieza retirada."
-                )
+                ),
+            }
+        )
+
+    removed_serial_number = normalize_serial_number(
+        removed_serial_number
+    )
+
+    if (
+        removed_component
+        and removed_component.requires_individual_serial
+        and not removed_serial_number
+    ):
+        raise ValidationError(
+            {
+                "removed_serial_number": (
+                    "Debes registrar la serie de la "
+                    "pieza retirada."
+                ),
             }
         )
 
@@ -710,18 +639,15 @@ def consume_component(
     repair_component.installed_at = timezone.now()
 
     if removed_component:
-        repair_component.removed_component = (
-            removed_component
+        repair_component.removed_component = removed_component
+        repair_component.removed_serial_number = (
+            removed_serial_number
         )
         repair_component.removed_by = actor
         repair_component.removed_at = timezone.now()
         repair_component.removed_part_disposition = (
             removed_part_disposition
-            or (
-                RepairComponent
-                .RemovedPartDisposition
-                .DISCARDED
-            )
+            or RepairComponent.RemovedPartDisposition.DISCARD
         )
 
     repair_component.notes = append_notes(
@@ -751,7 +677,6 @@ def return_component(
         .select_related(
             "repair",
             "component",
-            "inventory",
         )
         .get(pk=repair_component.pk)
     )
@@ -770,16 +695,7 @@ def return_component(
                 "status": (
                     "El componente no puede devolverse "
                     "desde su estado actual."
-                )
-            }
-        )
-
-    if not repair_component.inventory_id:
-        raise ValidationError(
-            {
-                "inventory": (
-                    "El componente no tiene inventario asociado."
-                )
+                ),
             }
         )
 
@@ -788,8 +704,10 @@ def return_component(
     )
 
     available_to_return = (
-        repair_component.reserved_quantity
-        + repair_component.delivered_quantity
+        max(
+            repair_component.delivered_quantity,
+            repair_component.reserved_quantity,
+        )
         - repair_component.installed_quantity
         - repair_component.consumed_quantity
         - repair_component.returned_quantity
@@ -801,53 +719,9 @@ def return_component(
                 "quantity": (
                     "La cantidad devuelta supera "
                     "la cantidad disponible."
-                )
+                ),
             }
         )
-
-    inventory = (
-        ComponentInventory.objects
-        .select_for_update()
-        .get(
-            pk=repair_component.inventory_id
-        )
-    )
-
-    reserved_pending = max(
-        repair_component.reserved_quantity
-        - repair_component.delivered_quantity,
-        ZERO,
-    )
-
-    returned_from_reserved = min(
-        quantity,
-        reserved_pending,
-    )
-
-    if returned_from_reserved > ZERO:
-        if (
-            inventory.reserved_quantity
-            < returned_from_reserved
-        ):
-            raise ValidationError(
-                {
-                    "quantity": (
-                        "El inventario reservado no coincide "
-                        "con la devolución."
-                    )
-                }
-            )
-
-        inventory.reserved_quantity -= (
-            returned_from_reserved
-        )
-
-    inventory.available_quantity += quantity
-
-    save_inventory(
-        inventory,
-        actor,
-    )
 
     repair_component.returned_quantity += quantity
     repair_component.status = (
@@ -887,7 +761,7 @@ def cancel_component_request(
             {
                 "reason": (
                     "El motivo de cancelación es obligatorio."
-                )
+                ),
             }
         )
 
@@ -897,7 +771,6 @@ def cancel_component_request(
         .select_related(
             "repair",
             "component",
-            "inventory",
         )
         .get(pk=repair_component.pk)
     )
@@ -913,60 +786,12 @@ def cancel_component_request(
             {
                 "status": (
                     "El componente ya no puede cancelarse."
-                )
+                ),
             }
         )
 
-    if (
-        repair_component.inventory_id
-        and repair_component.reserved_quantity > ZERO
-    ):
-        inventory = (
-            ComponentInventory.objects
-            .select_for_update()
-            .get(
-                pk=repair_component.inventory_id
-            )
-        )
-
-        pending_reserved = max(
-            repair_component.reserved_quantity
-            - repair_component.delivered_quantity
-            - repair_component.returned_quantity,
-            ZERO,
-        )
-
-        if pending_reserved > ZERO:
-            if (
-                inventory.reserved_quantity
-                < pending_reserved
-            ):
-                raise ValidationError(
-                    {
-                        "inventory": (
-                            "La reserva del inventario no coincide "
-                            "con la solicitud."
-                        )
-                    }
-                )
-
-            inventory.reserved_quantity -= (
-                pending_reserved
-            )
-            inventory.available_quantity += (
-                pending_reserved
-            )
-
-            save_inventory(
-                inventory,
-                actor,
-            )
-
     repair_component.status = (
         RepairComponent.Status.CANCELLED
-    )
-    repair_component.movement_type = (
-        RepairComponent.MovementType.CANCELLED
     )
     repair_component.notes = append_notes(
         repair_component.notes,

@@ -119,17 +119,6 @@ class ComponentTypeListCreateView(
                 requires_meter=requires_meter,
             )
 
-        controls_stock = parse_boolean_query_param(
-            self.request.query_params.get(
-                "controls_stock"
-            )
-        )
-
-        if controls_stock is not None:
-            queryset = queryset.filter(
-                controls_stock=controls_stock,
-            )
-
         is_active = parse_boolean_query_param(
             self.request.query_params.get(
                 "is_active"

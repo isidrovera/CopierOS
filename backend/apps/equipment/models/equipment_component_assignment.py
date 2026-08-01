@@ -4,35 +4,38 @@ from django.db import models
 from django.utils import timezone
 
 from .base import EquipmentBaseModel
-from .component_inventory import ComponentInventory
+from .component import EquipmentComponent
 from .equipment import Equipment
 
 
 class EquipmentComponentAssignment(EquipmentBaseModel):
     """
-    Historial de componentes instalados en un equipo.
+    Historial descriptivo de componentes instalados en un equipo.
 
     Permite registrar:
 
-    - Unidades técnicas.
-    - Subpartes.
+    - Unidades técnicas completas.
+    - Subpartes reemplazadas.
+    - Repuestos.
     - Accesorios.
     - Tóners.
-    - Repuestos.
+    - Consumibles.
 
-    Conserva el contador de instalación y retiro, así como
-    el destino del componente retirado.
+    Este modelo no controla stock, almacenes, costos, precios
+    ni movimientos de inventario.
+
+    Conserva:
+
+    - Componente instalado.
+    - Serie individual cuando corresponda.
+    - Posición o color.
+    - Fecha y contador de instalación.
+    - Fecha y contador de retiro.
+    - Destino del componente retirado.
+    - Reparación, servicio o proceso relacionado.
     """
 
     class Status(models.TextChoices):
-        RESERVED = (
-            "reserved",
-            "Reservado",
-        )
-        DELIVERED = (
-            "delivered",
-            "Entregado al técnico",
-        )
         INSTALLED = (
             "installed",
             "Instalado",
@@ -41,13 +44,29 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
             "removed",
             "Retirado",
         )
-        RETURNED = (
-            "returned",
-            "Devuelto al almacén",
+        SENT_TO_REPAIR = (
+            "sent_to_repair",
+            "Enviado a reparación",
+        )
+        REPAIRED = (
+            "repaired",
+            "Reparado",
+        )
+        RECOVERABLE = (
+            "recoverable",
+            "Recuperable",
+        )
+        FOR_PARTS = (
+            "for_parts",
+            "Para partes",
         )
         DISCARDED = (
             "discarded",
             "Desechado",
+        )
+        RETURNED_TO_CUSTOMER = (
+            "returned_to_customer",
+            "Entregado al cliente",
         )
         CANCELLED = (
             "cancelled",
@@ -59,9 +78,9 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
             "not_applicable",
             "No aplica",
         )
-        RETURN_TO_STOCK = (
-            "return_to_stock",
-            "Retornar al inventario",
+        KEEP_FOR_REUSE = (
+            "keep_for_reuse",
+            "Conservar para reutilización",
         )
         SEND_TO_REPAIR = (
             "send_to_repair",
@@ -73,7 +92,7 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
         )
         FOR_PARTS = (
             "for_parts",
-            "Para partes",
+            "Utilizar para partes",
         )
         DISCARD = (
             "discard",
@@ -83,6 +102,10 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
             "customer_return",
             "Entregar al cliente",
         )
+        OTHER = (
+            "other",
+            "Otro destino",
+        )
 
     equipment = models.ForeignKey(
         Equipment,
@@ -91,26 +114,26 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
         verbose_name="Equipo",
     )
 
-    inventory = models.ForeignKey(
-        ComponentInventory,
+    component = models.ForeignKey(
+        EquipmentComponent,
         on_delete=models.PROTECT,
         related_name="equipment_assignments",
-        verbose_name="Componente de inventario",
+        verbose_name="Componente",
+        help_text=(
+            "Unidad, subparte, repuesto, accesorio, tóner "
+            "o consumible relacionado con el equipo."
+        ),
     )
 
-    quantity = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=1,
-        verbose_name="Cantidad",
-    )
-
-    status = models.CharField(
-        max_length=30,
-        choices=Status.choices,
-        default=Status.RESERVED,
+    serial_number = models.CharField(
+        max_length=150,
+        blank=True,
         db_index=True,
-        verbose_name="Estado",
+        verbose_name="Número de serie del componente",
+        help_text=(
+            "Serie individual del accesorio o unidad física "
+            "cuando el fabricante la proporciona."
+        ),
     )
 
     position = models.CharField(
@@ -119,9 +142,17 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
         db_index=True,
         verbose_name="Color o posición",
         help_text=(
-            "Ejemplo: negro, cyan, magenta, amarillo, "
-            "superior, inferior o principal."
+            "Ejemplo: black, cyan, magenta, yellow, "
+            "superior, inferior, principal o bandeja 1."
         ),
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=Status.choices,
+        default=Status.INSTALLED,
+        db_index=True,
+        verbose_name="Estado",
     )
 
     installed_at = models.DateTimeField(
@@ -135,6 +166,10 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
         null=True,
         blank=True,
         verbose_name="Contador de instalación",
+        help_text=(
+            "Contador del equipo cuando se instaló "
+            "el componente."
+        ),
     )
 
     removed_at = models.DateTimeField(
@@ -148,6 +183,10 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
         null=True,
         blank=True,
         verbose_name="Contador de retiro",
+        help_text=(
+            "Contador del equipo cuando se retiró "
+            "el componente."
+        ),
     )
 
     removed_disposition = models.CharField(
@@ -164,8 +203,8 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
         db_index=True,
         verbose_name="Tipo de referencia",
         help_text=(
-            "Proceso relacionado, por ejemplo reparación, "
-            "servicio técnico o entrega."
+            "Proceso relacionado. Ejemplo: reparación, "
+            "servicio técnico, instalación o retiro."
         ),
     )
 
@@ -174,6 +213,10 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
         blank=True,
         db_index=True,
         verbose_name="ID de referencia",
+        help_text=(
+            "Identificador de la reparación, servicio "
+            "u otro proceso relacionado."
+        ),
     )
 
     installation_notes = models.TextField(
@@ -189,20 +232,47 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
     is_active = models.BooleanField(
         default=True,
         db_index=True,
-        verbose_name="Activo",
+        verbose_name="Continúa instalado",
         help_text=(
             "Indica si el componente continúa instalado "
-            "o asignado al equipo."
+            "actualmente en el equipo."
         ),
     )
 
     class Meta:
         verbose_name = "Componente asignado al equipo"
         verbose_name_plural = "Componentes asignados a equipos"
+
         ordering = (
             "-installed_at",
             "-created_at",
         )
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "equipment",
+                    "component",
+                    "position",
+                ],
+                condition=models.Q(
+                    is_active=True,
+                    status="installed",
+                ),
+                name="unique_active_component_position",
+            ),
+            models.UniqueConstraint(
+                fields=[
+                    "component",
+                    "serial_number",
+                ],
+                condition=~models.Q(
+                    serial_number="",
+                ),
+                name="unique_assigned_component_serial",
+            ),
+        ]
+
         indexes = [
             models.Index(
                 fields=[
@@ -213,10 +283,10 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
             ),
             models.Index(
                 fields=[
-                    "inventory",
+                    "component",
                     "status",
                 ],
-                name="eq_comp_asg_inv_idx",
+                name="eq_comp_asg_component_idx",
             ),
             models.Index(
                 fields=[
@@ -232,20 +302,44 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
                 ],
                 name="equip_comp_assign_status_idx",
             ),
+            models.Index(
+                fields=[
+                    "serial_number",
+                ],
+                name="equip_comp_asg_serial_idx",
+            ),
         ]
 
     def __str__(self):
-        return (
+        assignment_name = (
             f"{self.equipment} - "
-            f"{self.inventory.component}"
+            f"{self.component}"
         )
+
+        if self.position:
+            assignment_name = (
+                f"{assignment_name} - "
+                f"{self.position}"
+            )
+
+        if self.serial_number:
+            assignment_name = (
+                f"{assignment_name} "
+                f"[{self.serial_number}]"
+            )
+
+        return assignment_name
 
     def clean(self):
         """
-        Normaliza y valida la asignación.
+        Normaliza y valida la asignación del componente.
         """
 
         super().clean()
+
+        self.serial_number = str(
+            self.serial_number or ""
+        ).strip().upper()
 
         self.position = str(
             self.position or ""
@@ -272,47 +366,25 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
                 }
             )
 
-        if not self.inventory_id:
+        if not self.component_id:
             raise ValidationError(
                 {
-                    "inventory": (
-                        "El componente de inventario es obligatorio."
-                    ),
-                }
-            )
-
-        if self.quantity is None or self.quantity <= 0:
-            raise ValidationError(
-                {
-                    "quantity": (
-                        "La cantidad debe ser mayor que cero."
+                    "component": (
+                        "El componente es obligatorio."
                     ),
                 }
             )
 
         if (
-            self.inventory_id
-            and self.quantity > self.inventory.quantity
+            self.component_id
+            and self.component.requires_individual_serial
+            and not self.serial_number
         ):
             raise ValidationError(
                 {
-                    "quantity": (
-                        "La cantidad supera las existencias "
-                        "del registro de inventario."
-                    ),
-                }
-            )
-
-        if (
-            self.inventory_id
-            and self.inventory.serial_number
-            and self.quantity != 1
-        ):
-            raise ValidationError(
-                {
-                    "quantity": (
-                        "Un componente controlado por serie "
-                        "debe asignarse con cantidad igual a uno."
+                    "serial_number": (
+                        "Este componente requiere registrar "
+                        "un número de serie individual."
                     ),
                 }
             )
@@ -329,19 +401,37 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
                 }
             )
 
+        removed_statuses = [
+            self.Status.REMOVED,
+            self.Status.SENT_TO_REPAIR,
+            self.Status.REPAIRED,
+            self.Status.RECOVERABLE,
+            self.Status.FOR_PARTS,
+            self.Status.DISCARDED,
+            self.Status.RETURNED_TO_CUSTOMER,
+        ]
+
         if (
-            self.status
-            in [
-                self.Status.REMOVED,
-                self.Status.RETURNED,
-                self.Status.DISCARDED,
-            ]
+            self.status in removed_statuses
             and not self.removed_at
         ):
             raise ValidationError(
                 {
                     "removed_at": (
                         "Debe registrar la fecha de retiro."
+                    ),
+                }
+            )
+
+        if (
+            self.removed_at
+            and not self.installed_at
+        ):
+            raise ValidationError(
+                {
+                    "installed_at": (
+                        "Debe registrar la fecha de instalación "
+                        "antes de registrar el retiro."
                     ),
                 }
             )
@@ -382,7 +472,8 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
             raise ValidationError(
                 {
                     "removed_disposition": (
-                        "Debe indicar el destino del componente retirado."
+                        "Debe indicar el destino del componente "
+                        "retirado."
                     ),
                 }
             )
@@ -395,8 +486,8 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
             raise ValidationError(
                 {
                     "removed_disposition": (
-                        "No puede indicar un destino si el componente "
-                        "todavía no fue retirado."
+                        "No puede indicar un destino mientras "
+                        "el componente continúe instalado."
                     ),
                 }
             )
@@ -414,16 +505,46 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
             raise ValidationError(
                 {
                     "reference_id": (
-                        "Debe indicar el ID de referencia."
+                        "Debe indicar el ID del registro relacionado."
                     ),
                 }
             )
 
-        if self.status == self.Status.INSTALLED:
+        if (
+            self.status == self.Status.INSTALLED
+            and not self.is_active
+        ):
+            raise ValidationError(
+                {
+                    "is_active": (
+                        "Un componente instalado debe permanecer activo."
+                    ),
+                }
+            )
+
+        if (
+            self.status != self.Status.INSTALLED
+            and self.is_active
+        ):
+            raise ValidationError(
+                {
+                    "is_active": (
+                        "Solo un componente instalado puede permanecer "
+                        "marcado como activo."
+                    ),
+                }
+            )
+
+        if (
+            self.status == self.Status.INSTALLED
+            and self.equipment_id
+            and self.component_id
+        ):
             duplicate_active = (
                 EquipmentComponentAssignment.objects.filter(
                     equipment_id=self.equipment_id,
-                    inventory_id=self.inventory_id,
+                    component_id=self.component_id,
+                    position__iexact=self.position,
                     status=self.Status.INSTALLED,
                     is_active=True,
                 )
@@ -433,9 +554,28 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
             if duplicate_active.exists():
                 raise ValidationError(
                     {
-                        "inventory": (
+                        "component": (
                             "Este componente ya figura instalado "
-                            "en el equipo."
+                            "en la misma posición del equipo."
+                        ),
+                    }
+                )
+
+        if self.component_id and self.serial_number:
+            duplicate_serial = (
+                EquipmentComponentAssignment.objects.filter(
+                    component_id=self.component_id,
+                    serial_number__iexact=self.serial_number,
+                )
+                .exclude(pk=self.pk)
+            )
+
+            if duplicate_serial.exists():
+                raise ValidationError(
+                    {
+                        "serial_number": (
+                            "Esta serie ya fue registrada para "
+                            "el componente seleccionado."
                         ),
                     }
                 )
@@ -444,6 +584,10 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
         """
         Normaliza y valida antes de guardar.
         """
+
+        self.serial_number = str(
+            self.serial_number or ""
+        ).strip().upper()
 
         self.position = str(
             self.position or ""
@@ -467,10 +611,22 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
         ):
             self.installed_at = timezone.now()
 
+        if self.status == self.Status.INSTALLED:
+            self.is_active = True
+            self.removed_at = None
+            self.removal_meter = None
+            self.removed_disposition = (
+                self.RemovedDisposition.NOT_APPLICABLE
+            )
+
         if self.status in [
             self.Status.REMOVED,
-            self.Status.RETURNED,
+            self.Status.SENT_TO_REPAIR,
+            self.Status.REPAIRED,
+            self.Status.RECOVERABLE,
+            self.Status.FOR_PARTS,
             self.Status.DISCARDED,
+            self.Status.RETURNED_TO_CUSTOMER,
             self.Status.CANCELLED,
         ]:
             self.is_active = False
@@ -481,3 +637,29 @@ class EquipmentComponentAssignment(EquipmentBaseModel):
             *args,
             **kwargs,
         )
+
+    def remove(
+        self,
+        disposition,
+        removal_meter=None,
+        notes="",
+        removed_at=None,
+        save=True,
+    ):
+        """
+        Marca el componente como retirado del equipo.
+        """
+
+        self.status = self.Status.REMOVED
+        self.is_active = False
+        self.removed_at = removed_at or timezone.now()
+        self.removal_meter = removal_meter
+        self.removed_disposition = disposition
+        self.removal_notes = str(
+            notes or ""
+        ).strip()
+
+        if save:
+            self.save()
+
+        return self

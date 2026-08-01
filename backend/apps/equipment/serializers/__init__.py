@@ -23,17 +23,6 @@ from .component_compatibility import (
     ComponentCompatibilityDetailSerializer,
     ComponentCompatibilityListSerializer,
 )
-from .component_inventory import (
-    ArchiveComponentInventorySerializer,
-    ComponentInventoryCreateUpdateSerializer,
-    ComponentInventoryDetailSerializer,
-    ComponentInventoryListSerializer,
-)
-from .component_inventory_movement import (
-    ComponentInventoryMovementCreateSerializer,
-    ComponentInventoryMovementDetailSerializer,
-    ComponentInventoryMovementListSerializer,
-)
 from .component_type import (
     ArchiveComponentTypeSerializer,
     ComponentTypeCreateUpdateSerializer,
@@ -50,9 +39,11 @@ from .equipment import (
     RegisterInitialEquipmentMetersSerializer,
 )
 from .equipment_component_assignment import (
+    ArchiveEquipmentComponentAssignmentSerializer,
     EquipmentComponentAssignmentCreateUpdateSerializer,
     EquipmentComponentAssignmentDetailSerializer,
     EquipmentComponentAssignmentListSerializer,
+    RemoveEquipmentComponentAssignmentSerializer,
 )
 from .equipment_document import (
     ArchiveEquipmentDocumentSerializer,
@@ -151,21 +142,12 @@ __all__ = (
     "ComponentCompatibilityCreateUpdateSerializer",
     "ArchiveComponentCompatibilitySerializer",
 
-    # Inventario de componentes
-    "ComponentInventoryListSerializer",
-    "ComponentInventoryDetailSerializer",
-    "ComponentInventoryCreateUpdateSerializer",
-    "ArchiveComponentInventorySerializer",
-
-    # Movimientos de inventario
-    "ComponentInventoryMovementListSerializer",
-    "ComponentInventoryMovementDetailSerializer",
-    "ComponentInventoryMovementCreateSerializer",
-
     # Componentes asignados a equipos
     "EquipmentComponentAssignmentListSerializer",
     "EquipmentComponentAssignmentDetailSerializer",
     "EquipmentComponentAssignmentCreateUpdateSerializer",
+    "RemoveEquipmentComponentAssignmentSerializer",
+    "ArchiveEquipmentComponentAssignmentSerializer",
 
     # Importaciones y lotes
     "ImportBatchListSerializer",
@@ -183,7 +165,7 @@ __all__ = (
     "ChangeEquipmentCommercialStatusSerializer",
     "RegisterInitialEquipmentMetersSerializer",
 
-    # Movimientos
+    # Movimientos de equipos
     "EquipmentMovementListSerializer",
     "EquipmentMovementDetailSerializer",
     "EquipmentMovementCreateUpdateSerializer",

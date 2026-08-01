@@ -18,16 +18,6 @@ from .component_compatibility import (
     ComponentCompatibilityListCreateView,
     RestoreComponentCompatibilityView,
 )
-from .component_inventory import (
-    ArchiveComponentInventoryView,
-    ComponentInventoryDetailUpdateView,
-    ComponentInventoryListCreateView,
-    RestoreComponentInventoryView,
-)
-from .component_inventory_movement import (
-    ComponentInventoryMovementDetailView,
-    ComponentInventoryMovementListCreateView,
-)
 from .component_type import (
     ArchiveComponentTypeView,
     ComponentTypeDetailUpdateView,
@@ -100,58 +90,60 @@ from .meter_reading import (
 __all__ = (
     "parse_boolean_query_param",
 
+    # Tipos de equipos
     "EquipmentTypeListCreateView",
     "EquipmentTypeDetailUpdateView",
     "ArchiveEquipmentTypeView",
     "RestoreEquipmentTypeView",
 
+    # Marcas
     "EquipmentBrandListCreateView",
     "EquipmentBrandDetailUpdateView",
     "ArchiveEquipmentBrandView",
     "RestoreEquipmentBrandView",
 
+    # Familias
     "EquipmentFamilyListCreateView",
     "EquipmentFamilyDetailUpdateView",
     "ArchiveEquipmentFamilyView",
     "RestoreEquipmentFamilyView",
 
+    # Modelos de equipos
     "EquipmentModelListCreateView",
     "EquipmentModelDetailUpdateView",
     "ArchiveEquipmentModelView",
     "RestoreEquipmentModelView",
 
+    # Tipos de componentes
     "ComponentTypeListCreateView",
     "ComponentTypeDetailUpdateView",
     "ArchiveComponentTypeView",
     "RestoreComponentTypeView",
 
+    # Componentes
     "EquipmentComponentListCreateView",
     "EquipmentComponentDetailUpdateView",
     "ArchiveEquipmentComponentView",
     "RestoreEquipmentComponentView",
 
+    # Compatibilidades de componentes
     "ComponentCompatibilityListCreateView",
     "ComponentCompatibilityDetailUpdateView",
     "ArchiveComponentCompatibilityView",
     "RestoreComponentCompatibilityView",
 
-    "ComponentInventoryListCreateView",
-    "ComponentInventoryDetailUpdateView",
-    "ArchiveComponentInventoryView",
-    "RestoreComponentInventoryView",
-
-    "ComponentInventoryMovementListCreateView",
-    "ComponentInventoryMovementDetailView",
-
+    # Componentes asignados a equipos
     "EquipmentComponentAssignmentListCreateView",
     "EquipmentComponentAssignmentDetailUpdateView",
 
+    # Importaciones y lotes
     "ImportBatchListCreateView",
     "ImportBatchDetailUpdateView",
     "ChangeImportBatchStatusView",
     "ArchiveImportBatchView",
     "RestoreImportBatchView",
 
+    # Equipos físicos
     "EquipmentListCreateView",
     "EquipmentDetailUpdateView",
     "ChangeEquipmentTechnicalStatusView",
@@ -160,11 +152,13 @@ __all__ = (
     "ArchiveEquipmentView",
     "RestoreEquipmentView",
 
+    # Movimientos de equipos
     "EquipmentMovementListCreateView",
     "EquipmentMovementDetailUpdateView",
     "ArchiveEquipmentMovementView",
     "RestoreEquipmentMovementView",
 
+    # Lecturas de contadores
     "MeterReadingListCreateView",
     "MeterReadingDetailUpdateView",
     "VerifyMeterReadingView",
@@ -172,6 +166,7 @@ __all__ = (
     "ArchiveMeterReadingView",
     "RestoreMeterReadingView",
 
+    # Documentos
     "EquipmentDocumentListCreateView",
     "EquipmentDocumentDetailUpdateView",
     "VerifyEquipmentDocumentView",

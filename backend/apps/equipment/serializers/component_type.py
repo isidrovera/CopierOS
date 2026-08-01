@@ -39,7 +39,6 @@ class ComponentTypeListSerializer(
             "requires_color",
             "requires_serial_number",
             "requires_meter",
-            "controls_stock",
             "is_active",
             "display_order",
             "component_count",
@@ -101,7 +100,6 @@ class ComponentTypeDetailSerializer(
             "requires_color",
             "requires_serial_number",
             "requires_meter",
-            "controls_stock",
             "is_active",
             "display_order",
             "component_count",
@@ -155,7 +153,6 @@ class ComponentTypeCreateUpdateSerializer(
             "requires_color",
             "requires_serial_number",
             "requires_meter",
-            "controls_stock",
             "is_active",
             "display_order",
         )
@@ -238,6 +235,24 @@ class ComponentTypeCreateUpdateSerializer(
             ),
         )
 
+        requires_serial_number = attrs.get(
+            "requires_serial_number",
+            getattr(
+                instance,
+                "requires_serial_number",
+                False,
+            ),
+        )
+
+        requires_meter = attrs.get(
+            "requires_meter",
+            getattr(
+                instance,
+                "requires_meter",
+                False,
+            ),
+        )
+
         if (
             category == ComponentType.Category.TONER
             and not requires_color
@@ -246,6 +261,64 @@ class ComponentTypeCreateUpdateSerializer(
                 {
                     "requires_color": (
                         "El tipo tóner debe requerir color."
+                    ),
+                }
+            )
+
+        if (
+            category == ComponentType.Category.SUBPART
+            and requires_serial_number
+        ):
+            raise serializers.ValidationError(
+                {
+                    "requires_serial_number": (
+                        "Una subparte normalmente no debe exigir "
+                        "un número de serie individual."
+                    ),
+                }
+            )
+
+        if (
+            category == ComponentType.Category.TONER
+            and requires_serial_number
+        ):
+            raise serializers.ValidationError(
+                {
+                    "requires_serial_number": (
+                        "Un tóner no debe exigir un número "
+                        "de serie individual."
+                    ),
+                }
+            )
+
+        if (
+            category == ComponentType.Category.CONSUMABLE
+            and requires_serial_number
+        ):
+            raise serializers.ValidationError(
+                {
+                    "requires_serial_number": (
+                        "Un consumible no debe exigir un número "
+                        "de serie individual."
+                    ),
+                }
+            )
+
+        if (
+            category
+            in (
+                ComponentType.Category.UNIT,
+                ComponentType.Category.SUBPART,
+                ComponentType.Category.TONER,
+                ComponentType.Category.CONSUMABLE,
+            )
+            and not requires_meter
+        ):
+            raise serializers.ValidationError(
+                {
+                    "requires_meter": (
+                        "Este tipo debe permitir registrar duración "
+                        "estimada mediante contador."
                     ),
                 }
             )

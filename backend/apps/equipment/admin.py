@@ -2,9 +2,14 @@
 from django.contrib import admin
 
 from .models import (
+    ComponentCompatibility,
+    ComponentType,
     Equipment,
     EquipmentBrand,
+    EquipmentComponent,
+    EquipmentComponentAssignment,
     EquipmentDocument,
+    EquipmentFamily,
     EquipmentModel,
     EquipmentMovement,
     EquipmentType,
@@ -214,10 +219,10 @@ class EquipmentBrandAdmin(admin.ModelAdmin):
         return obj.is_archived
 
 
-@admin.register(EquipmentModel)
-class EquipmentModelAdmin(admin.ModelAdmin):
+@admin.register(EquipmentFamily)
+class EquipmentFamilyAdmin(admin.ModelAdmin):
     """
-    Administración del catálogo de modelos.
+    Administración de familias técnicas de equipos.
     """
 
     list_display = (
@@ -225,22 +230,14 @@ class EquipmentModelAdmin(admin.ModelAdmin):
         "brand",
         "name",
         "equipment_type",
-        "color_mode",
-        "technology",
-        "maximum_paper_size",
         "is_active",
+        "display_order",
         "is_archived_display",
     )
 
     list_filter = (
         "brand",
         "equipment_type",
-        "color_mode",
-        "technology",
-        "maximum_paper_size",
-        "is_multifunction",
-        "supports_accessories",
-        "supports_technical_units",
         "is_active",
         "archived_at",
     )
@@ -248,10 +245,10 @@ class EquipmentModelAdmin(admin.ModelAdmin):
     search_fields = (
         "code",
         "name",
-        "commercial_name",
-        "family",
-        "manufacturer_reference",
         "brand__name",
+        "equipment_type__name",
+        "description",
+        "technical_notes",
     )
 
     autocomplete_fields = (
@@ -285,8 +282,133 @@ class EquipmentModelAdmin(admin.ModelAdmin):
                     "brand",
                     "equipment_type",
                     "name",
+                )
+            },
+        ),
+        (
+            "Información técnica",
+            {
+                "fields": (
+                    "description",
+                    "technical_notes",
+                )
+            },
+        ),
+        (
+            "Configuración",
+            {
+                "fields": (
+                    "is_active",
+                    "display_order",
+                )
+            },
+        ),
+        (
+            "Auditoría",
+            {
+                "classes": (
+                    "collapse",
+                ),
+                "fields": (
+                    "created_at",
+                    "updated_at",
+                    "created_by",
+                    "updated_by",
+                    "archived_at",
+                    "archived_by",
+                    "archived_reason",
+                ),
+            },
+        ),
+    )
+
+    @admin.display(
+        boolean=True,
+        description="Archivada",
+    )
+    def is_archived_display(self, obj):
+        return obj.is_archived
+
+
+@admin.register(EquipmentModel)
+class EquipmentModelAdmin(admin.ModelAdmin):
+    """
+    Administración del catálogo de modelos.
+    """
+
+    list_display = (
+        "code",
+        "brand",
+        "name",
+        "equipment_type",
+        "equipment_family",
+        "color_mode",
+        "technology",
+        "maximum_paper_size",
+        "is_active",
+        "is_archived_display",
+    )
+
+    list_filter = (
+        "brand",
+        "equipment_type",
+        "equipment_family",
+        "color_mode",
+        "technology",
+        "maximum_paper_size",
+        "is_multifunction",
+        "supports_accessories",
+        "supports_technical_units",
+        "is_active",
+        "archived_at",
+    )
+
+    search_fields = (
+        "code",
+        "name",
+        "commercial_name",
+        "family",
+        "equipment_family__code",
+        "equipment_family__name",
+        "manufacturer_reference",
+        "brand__name",
+    )
+
+    autocomplete_fields = (
+        "brand",
+        "equipment_type",
+        "equipment_family",
+    )
+
+    ordering = (
+        "brand__name",
+        "display_order",
+        "name",
+    )
+
+    readonly_fields = (
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "archived_at",
+        "archived_by",
+    )
+
+    fieldsets = (
+        (
+            "Identificación",
+            {
+                "fields": (
+                    "id",
+                    "code",
+                    "brand",
+                    "equipment_type",
+                    "name",
                     "commercial_name",
                     "family",
+                    "equipment_family",
                     "manufacturer_reference",
                     "image",
                 )
@@ -376,6 +498,416 @@ class EquipmentModelAdmin(admin.ModelAdmin):
     @admin.display(
         boolean=True,
         description="Archivado",
+    )
+    def is_archived_display(self, obj):
+        return obj.is_archived
+
+
+@admin.register(ComponentType)
+class ComponentTypeAdmin(admin.ModelAdmin):
+    """
+    Administración de tipos de componentes técnicos.
+    """
+
+    list_display = (
+        "code",
+        "name",
+        "category",
+        "requires_color",
+        "requires_serial_number",
+        "requires_meter",
+        "is_active",
+        "display_order",
+        "is_archived_display",
+    )
+
+    list_filter = (
+        "category",
+        "requires_color",
+        "requires_serial_number",
+        "requires_meter",
+        "is_active",
+        "archived_at",
+    )
+
+    search_fields = (
+        "code",
+        "name",
+        "description",
+    )
+
+    ordering = (
+        "display_order",
+        "name",
+    )
+
+    readonly_fields = (
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "archived_at",
+        "archived_by",
+    )
+
+    fieldsets = (
+        (
+            "Identificación",
+            {
+                "fields": (
+                    "id",
+                    "code",
+                    "name",
+                    "category",
+                    "description",
+                )
+            },
+        ),
+        (
+            "Comportamiento técnico",
+            {
+                "fields": (
+                    "requires_color",
+                    "requires_serial_number",
+                    "requires_meter",
+                )
+            },
+        ),
+        (
+            "Configuración",
+            {
+                "fields": (
+                    "is_active",
+                    "display_order",
+                )
+            },
+        ),
+        (
+            "Auditoría",
+            {
+                "classes": (
+                    "collapse",
+                ),
+                "fields": (
+                    "created_at",
+                    "updated_at",
+                    "created_by",
+                    "updated_by",
+                    "archived_at",
+                    "archived_by",
+                    "archived_reason",
+                ),
+            },
+        ),
+    )
+
+    @admin.display(
+        boolean=True,
+        description="Archivado",
+    )
+    def is_archived_display(self, obj):
+        return obj.is_archived
+
+
+@admin.register(EquipmentComponent)
+class EquipmentComponentAdmin(admin.ModelAdmin):
+    """
+    Administración del catálogo técnico de componentes.
+    """
+
+    list_display = (
+        "code",
+        "name",
+        "component_type",
+        "parent_component",
+        "color",
+        "manufacturer_code",
+        "condition_control",
+        "expected_life_meter",
+        "expected_life_days",
+        "is_active",
+        "is_archived_display",
+    )
+
+    list_filter = (
+        "component_type",
+        "component_type__category",
+        "color",
+        "condition_control",
+        "requires_individual_serial",
+        "is_consumable",
+        "is_reusable",
+        "can_be_repaired",
+        "requires_removed_part_tracking",
+        "is_active",
+        "archived_at",
+    )
+
+    search_fields = (
+        "code",
+        "name",
+        "manufacturer_code",
+        "alternative_code",
+        "parent_component__code",
+        "parent_component__name",
+        "description",
+        "technical_notes",
+    )
+
+    autocomplete_fields = (
+        "component_type",
+        "parent_component",
+    )
+
+    ordering = (
+        "component_type__display_order",
+        "display_order",
+        "name",
+    )
+
+    readonly_fields = (
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "archived_at",
+        "archived_by",
+    )
+
+    fieldsets = (
+        (
+            "Identificación",
+            {
+                "fields": (
+                    "id",
+                    "component_type",
+                    "parent_component",
+                    "code",
+                    "name",
+                    "image",
+                )
+            },
+        ),
+        (
+            "Códigos técnicos",
+            {
+                "fields": (
+                    "manufacturer_code",
+                    "alternative_code",
+                )
+            },
+        ),
+        (
+            "Características",
+            {
+                "fields": (
+                    "color",
+                    "unit_of_measure",
+                    "requires_individual_serial",
+                    "is_consumable",
+                    "is_reusable",
+                    "can_be_repaired",
+                    "requires_removed_part_tracking",
+                )
+            },
+        ),
+        (
+            "Duración estimada",
+            {
+                "fields": (
+                    "condition_control",
+                    "expected_life_meter",
+                    "expected_life_days",
+                    "life_reference",
+                )
+            },
+        ),
+        (
+            "Información técnica",
+            {
+                "fields": (
+                    "description",
+                    "technical_notes",
+                )
+            },
+        ),
+        (
+            "Configuración",
+            {
+                "fields": (
+                    "is_active",
+                    "display_order",
+                )
+            },
+        ),
+        (
+            "Auditoría",
+            {
+                "classes": (
+                    "collapse",
+                ),
+                "fields": (
+                    "created_at",
+                    "updated_at",
+                    "created_by",
+                    "updated_by",
+                    "archived_at",
+                    "archived_by",
+                    "archived_reason",
+                ),
+            },
+        ),
+    )
+
+    @admin.display(
+        boolean=True,
+        description="Archivado",
+    )
+    def is_archived_display(self, obj):
+        return obj.is_archived
+
+
+@admin.register(ComponentCompatibility)
+class ComponentCompatibilityAdmin(admin.ModelAdmin):
+    """
+    Administración de compatibilidades de componentes.
+    """
+
+    list_display = (
+        "component",
+        "equipment_family",
+        "equipment_model",
+        "position",
+        "manufacturer_code_override",
+        "expected_life_meter_override",
+        "expected_life_days_override",
+        "is_required",
+        "is_active",
+        "is_archived_display",
+    )
+
+    list_filter = (
+        "equipment_family__brand",
+        "equipment_family",
+        "equipment_model",
+        "component__component_type",
+        "component__color",
+        "is_required",
+        "is_active",
+        "archived_at",
+    )
+
+    search_fields = (
+        "component__code",
+        "component__name",
+        "component__manufacturer_code",
+        "component__alternative_code",
+        "manufacturer_code_override",
+        "equipment_family__code",
+        "equipment_family__name",
+        "equipment_model__code",
+        "equipment_model__name",
+        "position",
+        "technical_notes",
+    )
+
+    autocomplete_fields = (
+        "component",
+        "equipment_family",
+        "equipment_model",
+    )
+
+    ordering = (
+        "equipment_family__brand__name",
+        "equipment_family__name",
+        "display_order",
+        "component__name",
+    )
+
+    readonly_fields = (
+        "id",
+        "effective_manufacturer_code",
+        "effective_expected_life_meter",
+        "effective_expected_life_days",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "archived_at",
+        "archived_by",
+    )
+
+    fieldsets = (
+        (
+            "Compatibilidad",
+            {
+                "fields": (
+                    "id",
+                    "component",
+                    "equipment_family",
+                    "equipment_model",
+                    "position",
+                )
+            },
+        ),
+        (
+            "Información específica",
+            {
+                "fields": (
+                    "manufacturer_code_override",
+                    "expected_life_meter_override",
+                    "expected_life_days_override",
+                    "technical_notes",
+                )
+            },
+        ),
+        (
+            "Valores aplicables",
+            {
+                "classes": (
+                    "collapse",
+                ),
+                "fields": (
+                    "effective_manufacturer_code",
+                    "effective_expected_life_meter",
+                    "effective_expected_life_days",
+                ),
+            },
+        ),
+        (
+            "Configuración",
+            {
+                "fields": (
+                    "is_required",
+                    "is_active",
+                    "display_order",
+                )
+            },
+        ),
+        (
+            "Auditoría",
+            {
+                "classes": (
+                    "collapse",
+                ),
+                "fields": (
+                    "created_at",
+                    "updated_at",
+                    "created_by",
+                    "updated_by",
+                    "archived_at",
+                    "archived_by",
+                    "archived_reason",
+                ),
+            },
+        ),
+    )
+
+    @admin.display(
+        boolean=True,
+        description="Archivada",
     )
     def is_archived_display(self, obj):
         return obj.is_archived
@@ -561,6 +1093,7 @@ class EquipmentAdmin(admin.ModelAdmin):
     list_filter = (
         "equipment_model__brand",
         "equipment_model__equipment_type",
+        "equipment_model__equipment_family",
         "ownership_type",
         "physical_condition",
         "technical_status",
@@ -577,6 +1110,7 @@ class EquipmentAdmin(admin.ModelAdmin):
         "serial_number",
         "equipment_model__name",
         "equipment_model__brand__name",
+        "equipment_model__equipment_family__name",
         "customer__legal_name",
         "customer__trade_name",
         "customer__document_number",
@@ -742,6 +1276,138 @@ class EquipmentAdmin(admin.ModelAdmin):
                     "technical_notes",
                     "commercial_notes",
                     "notes",
+                )
+            },
+        ),
+        (
+            "Auditoría",
+            {
+                "classes": (
+                    "collapse",
+                ),
+                "fields": (
+                    "created_at",
+                    "updated_at",
+                    "created_by",
+                    "updated_by",
+                    "archived_at",
+                    "archived_by",
+                    "archived_reason",
+                ),
+            },
+        ),
+    )
+
+
+@admin.register(EquipmentComponentAssignment)
+class EquipmentComponentAssignmentAdmin(admin.ModelAdmin):
+    """
+    Administración del historial de componentes instalados.
+    """
+
+    list_display = (
+        "equipment",
+        "component",
+        "serial_number",
+        "position",
+        "status",
+        "installed_at",
+        "installation_meter",
+        "removed_at",
+        "removal_meter",
+        "removed_disposition",
+        "is_active",
+    )
+
+    list_filter = (
+        "component__component_type",
+        "component__component_type__category",
+        "component__color",
+        "status",
+        "removed_disposition",
+        "is_active",
+        "installed_at",
+        "removed_at",
+        "archived_at",
+    )
+
+    search_fields = (
+        "equipment__internal_code",
+        "equipment__serial_number",
+        "equipment__equipment_model__name",
+        "component__code",
+        "component__name",
+        "component__manufacturer_code",
+        "component__alternative_code",
+        "serial_number",
+        "position",
+        "reference_type",
+        "installation_notes",
+        "removal_notes",
+    )
+
+    autocomplete_fields = (
+        "equipment",
+        "component",
+    )
+
+    ordering = (
+        "-installed_at",
+        "-created_at",
+    )
+
+    readonly_fields = (
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "archived_at",
+        "archived_by",
+    )
+
+    fieldsets = (
+        (
+            "Asignación",
+            {
+                "fields": (
+                    "id",
+                    "equipment",
+                    "component",
+                    "serial_number",
+                    "position",
+                    "status",
+                    "is_active",
+                )
+            },
+        ),
+        (
+            "Instalación",
+            {
+                "fields": (
+                    "installed_at",
+                    "installation_meter",
+                    "installation_notes",
+                )
+            },
+        ),
+        (
+            "Retiro",
+            {
+                "fields": (
+                    "removed_at",
+                    "removal_meter",
+                    "removed_disposition",
+                    "removal_notes",
+                )
+            },
+        ),
+        (
+            "Referencia",
+            {
+                "fields": (
+                    "reference_type",
+                    "reference_id",
                 )
             },
         ),

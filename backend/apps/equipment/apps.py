@@ -6,24 +6,32 @@ class EquipmentConfig(AppConfig):
     """
     Configuración de la aplicación de equipos.
 
-    Esta aplicación administrará:
+    Esta aplicación administra:
 
     - Tipos de equipos.
     - Marcas.
+    - Familias técnicas.
     - Modelos.
     - Máquinas físicas por número de serie.
     - Importaciones y lotes.
-    - Costos de compra e ingreso.
+    - Costos de compra e ingreso de equipos.
     - Estados técnicos.
     - Estados comerciales y logísticos.
     - Disponibilidad.
     - Historial de movimientos.
     - Lecturas de contadores.
-    - Documentos relacionados con los equipos.
+    - Documentos relacionados con equipos.
+    - Tipos de componentes.
+    - Unidades técnicas.
+    - Subpartes y repuestos.
+    - Tóners y consumibles.
+    - Accesorios con serie individual.
+    - Compatibilidades por familia o modelo.
+    - Historial de componentes instalados y retirados.
 
-    Los accesorios, unidades técnicas, reparaciones y contratos
-    se manejarán posteriormente en módulos independientes,
-    relacionados con los equipos mediante sus UUID.
+    El catálogo de componentes es descriptivo y técnico.
+    No administra stock, almacenes, cantidades ni precios
+    de componentes.
     """
 
     default_auto_field = "django.db.models.BigAutoField"

@@ -10,102 +10,25 @@ from .equipment_model import EquipmentModel
 
 class ComponentCompatibility(EquipmentBaseModel):
     """
-    Define la compatibilidad de un componente con una familia
-    o con un modelo específico de equipo.
+    Define la compatibilidad técnica de un componente.
 
-    La compatibilidad puede aplicarse:
+    La compatibilidad puede establecerse:
 
-    - A todos los modelos de una familia.
-    - Únicamente a un modelo específico.
-    - A una posición o color determinado.
-    - Como compatibilidad principal o alternativa.
+    - Para todos los modelos de una familia.
+    - Para un modelo específico.
+    - Para una posición o color determinado.
 
-    Ejemplos:
+    Este modelo es únicamente descriptivo.
 
-    - Cilindro compatible con toda la familia Ricoh MP C3004.
-    - Fusor compatible únicamente con Canon iR-ADV C5535i III.
-    - Unidad de imagen cyan compatible con una familia determinada.
+    No controla:
+
+    - Stock.
+    - Cantidades.
+    - Precios.
+    - Costos.
+    - Almacenes.
+    - Reservas.
     """
-
-    class CompatibilityType(models.TextChoices):
-        ORIGINAL = (
-            "original",
-            "Original",
-        )
-        COMPATIBLE = (
-            "compatible",
-            "Compatible",
-        )
-        ALTERNATIVE = (
-            "alternative",
-            "Alternativa",
-        )
-        ADAPTED = (
-            "adapted",
-            "Adaptada",
-        )
-
-    class Position(models.TextChoices):
-        BLACK = (
-            "black",
-            "Negro",
-        )
-        CYAN = (
-            "cyan",
-            "Cyan",
-        )
-        MAGENTA = (
-            "magenta",
-            "Magenta",
-        )
-        YELLOW = (
-            "yellow",
-            "Amarillo",
-        )
-        COLOR = (
-            "color",
-            "Color genérico",
-        )
-        MONOCHROME = (
-            "monochrome",
-            "Blanco y negro",
-        )
-        LEFT = (
-            "left",
-            "Izquierda",
-        )
-        RIGHT = (
-            "right",
-            "Derecha",
-        )
-        UPPER = (
-            "upper",
-            "Superior",
-        )
-        LOWER = (
-            "lower",
-            "Inferior",
-        )
-        FRONT = (
-            "front",
-            "Frontal",
-        )
-        REAR = (
-            "rear",
-            "Posterior",
-        )
-        MAIN = (
-            "main",
-            "Principal",
-        )
-        SECONDARY = (
-            "secondary",
-            "Secundaria",
-        )
-        NOT_APPLICABLE = (
-            "not_applicable",
-            "No aplica",
-        )
 
     component = models.ForeignKey(
         EquipmentComponent,
@@ -116,14 +39,11 @@ class ComponentCompatibility(EquipmentBaseModel):
 
     equipment_family = models.ForeignKey(
         EquipmentFamily,
-        null=True,
-        blank=True,
         on_delete=models.PROTECT,
         related_name="component_compatibilities",
         verbose_name="Familia de equipos",
         help_text=(
-            "Familia completa con la que el componente "
-            "es compatible."
+            "Familia para la cual el componente es compatible."
         ),
     )
 
@@ -133,71 +53,74 @@ class ComponentCompatibility(EquipmentBaseModel):
         blank=True,
         on_delete=models.PROTECT,
         related_name="component_compatibilities",
-        verbose_name="Modelo de equipo",
+        verbose_name="Modelo específico",
         help_text=(
-            "Modelo específico con el que el componente "
-            "es compatible."
+            "Solo debe seleccionarse cuando la compatibilidad "
+            "aplica a un modelo específico dentro de la familia."
         ),
-    )
-
-    compatibility_type = models.CharField(
-        max_length=30,
-        choices=CompatibilityType.choices,
-        default=CompatibilityType.COMPATIBLE,
-        db_index=True,
-        verbose_name="Tipo de compatibilidad",
     )
 
     position = models.CharField(
-        max_length=30,
-        choices=Position.choices,
-        default=Position.NOT_APPLICABLE,
+        max_length=80,
+        blank=True,
         db_index=True,
         verbose_name="Color o posición",
         help_text=(
-            "Color, ubicación o posición en la que se utiliza "
-            "el componente dentro del equipo."
+            "Ejemplo: black, cyan, magenta, yellow, "
+            "superior, inferior, principal o bandeja 1."
         ),
     )
 
-    manufacturer_reference = models.CharField(
+    manufacturer_code_override = models.CharField(
         max_length=120,
         blank=True,
         db_index=True,
-        verbose_name="Referencia del fabricante",
+        verbose_name="Código específico para esta compatibilidad",
         help_text=(
-            "Código o referencia particular para esta "
-            "compatibilidad."
+            "Código de fabricante utilizado específicamente "
+            "para esta familia o modelo cuando sea diferente "
+            "al código general del componente."
         ),
     )
 
-    requires_adjustment = models.BooleanField(
-        default=False,
-        verbose_name="Requiere adaptación",
-        help_text=(
-            "Indica si el componente necesita modificación, "
-            "configuración o adaptación antes de instalarse."
-        ),
-    )
-
-    adjustment_instructions = models.TextField(
+    expected_life_meter_override = models.PositiveBigIntegerField(
+        null=True,
         blank=True,
-        verbose_name="Instrucciones de adaptación",
+        verbose_name="Duración específica por contador",
+        help_text=(
+            "Duración estimada específica para esta familia "
+            "o modelo. Si queda vacío se utiliza la duración "
+            "general del componente."
+        ),
     )
 
-    is_preferred = models.BooleanField(
-        default=False,
-        db_index=True,
-        verbose_name="Compatibilidad preferida",
+    expected_life_days_override = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Duración específica en días",
         help_text=(
-            "Indica que esta opción debe mostrarse primero "
-            "al técnico."
+            "Duración estimada específica para esta familia "
+            "o modelo. Si queda vacío se utiliza la duración "
+            "general del componente."
         ),
     )
 
     technical_notes = models.TextField(
         blank=True,
         verbose_name="Notas técnicas",
+        help_text=(
+            "Observaciones, restricciones o diferencias "
+            "de instalación para esta familia o modelo."
+        ),
+    )
+
+    is_required = models.BooleanField(
+        default=False,
+        verbose_name="Componente habitual u obligatorio",
+        help_text=(
+            "Indica si normalmente el equipo utiliza "
+            "este componente."
+        ),
     )
 
     is_active = models.BooleanField(
@@ -205,8 +128,8 @@ class ComponentCompatibility(EquipmentBaseModel):
         db_index=True,
         verbose_name="Activa",
         help_text=(
-            "Las compatibilidades inactivas no deben mostrarse "
-            "para nuevas reparaciones."
+            "Las compatibilidades inactivas no deben utilizarse "
+            "en nuevos registros, pero se conservan en el historial."
         ),
     )
 
@@ -219,11 +142,14 @@ class ComponentCompatibility(EquipmentBaseModel):
     class Meta:
         verbose_name = "Compatibilidad de componente"
         verbose_name_plural = "Compatibilidades de componentes"
+
         ordering = (
-            "-is_preferred",
+            "equipment_family__brand__name",
+            "equipment_family__name",
             "display_order",
             "component__name",
         )
+
         constraints = [
             models.UniqueConstraint(
                 fields=[
@@ -232,77 +158,110 @@ class ComponentCompatibility(EquipmentBaseModel):
                     "equipment_model",
                     "position",
                 ],
-                name="unique_component_compatibility_target",
+                name="unique_component_family_model_position",
             ),
         ]
+
         indexes = [
-            models.Index(
-                fields=[
-                    "component",
-                    "is_active",
-                ],
-                name="equip_comp_compat_active_idx",
-            ),
             models.Index(
                 fields=[
                     "equipment_family",
                     "is_active",
                 ],
-                name="equip_comp_family_active_idx",
+                name="comp_compat_family_active_idx",
             ),
             models.Index(
                 fields=[
                     "equipment_model",
                     "is_active",
                 ],
-                name="equip_comp_model_active_idx",
+                name="comp_compat_model_active_idx",
+            ),
+            models.Index(
+                fields=[
+                    "component",
+                    "is_active",
+                ],
+                name="comp_compat_component_idx",
             ),
             models.Index(
                 fields=[
                     "position",
                     "is_active",
                 ],
-                name="equip_comp_position_active_idx",
-            ),
-            models.Index(
-                fields=[
-                    "is_preferred",
-                    "is_active",
-                ],
-                name="equip_comp_preferred_idx",
+                name="comp_compat_position_idx",
             ),
         ]
 
     def __str__(self):
-        target = ""
+        compatibility_name = (
+            f"{self.component} - "
+            f"{self.equipment_family}"
+        )
 
         if self.equipment_model_id:
-            target = str(self.equipment_model)
-        elif self.equipment_family_id:
-            target = str(self.equipment_family)
-
-        if self.position != self.Position.NOT_APPLICABLE:
-            return (
-                f"{self.component} - {target} - "
-                f"{self.get_position_display()}"
+            compatibility_name = (
+                f"{compatibility_name} - "
+                f"{self.equipment_model.name}"
             )
 
-        return f"{self.component} - {target}"
+        if self.position:
+            compatibility_name = (
+                f"{compatibility_name} - "
+                f"{self.position}"
+            )
+
+        return compatibility_name
+
+    @property
+    def effective_manufacturer_code(self):
+        """
+        Devuelve el código específico de la compatibilidad.
+
+        Si no existe, utiliza el código general del componente.
+        """
+
+        return (
+            self.manufacturer_code_override
+            or self.component.manufacturer_code
+        )
+
+    @property
+    def effective_expected_life_meter(self):
+        """
+        Devuelve la duración por contador aplicable.
+        """
+
+        if self.expected_life_meter_override is not None:
+            return self.expected_life_meter_override
+
+        return self.component.expected_life_meter
+
+    @property
+    def effective_expected_life_days(self):
+        """
+        Devuelve la duración en días aplicable.
+        """
+
+        if self.expected_life_days_override is not None:
+            return self.expected_life_days_override
+
+        return self.component.expected_life_days
 
     def clean(self):
         """
-        Normaliza y valida los datos antes de guardar.
+        Normaliza y valida la compatibilidad.
         """
 
         super().clean()
 
-        self.manufacturer_reference = str(
-            self.manufacturer_reference or ""
-        ).strip().upper()
+        self.position = str(
+            self.position or ""
+        ).strip().lower()
 
-        self.adjustment_instructions = str(
-            self.adjustment_instructions or ""
-        ).strip()
+        self.manufacturer_code_override = str(
+            self.manufacturer_code_override or ""
+        ).strip().upper()
 
         self.technical_notes = str(
             self.technical_notes or ""
@@ -317,152 +276,80 @@ class ComponentCompatibility(EquipmentBaseModel):
                 }
             )
 
-        if (
-            not self.equipment_family_id
-            and not self.equipment_model_id
-        ):
+        if not self.equipment_family_id:
             raise ValidationError(
                 {
                     "equipment_family": (
-                        "Debe seleccionar una familia o un "
-                        "modelo de equipo."
-                    ),
-                    "equipment_model": (
-                        "Debe seleccionar una familia o un "
-                        "modelo de equipo."
-                    ),
-                }
-            )
-
-        if (
-            self.equipment_family_id
-            and self.equipment_model_id
-        ):
-            raise ValidationError(
-                {
-                    "equipment_family": (
-                        "Seleccione únicamente una familia "
-                        "o un modelo específico."
-                    ),
-                    "equipment_model": (
-                        "Seleccione únicamente una familia "
-                        "o un modelo específico."
-                    ),
-                }
-            )
-
-        if (
-            self.requires_adjustment
-            and not self.adjustment_instructions
-        ):
-            raise ValidationError(
-                {
-                    "adjustment_instructions": (
-                        "Debe indicar las instrucciones de "
-                        "adaptación del componente."
-                    ),
-                }
-            )
-
-        if (
-            not self.requires_adjustment
-            and self.adjustment_instructions
-        ):
-            raise ValidationError(
-                {
-                    "adjustment_instructions": (
-                        "No debe registrar instrucciones si el "
-                        "componente no requiere adaptación."
+                        "La familia de equipos es obligatoria."
                     ),
                 }
             )
 
         if self.equipment_model_id:
+            if not self.equipment_model.equipment_family_id:
+                raise ValidationError(
+                    {
+                        "equipment_model": (
+                            "El modelo seleccionado no tiene "
+                            "una familia de equipos asignada."
+                        ),
+                    }
+                )
+
             if (
                 self.equipment_model.equipment_family_id
-                and self.equipment_family_id
-                and self.equipment_model.equipment_family_id
                 != self.equipment_family_id
             ):
                 raise ValidationError(
                     {
                         "equipment_model": (
-                            "El modelo no pertenece a la familia "
-                            "seleccionada."
+                            "El modelo seleccionado no pertenece "
+                            "a la familia indicada."
                         ),
                     }
                 )
 
         if (
-            self.position
-            in [
-                self.Position.BLACK,
-                self.Position.CYAN,
-                self.Position.MAGENTA,
-                self.Position.YELLOW,
-                self.Position.COLOR,
-                self.Position.MONOCHROME,
-            ]
+            self.component_id
             and self.component.color
             != EquipmentComponent.Color.NOT_APPLICABLE
+            and not self.position
         ):
-            component_color_map = {
-                EquipmentComponent.Color.BLACK: self.Position.BLACK,
-                EquipmentComponent.Color.CYAN: self.Position.CYAN,
-                EquipmentComponent.Color.MAGENTA: self.Position.MAGENTA,
-                EquipmentComponent.Color.YELLOW: self.Position.YELLOW,
-                EquipmentComponent.Color.COLOR: self.Position.COLOR,
-                EquipmentComponent.Color.MONOCHROME: (
-                    self.Position.MONOCHROME
-                ),
-            }
-
-            expected_position = component_color_map.get(
-                self.component.color
-            )
-
-            if expected_position and self.position != expected_position:
-                raise ValidationError(
-                    {
-                        "position": (
-                            "El color o posición no coincide con "
-                            "el color definido en el componente."
-                        ),
-                    }
-                )
+            self.position = self.component.color
 
         duplicate_compatibility = (
             ComponentCompatibility.objects.filter(
                 component_id=self.component_id,
                 equipment_family_id=self.equipment_family_id,
                 equipment_model_id=self.equipment_model_id,
-                position=self.position,
-            ).exclude(
-                pk=self.pk,
+                position__iexact=self.position,
             )
+            .exclude(pk=self.pk)
         )
 
         if duplicate_compatibility.exists():
             raise ValidationError(
                 {
                     "component": (
-                        "Esta compatibilidad ya está registrada."
+                        "Esta compatibilidad ya se encuentra "
+                        "registrada para la familia, modelo "
+                        "y posición seleccionados."
                     ),
                 }
             )
 
     def save(self, *args, **kwargs):
         """
-        Normaliza y valida el registro antes de guardar.
+        Normaliza y valida antes de guardar.
         """
 
-        self.manufacturer_reference = str(
-            self.manufacturer_reference or ""
-        ).strip().upper()
+        self.position = str(
+            self.position or ""
+        ).strip().lower()
 
-        self.adjustment_instructions = str(
-            self.adjustment_instructions or ""
-        ).strip()
+        self.manufacturer_code_override = str(
+            self.manufacturer_code_override or ""
+        ).strip().upper()
 
         self.technical_notes = str(
             self.technical_notes or ""
@@ -482,7 +369,7 @@ class ComponentCompatibility(EquipmentBaseModel):
         save=True,
     ):
         """
-        Al archivar la compatibilidad también se marca inactiva.
+        Archiva la compatibilidad.
         """
 
         self.is_active = False
@@ -507,7 +394,7 @@ class ComponentCompatibility(EquipmentBaseModel):
         save=True,
     ):
         """
-        Al restaurar la compatibilidad vuelve a quedar activa.
+        Restaura la compatibilidad.
         """
 
         self.is_active = True

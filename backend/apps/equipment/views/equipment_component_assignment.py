@@ -31,9 +31,9 @@ class EquipmentComponentAssignmentListCreateView(
                 "equipment",
                 "equipment__equipment_model",
                 "equipment__equipment_model__brand",
-                "inventory",
-                "inventory__component",
-                "inventory__component__component_type",
+                "equipment__equipment_model__equipment_family",
+                "component",
+                "component__component_type",
                 "created_by",
                 "updated_by",
                 "archived_by",
@@ -71,16 +71,22 @@ class EquipmentComponentAssignmentListCreateView(
                     equipment__equipment_model__name__icontains=search,
                 )
                 | Q(
-                    inventory__internal_code__icontains=search,
+                    equipment__equipment_model__code__icontains=search,
                 )
                 | Q(
-                    inventory__serial_number__icontains=search,
+                    component__code__icontains=search,
                 )
                 | Q(
-                    inventory__component__code__icontains=search,
+                    component__name__icontains=search,
                 )
                 | Q(
-                    inventory__component__name__icontains=search,
+                    component__manufacturer_code__icontains=search,
+                )
+                | Q(
+                    component__alternative_code__icontains=search,
+                )
+                | Q(
+                    serial_number__icontains=search,
                 )
                 | Q(
                     position__icontains=search,
@@ -105,18 +111,6 @@ class EquipmentComponentAssignmentListCreateView(
                 equipment_id=equipment_id,
             )
 
-        inventory_id = str(
-            self.request.query_params.get(
-                "inventory",
-                "",
-            )
-        ).strip()
-
-        if inventory_id:
-            queryset = queryset.filter(
-                inventory_id=inventory_id,
-            )
-
         component_id = str(
             self.request.query_params.get(
                 "component",
@@ -126,7 +120,7 @@ class EquipmentComponentAssignmentListCreateView(
 
         if component_id:
             queryset = queryset.filter(
-                inventory__component_id=component_id,
+                component_id=component_id,
             )
 
         component_type_id = str(
@@ -138,9 +132,45 @@ class EquipmentComponentAssignmentListCreateView(
 
         if component_type_id:
             queryset = queryset.filter(
-                inventory__component__component_type_id=(
+                component__component_type_id=(
                     component_type_id
                 ),
+            )
+
+        category = str(
+            self.request.query_params.get(
+                "category",
+                "",
+            )
+        ).strip()
+
+        if category:
+            queryset = queryset.filter(
+                component__component_type__category=category,
+            )
+
+        color = str(
+            self.request.query_params.get(
+                "color",
+                "",
+            )
+        ).strip()
+
+        if color:
+            queryset = queryset.filter(
+                component__color=color,
+            )
+
+        serial_number = str(
+            self.request.query_params.get(
+                "serial_number",
+                "",
+            )
+        ).strip()
+
+        if serial_number:
+            queryset = queryset.filter(
+                serial_number__icontains=serial_number,
             )
 
         assignment_status = str(
@@ -160,7 +190,7 @@ class EquipmentComponentAssignmentListCreateView(
                 "position",
                 "",
             )
-        ).strip()
+        ).strip().lower()
 
         if position:
             queryset = queryset.filter(
@@ -172,7 +202,7 @@ class EquipmentComponentAssignmentListCreateView(
                 "reference_type",
                 "",
             )
-        ).strip()
+        ).strip().lower()
 
         if reference_type:
             queryset = queryset.filter(
@@ -239,9 +269,9 @@ class EquipmentComponentAssignmentDetailUpdateView(
                 "equipment",
                 "equipment__equipment_model",
                 "equipment__equipment_model__brand",
-                "inventory",
-                "inventory__component",
-                "inventory__component__component_type",
+                "equipment__equipment_model__equipment_family",
+                "component",
+                "component__component_type",
                 "created_by",
                 "updated_by",
                 "archived_by",

@@ -28,6 +28,16 @@ class ComponentCompatibilityListSerializer(
         read_only=True,
     )
 
+    component_type_name = serializers.CharField(
+        source="component.component_type.name",
+        read_only=True,
+    )
+
+    component_category = serializers.CharField(
+        source="component.component_type.category",
+        read_only=True,
+    )
+
     component_color = serializers.CharField(
         source="component.color",
         read_only=True,
@@ -41,7 +51,11 @@ class ComponentCompatibilityListSerializer(
     equipment_family_name = serializers.CharField(
         source="equipment_family.name",
         read_only=True,
-        allow_null=True,
+    )
+
+    equipment_family_code = serializers.CharField(
+        source="equipment_family.code",
+        read_only=True,
     )
 
     equipment_model_name = serializers.CharField(
@@ -50,16 +64,34 @@ class ComponentCompatibilityListSerializer(
         allow_null=True,
     )
 
-    brand_name = serializers.SerializerMethodField()
+    equipment_model_code = serializers.CharField(
+        source="equipment_model.code",
+        read_only=True,
+        allow_null=True,
+    )
 
-    compatibility_type_name = serializers.CharField(
-        source="get_compatibility_type_display",
+    brand_name = serializers.CharField(
+        source="equipment_family.brand.name",
         read_only=True,
     )
 
-    position_name = serializers.CharField(
-        source="get_position_display",
+    equipment_type_name = serializers.CharField(
+        source="equipment_family.equipment_type.name",
         read_only=True,
+    )
+
+    effective_manufacturer_code = serializers.CharField(
+        read_only=True,
+    )
+
+    effective_expected_life_meter = serializers.IntegerField(
+        read_only=True,
+        allow_null=True,
+    )
+
+    effective_expected_life_days = serializers.IntegerField(
+        read_only=True,
+        allow_null=True,
     )
 
     target_name = serializers.SerializerMethodField()
@@ -76,21 +108,27 @@ class ComponentCompatibilityListSerializer(
             "component",
             "component_name",
             "component_code",
+            "component_type_name",
+            "component_category",
             "component_color",
             "component_color_name",
             "equipment_family",
             "equipment_family_name",
+            "equipment_family_code",
             "equipment_model",
             "equipment_model_name",
+            "equipment_model_code",
             "brand_name",
+            "equipment_type_name",
             "target_name",
-            "compatibility_type",
-            "compatibility_type_name",
             "position",
-            "position_name",
-            "manufacturer_reference",
-            "requires_adjustment",
-            "is_preferred",
+            "manufacturer_code_override",
+            "effective_manufacturer_code",
+            "expected_life_meter_override",
+            "effective_expected_life_meter",
+            "expected_life_days_override",
+            "effective_expected_life_days",
+            "is_required",
             "is_active",
             "display_order",
             "is_archived",
@@ -100,27 +138,15 @@ class ComponentCompatibilityListSerializer(
 
         read_only_fields = fields
 
-    def get_brand_name(self, obj):
-        if obj.equipment_model_id:
-            return obj.equipment_model.brand.name
-
-        if obj.equipment_family_id:
-            return obj.equipment_family.brand.name
-
-        return ""
-
     def get_target_name(self, obj):
         if obj.equipment_model_id:
             return str(
                 obj.equipment_model
             )
 
-        if obj.equipment_family_id:
-            return str(
-                obj.equipment_family
-            )
-
-        return ""
+        return str(
+            obj.equipment_family
+        )
 
 
 class ComponentCompatibilityDetailSerializer(
@@ -141,6 +167,19 @@ class ComponentCompatibilityDetailSerializer(
         read_only=True,
     )
 
+    component_category = serializers.CharField(
+        source="component.component_type.category",
+        read_only=True,
+    )
+
+    component_category_name = serializers.CharField(
+        source=(
+            "component.component_type."
+            "get_category_display"
+        ),
+        read_only=True,
+    )
+
     component_color = serializers.CharField(
         source="component.color",
         read_only=True,
@@ -151,10 +190,31 @@ class ComponentCompatibilityDetailSerializer(
         read_only=True,
     )
 
+    component_manufacturer_code = serializers.CharField(
+        source="component.manufacturer_code",
+        read_only=True,
+    )
+
+    component_expected_life_meter = serializers.IntegerField(
+        source="component.expected_life_meter",
+        read_only=True,
+        allow_null=True,
+    )
+
+    component_expected_life_days = serializers.IntegerField(
+        source="component.expected_life_days",
+        read_only=True,
+        allow_null=True,
+    )
+
     equipment_family_name = serializers.CharField(
         source="equipment_family.name",
         read_only=True,
-        allow_null=True,
+    )
+
+    equipment_family_code = serializers.CharField(
+        source="equipment_family.code",
+        read_only=True,
     )
 
     equipment_model_name = serializers.CharField(
@@ -163,21 +223,37 @@ class ComponentCompatibilityDetailSerializer(
         allow_null=True,
     )
 
-    brand_name = serializers.SerializerMethodField()
+    equipment_model_code = serializers.CharField(
+        source="equipment_model.code",
+        read_only=True,
+        allow_null=True,
+    )
 
-    equipment_type_name = serializers.SerializerMethodField()
+    brand_name = serializers.CharField(
+        source="equipment_family.brand.name",
+        read_only=True,
+    )
+
+    equipment_type_name = serializers.CharField(
+        source="equipment_family.equipment_type.name",
+        read_only=True,
+    )
+
+    effective_manufacturer_code = serializers.CharField(
+        read_only=True,
+    )
+
+    effective_expected_life_meter = serializers.IntegerField(
+        read_only=True,
+        allow_null=True,
+    )
+
+    effective_expected_life_days = serializers.IntegerField(
+        read_only=True,
+        allow_null=True,
+    )
 
     target_name = serializers.SerializerMethodField()
-
-    compatibility_type_name = serializers.CharField(
-        source="get_compatibility_type_display",
-        read_only=True,
-    )
-
-    position_name = serializers.CharField(
-        source="get_position_display",
-        read_only=True,
-    )
 
     is_archived = serializers.BooleanField(
         read_only=True,
@@ -210,24 +286,31 @@ class ComponentCompatibilityDetailSerializer(
             "component_name",
             "component_code",
             "component_type_name",
+            "component_category",
+            "component_category_name",
             "component_color",
             "component_color_name",
+            "component_manufacturer_code",
+            "component_expected_life_meter",
+            "component_expected_life_days",
             "equipment_family",
             "equipment_family_name",
+            "equipment_family_code",
             "equipment_model",
             "equipment_model_name",
+            "equipment_model_code",
             "brand_name",
             "equipment_type_name",
             "target_name",
-            "compatibility_type",
-            "compatibility_type_name",
             "position",
-            "position_name",
-            "manufacturer_reference",
-            "requires_adjustment",
-            "adjustment_instructions",
-            "is_preferred",
+            "manufacturer_code_override",
+            "effective_manufacturer_code",
+            "expected_life_meter_override",
+            "effective_expected_life_meter",
+            "expected_life_days_override",
+            "effective_expected_life_days",
             "technical_notes",
+            "is_required",
             "is_active",
             "display_order",
             "is_archived",
@@ -248,15 +331,23 @@ class ComponentCompatibilityDetailSerializer(
             "component_name",
             "component_code",
             "component_type_name",
+            "component_category",
+            "component_category_name",
             "component_color",
             "component_color_name",
+            "component_manufacturer_code",
+            "component_expected_life_meter",
+            "component_expected_life_days",
             "equipment_family_name",
+            "equipment_family_code",
             "equipment_model_name",
+            "equipment_model_code",
             "brand_name",
             "equipment_type_name",
             "target_name",
-            "compatibility_type_name",
-            "position_name",
+            "effective_manufacturer_code",
+            "effective_expected_life_meter",
+            "effective_expected_life_days",
             "is_archived",
             "archived_at",
             "archived_reason",
@@ -270,36 +361,15 @@ class ComponentCompatibilityDetailSerializer(
             "updated_at",
         )
 
-    def get_brand_name(self, obj):
-        if obj.equipment_model_id:
-            return obj.equipment_model.brand.name
-
-        if obj.equipment_family_id:
-            return obj.equipment_family.brand.name
-
-        return ""
-
-    def get_equipment_type_name(self, obj):
-        if obj.equipment_model_id:
-            return obj.equipment_model.equipment_type.name
-
-        if obj.equipment_family_id:
-            return obj.equipment_family.equipment_type.name
-
-        return ""
-
     def get_target_name(self, obj):
         if obj.equipment_model_id:
             return str(
                 obj.equipment_model
             )
 
-        if obj.equipment_family_id:
-            return str(
-                obj.equipment_family
-            )
-
-        return ""
+        return str(
+            obj.equipment_family
+        )
 
 
 class ComponentCompatibilityCreateUpdateSerializer(
@@ -312,13 +382,12 @@ class ComponentCompatibilityCreateUpdateSerializer(
             "component",
             "equipment_family",
             "equipment_model",
-            "compatibility_type",
             "position",
-            "manufacturer_reference",
-            "requires_adjustment",
-            "adjustment_instructions",
-            "is_preferred",
+            "manufacturer_code_override",
+            "expected_life_meter_override",
+            "expected_life_days_override",
             "technical_notes",
+            "is_required",
             "is_active",
             "display_order",
         )
@@ -337,9 +406,6 @@ class ComponentCompatibilityCreateUpdateSerializer(
         return value
 
     def validate_equipment_family(self, value):
-        if value is None:
-            return value
-
         if value.archived_at is not None:
             raise serializers.ValidationError(
                 "No puedes utilizar una familia archivada."
@@ -368,15 +434,15 @@ class ComponentCompatibilityCreateUpdateSerializer(
 
         return value
 
-    def validate_manufacturer_reference(self, value):
+    def validate_position(self, value):
+        return str(
+            value or ""
+        ).strip().lower()
+
+    def validate_manufacturer_code_override(self, value):
         return str(
             value or ""
         ).strip().upper()
-
-    def validate_adjustment_instructions(self, value):
-        return str(
-            value or ""
-        ).strip()
 
     def validate_technical_notes(self, value):
         return str(
@@ -413,30 +479,45 @@ class ComponentCompatibilityCreateUpdateSerializer(
             ),
         )
 
-        position = attrs.get(
-            "position",
-            getattr(
-                instance,
+        position = str(
+            attrs.get(
                 "position",
-                ComponentCompatibility.Position.NOT_APPLICABLE,
+                getattr(
+                    instance,
+                    "position",
+                    "",
+                ),
+            )
+            or ""
+        ).strip().lower()
+
+        manufacturer_code_override = str(
+            attrs.get(
+                "manufacturer_code_override",
+                getattr(
+                    instance,
+                    "manufacturer_code_override",
+                    "",
+                ),
+            )
+            or ""
+        ).strip().upper()
+
+        expected_life_meter_override = attrs.get(
+            "expected_life_meter_override",
+            getattr(
+                instance,
+                "expected_life_meter_override",
+                None,
             ),
         )
 
-        requires_adjustment = attrs.get(
-            "requires_adjustment",
+        expected_life_days_override = attrs.get(
+            "expected_life_days_override",
             getattr(
                 instance,
-                "requires_adjustment",
-                False,
-            ),
-        )
-
-        adjustment_instructions = attrs.get(
-            "adjustment_instructions",
-            getattr(
-                instance,
-                "adjustment_instructions",
-                "",
+                "expected_life_days_override",
+                None,
             ),
         )
 
@@ -445,125 +526,144 @@ class ComponentCompatibilityCreateUpdateSerializer(
                 {
                     "component": (
                         "Debes seleccionar un componente."
-                    )
+                    ),
                 }
             )
 
-        if not equipment_family and not equipment_model:
+        if not equipment_family:
             raise serializers.ValidationError(
                 {
                     "equipment_family": (
-                        "Debes seleccionar una familia o "
-                        "un modelo de equipo."
-                    ),
-                    "equipment_model": (
-                        "Debes seleccionar una familia o "
-                        "un modelo de equipo."
+                        "Debes seleccionar una familia de equipos."
                     ),
                 }
             )
 
-        if equipment_family and equipment_model:
-            raise serializers.ValidationError(
-                {
-                    "equipment_family": (
-                        "Selecciona únicamente una familia "
-                        "o un modelo específico."
-                    ),
-                    "equipment_model": (
-                        "Selecciona únicamente una familia "
-                        "o un modelo específico."
-                    ),
-                }
-            )
-
-        if (
-            requires_adjustment
-            and not str(
-                adjustment_instructions or ""
-            ).strip()
-        ):
-            raise serializers.ValidationError(
-                {
-                    "adjustment_instructions": (
-                        "Debes indicar las instrucciones "
-                        "de adaptación."
-                    )
-                }
-            )
-
-        if (
-            not requires_adjustment
-            and str(
-                adjustment_instructions or ""
-            ).strip()
-        ):
-            raise serializers.ValidationError(
-                {
-                    "adjustment_instructions": (
-                        "No debes registrar instrucciones "
-                        "si no requiere adaptación."
-                    )
-                }
-            )
-
-        if component:
-            color_position_map = {
-                EquipmentComponent.Color.BLACK: (
-                    ComponentCompatibility.Position.BLACK
-                ),
-                EquipmentComponent.Color.CYAN: (
-                    ComponentCompatibility.Position.CYAN
-                ),
-                EquipmentComponent.Color.MAGENTA: (
-                    ComponentCompatibility.Position.MAGENTA
-                ),
-                EquipmentComponent.Color.YELLOW: (
-                    ComponentCompatibility.Position.YELLOW
-                ),
-                EquipmentComponent.Color.COLOR: (
-                    ComponentCompatibility.Position.COLOR
-                ),
-                EquipmentComponent.Color.MONOCHROME: (
-                    ComponentCompatibility.Position.MONOCHROME
-                ),
-            }
-
-            expected_position = color_position_map.get(
-                component.color
-            )
-
-            if (
-                expected_position
-                and position != expected_position
-            ):
+        if equipment_model:
+            if not equipment_model.equipment_family_id:
                 raise serializers.ValidationError(
                     {
-                        "position": (
-                            "La posición no coincide con "
-                            "el color del componente."
-                        )
+                        "equipment_model": (
+                            "El modelo seleccionado no tiene una "
+                            "familia de equipos asignada."
+                        ),
                     }
                 )
 
-        queryset = ComponentCompatibility.objects.filter(
-            component=component,
-            equipment_family=equipment_family,
-            equipment_model=equipment_model,
-            position=position,
+            if (
+                equipment_model.equipment_family_id
+                != equipment_family.id
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "equipment_model": (
+                            "El modelo seleccionado no pertenece "
+                            "a la familia indicada."
+                        ),
+                    }
+                )
+
+            if equipment_model.brand_id != equipment_family.brand_id:
+                raise serializers.ValidationError(
+                    {
+                        "equipment_model": (
+                            "La marca del modelo no coincide "
+                            "con la marca de la familia."
+                        ),
+                    }
+                )
+
+            if (
+                equipment_model.equipment_type_id
+                != equipment_family.equipment_type_id
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "equipment_model": (
+                            "El tipo del modelo no coincide "
+                            "con el tipo de la familia."
+                        ),
+                    }
+                )
+
+        if (
+            component.color
+            != EquipmentComponent.Color.NOT_APPLICABLE
+            and not position
+        ):
+            position = component.color
+            attrs["position"] = position
+
+        if (
+            component.color
+            != EquipmentComponent.Color.NOT_APPLICABLE
+            and position
+            and position != component.color
+        ):
+            raise serializers.ValidationError(
+                {
+                    "position": (
+                        "La posición o color no coincide "
+                        "con el color del componente."
+                    ),
+                }
+            )
+
+        if (
+            expected_life_meter_override is not None
+            and expected_life_meter_override <= 0
+        ):
+            raise serializers.ValidationError(
+                {
+                    "expected_life_meter_override": (
+                        "La duración específica por contador "
+                        "debe ser mayor que cero."
+                    ),
+                }
+            )
+
+        if (
+            expected_life_days_override is not None
+            and expected_life_days_override <= 0
+        ):
+            raise serializers.ValidationError(
+                {
+                    "expected_life_days_override": (
+                        "La duración específica en días "
+                        "debe ser mayor que cero."
+                    ),
+                }
+            )
+
+        if (
+            manufacturer_code_override
+            and component.manufacturer_code
+            and manufacturer_code_override
+            == component.manufacturer_code
+        ):
+            attrs["manufacturer_code_override"] = ""
+
+        duplicate_queryset = (
+            ComponentCompatibility.objects.filter(
+                component=component,
+                equipment_family=equipment_family,
+                equipment_model=equipment_model,
+                position__iexact=position,
+            )
         )
 
         if instance:
-            queryset = queryset.exclude(
+            duplicate_queryset = duplicate_queryset.exclude(
                 pk=instance.pk,
             )
 
-        if queryset.exists():
+        if duplicate_queryset.exists():
             raise serializers.ValidationError(
                 {
                     "component": (
-                        "Esta compatibilidad ya está registrada."
-                    )
+                        "Esta compatibilidad ya está registrada "
+                        "para la familia, modelo y posición."
+                    ),
                 }
             )
 

@@ -6,10 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
-from apps.equipment.models import (
-    ComponentInventory,
-    EquipmentComponent,
-)
+from apps.equipment.models import EquipmentComponent
 
 from .base import RepairBaseModel
 from .repair import Repair
@@ -23,11 +20,12 @@ class RepairComponent(RepairBaseModel):
 
     - Componentes diagnosticados.
     - Componentes solicitados.
-    - Reservas de inventario.
+    - Componentes preparados.
+    - Componentes entregados al técnico.
     - Componentes instalados.
     - Componentes retirados.
     - Consumo de repuestos y consumibles.
-    - Devoluciones al inventario.
+    - Componentes devueltos.
     """
 
     class MovementType(models.TextChoices):
@@ -37,7 +35,7 @@ class RepairComponent(RepairBaseModel):
         )
         RESERVED = (
             "reserved",
-            "Reservado",
+            "Preparado",
         )
         DELIVERED = (
             "delivered",
@@ -53,7 +51,7 @@ class RepairComponent(RepairBaseModel):
         )
         RETURNED = (
             "returned",
-            "Retornado al inventario",
+            "Devuelto",
         )
         CONSUMED = (
             "consumed",
@@ -75,7 +73,7 @@ class RepairComponent(RepairBaseModel):
         )
         RESERVED = (
             "reserved",
-            "Reservado",
+            "Preparado",
         )
         DELIVERED = (
             "delivered",
@@ -91,7 +89,7 @@ class RepairComponent(RepairBaseModel):
         )
         RETURNED = (
             "returned",
-            "Retornado",
+            "Devuelto",
         )
         CONSUMED = (
             "consumed",
@@ -115,10 +113,6 @@ class RepairComponent(RepairBaseModel):
             "pending",
             "Pendiente de definir",
         )
-        RETURN_TO_STOCK = (
-            "return_to_stock",
-            "Retornar al inventario",
-        )
         SEND_TO_REPAIR = (
             "send_to_repair",
             "Enviar a reparación",
@@ -130,6 +124,10 @@ class RepairComponent(RepairBaseModel):
         RETURN_TO_SUPPLIER = (
             "return_to_supplier",
             "Devolver al proveedor",
+        )
+        RETURN_TO_CUSTOMER = (
+            "return_to_customer",
+            "Devolver al cliente",
         )
         DISCARD = (
             "discard",
@@ -150,16 +148,13 @@ class RepairComponent(RepairBaseModel):
         verbose_name="Componente",
     )
 
-    inventory = models.ForeignKey(
-        ComponentInventory,
-        null=True,
+    serial_number = models.CharField(
+        max_length=150,
         blank=True,
-        on_delete=models.PROTECT,
-        related_name="repair_usages",
-        verbose_name="Registro de inventario",
+        db_index=True,
+        verbose_name="Serie del componente utilizado",
         help_text=(
-            "Registro físico o lote de inventario utilizado "
-            "en la reparación."
+            "Serie física del componente cuando corresponda."
         ),
     )
 
@@ -190,7 +185,7 @@ class RepairComponent(RepairBaseModel):
         max_digits=12,
         decimal_places=2,
         default=0,
-        verbose_name="Cantidad reservada",
+        verbose_name="Cantidad preparada",
     )
 
     delivered_quantity = models.DecimalField(
@@ -211,7 +206,7 @@ class RepairComponent(RepairBaseModel):
         max_digits=12,
         decimal_places=2,
         default=0,
-        verbose_name="Cantidad retornada",
+        verbose_name="Cantidad devuelta",
     )
 
     consumed_quantity = models.DecimalField(
@@ -228,15 +223,6 @@ class RepairComponent(RepairBaseModel):
         on_delete=models.PROTECT,
         related_name="removed_from_repairs",
         verbose_name="Componente retirado",
-    )
-
-    removed_inventory = models.ForeignKey(
-        ComponentInventory,
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="removed_from_repair_usages",
-        verbose_name="Inventario del componente retirado",
     )
 
     removed_serial_number = models.CharField(
@@ -276,14 +262,14 @@ class RepairComponent(RepairBaseModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="reserved_repair_components",
-        verbose_name="Reservado por",
+        verbose_name="Preparado por",
     )
 
     reserved_at = models.DateTimeField(
         null=True,
         blank=True,
         db_index=True,
-        verbose_name="Fecha de reserva",
+        verbose_name="Fecha de preparación",
     )
 
     delivered_by = models.ForeignKey(
@@ -340,14 +326,14 @@ class RepairComponent(RepairBaseModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="returned_repair_components",
-        verbose_name="Retornado por",
+        verbose_name="Devuelto por",
     )
 
     returned_at = models.DateTimeField(
         null=True,
         blank=True,
         db_index=True,
-        verbose_name="Fecha de retorno",
+        verbose_name="Fecha de devolución",
     )
 
     unit_cost = models.DecimalField(
@@ -355,7 +341,7 @@ class RepairComponent(RepairBaseModel):
         decimal_places=2,
         null=True,
         blank=True,
-        verbose_name="Costo unitario",
+        verbose_name="Costo unitario referencial",
     )
 
     notes = models.TextField(
@@ -393,10 +379,10 @@ class RepairComponent(RepairBaseModel):
             ),
             models.Index(
                 fields=[
-                    "inventory",
+                    "serial_number",
                     "status",
                 ],
-                name="repair_comp_inv_idx",
+                name="repair_comp_serial_idx",
             ),
             models.Index(
                 fields=[
@@ -433,6 +419,10 @@ class RepairComponent(RepairBaseModel):
         """
 
         super().clean()
+
+        self.serial_number = str(
+            self.serial_number or ""
+        ).strip().upper()
 
         self.removed_serial_number = str(
             self.removed_serial_number or ""
@@ -510,44 +500,24 @@ class RepairComponent(RepairBaseModel):
             raise ValidationError(
                 {
                     "installed_quantity": (
-                        "La suma instalada, retornada y consumida "
+                        "La suma instalada, devuelta y consumida "
                         "no puede superar la cantidad solicitada."
                     ),
                 }
             )
 
-        if self.inventory_id:
-            if self.inventory.component_id != self.component_id:
-                raise ValidationError(
-                    {
-                        "inventory": (
-                            "El registro de inventario no corresponde "
-                            "al componente seleccionado."
-                        ),
-                    }
-                )
-
-            if not self.inventory.is_active:
-                raise ValidationError(
-                    {
-                        "inventory": (
-                            "El registro de inventario está inactivo."
-                        ),
-                    }
-                )
-
-            if (
-                self.component.requires_individual_serial
-                and self.quantity != Decimal("1")
-            ):
-                raise ValidationError(
-                    {
-                        "quantity": (
-                            "Un componente controlado por serie debe "
-                            "utilizar cantidad igual a uno."
-                        ),
-                    }
-                )
+        if (
+            self.component.requires_individual_serial
+            and self.quantity != Decimal("1")
+        ):
+            raise ValidationError(
+                {
+                    "quantity": (
+                        "Un componente controlado por serie debe "
+                        "utilizar cantidad igual a uno."
+                    ),
+                }
+            )
 
         if (
             self.component.requires_individual_serial
@@ -558,12 +528,12 @@ class RepairComponent(RepairBaseModel):
                 self.Status.INSTALLED,
                 self.Status.CONSUMED,
             ]
-            and not self.inventory_id
+            and not self.serial_number
         ):
             raise ValidationError(
                 {
-                    "inventory": (
-                        "Debe seleccionar el registro serializado "
+                    "serial_number": (
+                        "Debe registrar la serie física "
                         "del componente."
                     ),
                 }
@@ -580,20 +550,11 @@ class RepairComponent(RepairBaseModel):
                 )
 
         if self.status == self.Status.RESERVED:
-            if not self.inventory_id:
-                raise ValidationError(
-                    {
-                        "inventory": (
-                            "Debe seleccionar el inventario reservado."
-                        ),
-                    }
-                )
-
             if not self.reserved_at:
                 raise ValidationError(
                     {
                         "reserved_at": (
-                            "Debe registrar la fecha de reserva."
+                            "Debe registrar la fecha de preparación."
                         ),
                     }
                 )
@@ -602,7 +563,7 @@ class RepairComponent(RepairBaseModel):
                 raise ValidationError(
                     {
                         "reserved_quantity": (
-                            "Debe indicar la cantidad reservada."
+                            "Debe indicar la cantidad preparada."
                         ),
                     }
                 )
@@ -682,7 +643,7 @@ class RepairComponent(RepairBaseModel):
                 raise ValidationError(
                     {
                         "returned_at": (
-                            "Debe registrar la fecha de retorno."
+                            "Debe registrar la fecha de devolución."
                         ),
                     }
                 )
@@ -691,7 +652,7 @@ class RepairComponent(RepairBaseModel):
                 raise ValidationError(
                     {
                         "returned_quantity": (
-                            "Debe indicar la cantidad retornada."
+                            "Debe indicar la cantidad devuelta."
                         ),
                     }
                 )
@@ -724,20 +685,19 @@ class RepairComponent(RepairBaseModel):
                 }
             )
 
-        if self.removed_inventory_id:
-            if (
-                self.removed_component_id
-                and self.removed_inventory.component_id
-                != self.removed_component_id
-            ):
-                raise ValidationError(
-                    {
-                        "removed_inventory": (
-                            "El inventario retirado no corresponde "
-                            "al componente indicado."
-                        ),
-                    }
-                )
+        if (
+            self.removed_component_id
+            and self.removed_component.requires_individual_serial
+            and not self.removed_serial_number
+        ):
+            raise ValidationError(
+                {
+                    "removed_serial_number": (
+                        "Debe registrar la serie del componente "
+                        "retirado."
+                    ),
+                }
+            )
 
         if (
             self.removed_part_disposition
@@ -765,6 +725,10 @@ class RepairComponent(RepairBaseModel):
         """
         Normaliza y valida el registro.
         """
+
+        self.serial_number = str(
+            self.serial_number or ""
+        ).strip().upper()
 
         self.removed_serial_number = str(
             self.removed_serial_number or ""
@@ -813,12 +777,6 @@ class RepairComponent(RepairBaseModel):
             and not self.returned_at
         ):
             self.returned_at = timezone.now()
-
-        if (
-            self.inventory_id
-            and self.unit_cost is None
-        ):
-            self.unit_cost = self.inventory.purchase_cost
 
         self.full_clean()
 

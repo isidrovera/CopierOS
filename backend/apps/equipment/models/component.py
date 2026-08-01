@@ -18,30 +18,29 @@ component_code_validator = RegexValidator(
 
 class EquipmentComponent(EquipmentBaseModel):
     """
-    Catálogo principal de componentes técnicos.
+    Catálogo técnico descriptivo de componentes de equipos.
 
     Permite registrar:
 
-    - Unidades técnicas.
-    - Subpartes.
+    - Unidades técnicas completas.
+    - Subpartes de una unidad.
+    - Repuestos independientes.
     - Accesorios.
     - Tóners.
-    - Repuestos.
+    - Consumibles.
 
-    Este catálogo representa el componente técnico general.
-    La compatibilidad con familias y modelos se definirá en
-    modelos separados.
+    Cada componente puede tener:
 
-    Ejemplos:
+    - Código interno.
+    - Código original del fabricante.
+    - Código alternativo.
+    - Color.
+    - Duración estimada.
+    - Componente principal.
+    - Imagen y notas técnicas.
 
-    - Unidad de imagen.
-    - Unidad de fusor.
-    - Unidad de transferencia.
-    - Cilindro.
-    - Cuchilla de limpieza.
-    - Rodillo de presión.
-    - Finalizador.
-    - Tóner.
+    Este modelo no controla stock, cantidades, precios,
+    almacenes ni movimientos de inventario.
     """
 
     class Color(models.TextChoices):
@@ -81,19 +80,19 @@ class EquipmentComponent(EquipmentBaseModel):
     class ConditionControl(models.TextChoices):
         NONE = (
             "none",
-            "Sin control especial",
+            "Sin duración definida",
         )
         DATE = (
             "date",
-            "Control por fecha",
+            "Duración por tiempo",
         )
         METER = (
             "meter",
-            "Control por contador",
+            "Duración por contador",
         )
         DATE_AND_METER = (
             "date_and_meter",
-            "Control por fecha y contador",
+            "Duración por tiempo y contador",
         )
 
     component_type = models.ForeignKey(
@@ -111,8 +110,9 @@ class EquipmentComponent(EquipmentBaseModel):
         related_name="subcomponents",
         verbose_name="Componente principal",
         help_text=(
-            "Se utiliza para relacionar una subparte con su unidad "
-            "principal. Ejemplo: cilindro dentro de una unidad de imagen."
+            "Relaciona una subparte con la unidad o componente "
+            "principal al que pertenece. Por ejemplo, un rodillo "
+            "de presión dentro de una unidad fusora."
         ),
     )
 
@@ -123,10 +123,10 @@ class EquipmentComponent(EquipmentBaseModel):
         validators=[
             component_code_validator,
         ],
-        verbose_name="Código",
+        verbose_name="Código interno",
         help_text=(
-            "Código interno único del componente. "
-            "Ejemplo: IMAGE_UNIT, DRUM o FUSER_PRESSURE_ROLLER."
+            "Código interno único utilizado por el sistema. "
+            "Ejemplo: FUSER_UNIT, PRESSURE_ROLLER o TONER_BLACK."
         ),
     )
 
@@ -134,7 +134,7 @@ class EquipmentComponent(EquipmentBaseModel):
         max_length=180,
         db_index=True,
         verbose_name="Nombre",
-        help_text="Nombre visible del componente.",
+        help_text="Nombre visible del componente técnico.",
     )
 
     manufacturer_code = models.CharField(
@@ -143,8 +143,8 @@ class EquipmentComponent(EquipmentBaseModel):
         db_index=True,
         verbose_name="Código del fabricante",
         help_text=(
-            "Código original, part number o referencia utilizada "
-            "por el fabricante."
+            "Código original, part number o referencia oficial "
+            "proporcionada por el fabricante."
         ),
     )
 
@@ -154,8 +154,8 @@ class EquipmentComponent(EquipmentBaseModel):
         db_index=True,
         verbose_name="Código alternativo",
         help_text=(
-            "Código alternativo utilizado por proveedores "
-            "o fabricantes compatibles."
+            "Código compatible, equivalente o alternativo utilizado "
+            "por otro fabricante o proveedor."
         ),
     )
 
@@ -172,31 +172,46 @@ class EquipmentComponent(EquipmentBaseModel):
         choices=ConditionControl.choices,
         default=ConditionControl.NONE,
         db_index=True,
-        verbose_name="Control de vida útil",
+        verbose_name="Tipo de duración estimada",
     )
 
     expected_life_meter = models.PositiveBigIntegerField(
         null=True,
         blank=True,
-        verbose_name="Vida útil estimada por contador",
+        verbose_name="Duración estimada por contador",
         help_text=(
-            "Cantidad estimada de impresiones, copias o ciclos "
-            "que debería durar el componente."
+            "Cantidad estimada de copias, impresiones, escaneos "
+            "o ciclos que debería durar el componente."
         ),
     )
 
     expected_life_days = models.PositiveIntegerField(
         null=True,
         blank=True,
-        verbose_name="Vida útil estimada en días",
+        verbose_name="Duración estimada en días",
+        help_text=(
+            "Cantidad estimada de días de duración cuando el fabricante "
+            "o la experiencia técnica proporciona esta información."
+        ),
+    )
+
+    life_reference = models.CharField(
+        max_length=250,
+        blank=True,
+        verbose_name="Referencia de duración",
+        help_text=(
+            "Fuente o referencia utilizada para establecer la duración. "
+            "Por ejemplo: manual del fabricante, ficha técnica o "
+            "experiencia del taller."
+        ),
     )
 
     requires_individual_serial = models.BooleanField(
         default=False,
-        verbose_name="Requiere serie individual",
+        verbose_name="Permite registrar serie individual",
         help_text=(
-            "Indica si cada unidad física debe manejarse mediante "
-            "un número de serie propio."
+            "Indica si una unidad física o accesorio puede identificarse "
+            "mediante su propio número de serie."
         ),
     )
 
@@ -205,8 +220,8 @@ class EquipmentComponent(EquipmentBaseModel):
         db_index=True,
         verbose_name="Es consumible",
         help_text=(
-            "Indica si normalmente se consume y no retorna "
-            "al inventario después de instalarse."
+            "Indica si el componente se consume normalmente durante "
+            "el funcionamiento, por ejemplo tóner o tinta."
         ),
     )
 
@@ -215,8 +230,8 @@ class EquipmentComponent(EquipmentBaseModel):
         db_index=True,
         verbose_name="Es reutilizable",
         help_text=(
-            "Indica si puede retirarse, repararse y volver "
-            "a utilizarse."
+            "Indica si el componente puede retirarse, repararse "
+            "y volver a utilizarse."
         ),
     )
 
@@ -224,8 +239,8 @@ class EquipmentComponent(EquipmentBaseModel):
         default=False,
         verbose_name="Puede repararse",
         help_text=(
-            "Indica si el componente puede ingresar nuevamente "
-            "al taller para reparación o reacondicionamiento."
+            "Indica si el componente puede ser reparado "
+            "o reacondicionado."
         ),
     )
 
@@ -233,8 +248,8 @@ class EquipmentComponent(EquipmentBaseModel):
         default=False,
         verbose_name="Controlar componente retirado",
         help_text=(
-            "Obliga a registrar qué ocurrió con la pieza retirada: "
-            "desecho, devolución, reparación o recuperación."
+            "Indica si debe registrarse el destino de la unidad "
+            "o pieza retirada durante una reparación o servicio."
         ),
     )
 
@@ -243,7 +258,8 @@ class EquipmentComponent(EquipmentBaseModel):
         default="unit",
         verbose_name="Unidad de medida",
         help_text=(
-            "Ejemplo: unit, kit, bottle, kilogram o meter."
+            "Unidad descriptiva. Ejemplo: unit, kit, bottle, "
+            "kilogram o meter."
         ),
     )
 
@@ -269,8 +285,8 @@ class EquipmentComponent(EquipmentBaseModel):
         db_index=True,
         verbose_name="Activo",
         help_text=(
-            "Los componentes inactivos no deben mostrarse para "
-            "nuevos registros, pero se conservan en el historial."
+            "Los componentes inactivos no deben mostrarse en nuevos "
+            "registros, pero se conservan en el historial."
         ),
     )
 
@@ -283,11 +299,13 @@ class EquipmentComponent(EquipmentBaseModel):
     class Meta:
         verbose_name = "Componente de equipo"
         verbose_name_plural = "Componentes de equipos"
+
         ordering = (
             "component_type__display_order",
             "display_order",
             "name",
         )
+
         constraints = [
             models.UniqueConstraint(
                 fields=[
@@ -298,6 +316,7 @@ class EquipmentComponent(EquipmentBaseModel):
                 name="unique_component_type_name_color",
             ),
         ]
+
         indexes = [
             models.Index(
                 fields=[
@@ -327,13 +346,31 @@ class EquipmentComponent(EquipmentBaseModel):
                 ],
                 name="eq_comp_consum_idx",
             ),
+            models.Index(
+                fields=[
+                    "manufacturer_code",
+                    "is_active",
+                ],
+                name="eq_comp_mfr_code_idx",
+            ),
         ]
 
     def __str__(self):
-        if self.color != self.Color.NOT_APPLICABLE:
-            return f"{self.name} - {self.get_color_display()}"
+        component_name = self.name
 
-        return self.name
+        if self.color != self.Color.NOT_APPLICABLE:
+            component_name = (
+                f"{component_name} - "
+                f"{self.get_color_display()}"
+            )
+
+        if self.manufacturer_code:
+            component_name = (
+                f"{component_name} "
+                f"[{self.manufacturer_code}]"
+            )
+
+        return component_name
 
     def clean(self):
         """
@@ -358,6 +395,10 @@ class EquipmentComponent(EquipmentBaseModel):
             self.alternative_code or ""
         ).strip().upper()
 
+        self.life_reference = str(
+            self.life_reference or ""
+        ).strip()
+
         self.unit_of_measure = str(
             self.unit_of_measure or ""
         ).strip().lower()
@@ -374,7 +415,8 @@ class EquipmentComponent(EquipmentBaseModel):
             raise ValidationError(
                 {
                     "code": (
-                        "El código del componente es obligatorio."
+                        "El código interno del componente "
+                        "es obligatorio."
                     ),
                 }
             )
@@ -417,7 +459,7 @@ class EquipmentComponent(EquipmentBaseModel):
                 {
                     "code": (
                         "Ya existe un componente registrado "
-                        "con este código."
+                        "con este código interno."
                     ),
                 }
             )
@@ -453,33 +495,50 @@ class EquipmentComponent(EquipmentBaseModel):
                 )
 
             if (
-                self.parent_component.parent_component_id
-                == self.pk
-            ):
-                raise ValidationError(
-                    {
-                        "parent_component": (
-                            "La relación entre componentes genera "
-                            "una referencia circular."
-                        ),
-                    }
-                )
-
-            if (
                 self.component_type.category
                 != ComponentType.Category.SUBPART
             ):
                 raise ValidationError(
                     {
                         "parent_component": (
-                            "Solo las subpartes pueden relacionarse "
+                            "Solo una subparte puede relacionarse "
                             "con un componente principal."
                         ),
                     }
                 )
 
+            parent = self.parent_component
+
+            while parent is not None:
+                if parent.pk == self.pk:
+                    raise ValidationError(
+                        {
+                            "parent_component": (
+                                "La relación entre componentes "
+                                "genera una referencia circular."
+                            ),
+                        }
+                    )
+
+                parent = parent.parent_component
+
+        elif (
+            self.component_type_id
+            and self.component_type.category
+            == ComponentType.Category.SUBPART
+        ):
+            raise ValidationError(
+                {
+                    "parent_component": (
+                        "Debe seleccionar el componente principal "
+                        "al que pertenece esta subparte."
+                    ),
+                }
+            )
+
         if (
-            self.component_type.requires_color
+            self.component_type_id
+            and self.component_type.requires_color
             and self.color == self.Color.NOT_APPLICABLE
         ):
             raise ValidationError(
@@ -492,7 +551,8 @@ class EquipmentComponent(EquipmentBaseModel):
             )
 
         if (
-            not self.component_type.requires_color
+            self.component_type_id
+            and not self.component_type.requires_color
             and self.color != self.Color.NOT_APPLICABLE
         ):
             raise ValidationError(
@@ -514,7 +574,7 @@ class EquipmentComponent(EquipmentBaseModel):
             raise ValidationError(
                 {
                     "expected_life_meter": (
-                        "Debe indicar la vida útil estimada "
+                        "Debe indicar la duración estimada "
                         "por contador."
                     ),
                 }
@@ -531,21 +591,67 @@ class EquipmentComponent(EquipmentBaseModel):
             raise ValidationError(
                 {
                     "expected_life_days": (
-                        "Debe indicar la vida útil estimada "
+                        "Debe indicar la duración estimada "
                         "en días."
                     ),
                 }
             )
 
         if (
+            self.condition_control
+            == self.ConditionControl.NONE
+            and (
+                self.expected_life_meter is not None
+                or self.expected_life_days is not None
+            )
+        ):
+            raise ValidationError(
+                {
+                    "condition_control": (
+                        "Debe seleccionar el tipo de duración "
+                        "cuando registra una duración estimada."
+                    ),
+                }
+            )
+
+        if (
+            self.condition_control
+            == self.ConditionControl.DATE
+            and self.expected_life_meter is not None
+        ):
+            raise ValidationError(
+                {
+                    "expected_life_meter": (
+                        "No debe registrar duración por contador "
+                        "cuando el control es únicamente por tiempo."
+                    ),
+                }
+            )
+
+        if (
+            self.condition_control
+            == self.ConditionControl.METER
+            and self.expected_life_days is not None
+        ):
+            raise ValidationError(
+                {
+                    "expected_life_days": (
+                        "No debe registrar duración por días "
+                        "cuando el control es únicamente por contador."
+                    ),
+                }
+            )
+
+        if (
             self.requires_individual_serial
+            and self.component_type_id
             and not self.component_type.requires_serial_number
         ):
             raise ValidationError(
                 {
                     "requires_individual_serial": (
                         "El tipo de componente seleccionado no permite "
-                        "control mediante número de serie."
+                        "registrar un número de serie individual."
                     ),
                 }
             )
@@ -572,7 +678,7 @@ class EquipmentComponent(EquipmentBaseModel):
 
     def save(self, *args, **kwargs):
         """
-        Normaliza y valida el registro antes de guardarlo.
+        Normaliza y valida el componente antes de guardarlo.
         """
 
         self.code = str(
@@ -590,6 +696,10 @@ class EquipmentComponent(EquipmentBaseModel):
         self.alternative_code = str(
             self.alternative_code or ""
         ).strip().upper()
+
+        self.life_reference = str(
+            self.life_reference or ""
+        ).strip()
 
         self.unit_of_measure = str(
             self.unit_of_measure or ""
@@ -617,7 +727,7 @@ class EquipmentComponent(EquipmentBaseModel):
         save=True,
     ):
         """
-        Al archivar el componente también se marca como inactivo.
+        Archiva el componente y lo marca como inactivo.
         """
 
         self.is_active = False
@@ -642,7 +752,7 @@ class EquipmentComponent(EquipmentBaseModel):
         save=True,
     ):
         """
-        Al restaurar el componente vuelve a quedar activo.
+        Restaura el componente y lo vuelve a marcar como activo.
         """
 
         self.is_active = True
