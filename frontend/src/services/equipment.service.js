@@ -709,6 +709,118 @@ export async function restoreEquipmentBrand(
 
 
 /* ============================================================= */
+/* FAMILIAS DE EQUIPOS                                           */
+/* ============================================================= */
+
+export async function getEquipmentFamilies({
+  search = "",
+  includeArchived = false,
+  brand = "",
+  equipmentType = "",
+  isActive = "",
+} = {}) {
+  const params = new URLSearchParams()
+
+  addParam(params, "search", search)
+
+  if (includeArchived) {
+    params.set("include_archived", "true")
+  }
+
+  addParam(params, "brand", brand)
+  addParam(params, "equipment_type", equipmentType)
+  addBooleanParam(params, "is_active", isActive)
+
+  return request(
+    buildUrl(
+      `${API_URL}/families/`,
+      params
+    )
+  )
+}
+
+
+export async function getEquipmentFamily(
+  equipmentFamilyId
+) {
+  return request(
+    `${API_URL}/families/${equipmentFamilyId}/`
+  )
+}
+
+
+export async function createEquipmentFamily(
+  equipmentFamilyData
+) {
+  return request(
+    `${API_URL}/families/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(
+        equipmentFamilyData
+      ),
+    }
+  )
+}
+
+
+export async function updateEquipmentFamily(
+  equipmentFamilyId,
+  equipmentFamilyData
+) {
+  return request(
+    `${API_URL}/families/${equipmentFamilyId}/`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(
+        equipmentFamilyData
+      ),
+    }
+  )
+}
+
+
+export async function archiveEquipmentFamily(
+  equipmentFamilyId,
+  reason = ""
+) {
+  return request(
+    `${API_URL}/families/${equipmentFamilyId}/archive/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        reason,
+      }),
+    }
+  )
+}
+
+
+export async function restoreEquipmentFamily(
+  equipmentFamilyId
+) {
+  return request(
+    `${API_URL}/families/${equipmentFamilyId}/restore/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  )
+}
+
+
+/* ============================================================= */
 /* MODELOS DE EQUIPO                                             */
 /* ============================================================= */
 
@@ -718,6 +830,7 @@ export async function getEquipmentModels({
   brand = "",
   equipmentType = "",
   family = "",
+  equipmentFamily = "",
   colorMode = "",
   technology = "",
   maximumPaperSize = "",
@@ -760,6 +873,12 @@ export async function getEquipmentModels({
     params,
     "family",
     family
+  )
+
+  addParam(
+    params,
+    "equipment_family",
+    equipmentFamily
   )
 
   addParam(
@@ -1840,7 +1959,6 @@ export async function getComponentTypes({
   requiresColor = "",
   requiresSerialNumber = "",
   requiresMeter = "",
-  controlsStock = "",
   isActive = "",
 } = {}) {
   const params = new URLSearchParams()
@@ -1855,7 +1973,6 @@ export async function getComponentTypes({
   addBooleanParam(params, "requires_color", requiresColor)
   addBooleanParam(params, "requires_serial_number", requiresSerialNumber)
   addBooleanParam(params, "requires_meter", requiresMeter)
-  addBooleanParam(params, "controls_stock", controlsStock)
   addBooleanParam(params, "is_active", isActive)
 
   return request(
@@ -2065,12 +2182,10 @@ export async function getComponentCompatibilities({
   component = "",
   equipmentFamily = "",
   equipmentModel = "",
-  compatibilityType = "",
   position = "",
   brand = "",
   equipmentType = "",
-  requiresAdjustment = "",
-  isPreferred = "",
+  isRequired = "",
   isActive = "",
 } = {}) {
   const params = new URLSearchParams()
@@ -2084,12 +2199,10 @@ export async function getComponentCompatibilities({
   addParam(params, "component", component)
   addParam(params, "equipment_family", equipmentFamily)
   addParam(params, "equipment_model", equipmentModel)
-  addParam(params, "compatibility_type", compatibilityType)
   addParam(params, "position", position)
   addParam(params, "brand", brand)
   addParam(params, "equipment_type", equipmentType)
-  addBooleanParam(params, "requires_adjustment", requiresAdjustment)
-  addBooleanParam(params, "is_preferred", isPreferred)
+  addBooleanParam(params, "is_required", isRequired)
   addBooleanParam(params, "is_active", isActive)
 
   return request(
@@ -2168,179 +2281,94 @@ export async function restoreComponentCompatibility(compatibilityId) {
 
 
 /* ============================================================= */
-/* INVENTARIO DE COMPONENTES Y REPUESTOS                         */
+/* ASIGNACIONES DE COMPONENTES A EQUIPOS                         */
 /* ============================================================= */
 
-export async function getComponentInventories({
+export async function getEquipmentComponentAssignments({
   search = "",
   includeArchived = false,
+  equipment = "",
   component = "",
-  condition = "",
-  status = "",
-  warehouseLocation = "",
+  componentType = "",
+  category = "",
+  color = "",
   serialNumber = "",
-  hasAvailableStock = "",
-  isReserved = "",
+  status = "",
+  position = "",
+  referenceType = "",
+  referenceId = "",
   isActive = "",
-  ordering = "",
 } = {}) {
   const params = new URLSearchParams()
 
-  addParam(
-    params,
-    "search",
-    search
-  )
+  addParam(params, "search", search)
 
   if (includeArchived) {
-    params.set(
-      "include_archived",
-      "true"
-    )
+    params.set("include_archived", "true")
   }
 
-  addParam(
-    params,
-    "component",
-    component
-  )
-
-  addParam(
-    params,
-    "condition",
-    condition
-  )
-
-  addParam(
-    params,
-    "status",
-    status
-  )
-
-  addParam(
-    params,
-    "warehouse_location",
-    warehouseLocation
-  )
-
-  addParam(
-    params,
-    "serial_number",
-    serialNumber
-  )
-
-  addBooleanParam(
-    params,
-    "has_available_stock",
-    hasAvailableStock
-  )
-
-  addBooleanParam(
-    params,
-    "is_reserved",
-    isReserved
-  )
-
-  addBooleanParam(
-    params,
-    "is_active",
-    isActive
-  )
-
-  addParam(
-    params,
-    "ordering",
-    ordering
-  )
+  addParam(params, "equipment", equipment)
+  addParam(params, "component", component)
+  addParam(params, "component_type", componentType)
+  addParam(params, "category", category)
+  addParam(params, "color", color)
+  addParam(params, "serial_number", serialNumber)
+  addParam(params, "status", status)
+  addParam(params, "position", position)
+  addParam(params, "reference_type", referenceType)
+  addParam(params, "reference_id", referenceId)
+  addBooleanParam(params, "is_active", isActive)
 
   return request(
     buildUrl(
-      `${API_URL}/component-inventory/`,
+      `${API_URL}/component-assignments/`,
       params
     )
   )
 }
 
 
-export async function getComponentInventory(
-  inventoryId
+export async function getEquipmentComponentAssignment(
+  assignmentId
 ) {
   return request(
-    `${API_URL}/component-inventory/${inventoryId}/`
+    `${API_URL}/component-assignments/${assignmentId}/`
   )
 }
 
 
-export async function createComponentInventory(
-  inventoryData
+export async function createEquipmentComponentAssignment(
+  assignmentData
 ) {
   return request(
-    `${API_URL}/component-inventory/`,
+    `${API_URL}/component-assignments/`,
     {
       method: "POST",
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(
-        inventoryData
+        assignmentData
       ),
     }
   )
 }
 
 
-export async function updateComponentInventory(
-  inventoryId,
-  inventoryData
+export async function updateEquipmentComponentAssignment(
+  assignmentId,
+  assignmentData
 ) {
   return request(
-    `${API_URL}/component-inventory/${inventoryId}/`,
+    `${API_URL}/component-assignments/${assignmentId}/`,
     {
       method: "PATCH",
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(
-        inventoryData
+        assignmentData
       ),
-    }
-  )
-}
-
-
-export async function archiveComponentInventory(
-  inventoryId,
-  reason = ""
-) {
-  return request(
-    `${API_URL}/component-inventory/${inventoryId}/archive/`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body: JSON.stringify({
-        reason,
-      }),
-    }
-  )
-}
-
-
-export async function restoreComponentInventory(
-  inventoryId
-) {
-  return request(
-    `${API_URL}/component-inventory/${inventoryId}/restore/`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
     }
   )
 }
@@ -2405,3 +2433,34 @@ export const archiveModel =
 
 export const restoreModel =
   restoreEquipmentModel
+
+export const getFamilies =
+  getEquipmentFamilies
+
+export const getFamily =
+  getEquipmentFamily
+
+export const createFamily =
+  createEquipmentFamily
+
+export const updateFamily =
+  updateEquipmentFamily
+
+export const archiveFamily =
+  archiveEquipmentFamily
+
+export const restoreFamily =
+  restoreEquipmentFamily
+
+
+export const getComponentAssignments =
+  getEquipmentComponentAssignments
+
+export const getComponentAssignment =
+  getEquipmentComponentAssignment
+
+export const createComponentAssignment =
+  createEquipmentComponentAssignment
+
+export const updateComponentAssignment =
+  updateEquipmentComponentAssignment

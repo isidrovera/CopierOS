@@ -10,6 +10,8 @@ import {
   useRouter,
 } from "vue-router"
 
+import EquipmentComponentsPanel from "./components/EquipmentComponentsPanel.vue"
+
 import {
   archiveEquipment,
   changeEquipmentCommercialStatus,
@@ -1587,6 +1589,15 @@ onMounted(async () => {
             </div>
           </article>
         </div>
+      </section>
+
+      <section
+        v-if="activeTab === 'components'"
+        class="detail-section"
+      >
+        <EquipmentComponentsPanel
+          :equipment-id="equipmentId"
+        />
       </section>
 
       <section

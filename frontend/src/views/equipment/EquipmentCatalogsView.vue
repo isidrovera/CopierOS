@@ -12,30 +12,35 @@ import {
   archiveComponentType,
   archiveEquipmentBrand,
   archiveEquipmentComponent,
+  archiveEquipmentFamily,
   archiveEquipmentModel,
   archiveEquipmentType,
   createComponentCompatibility,
   createComponentType,
   createEquipmentBrand,
   createEquipmentComponent,
+  createEquipmentFamily,
   createEquipmentModel,
   createEquipmentType,
   getComponentCompatibilities,
   getComponentTypes,
   getEquipmentBrands,
   getEquipmentComponents,
+  getEquipmentFamilies,
   getEquipmentModels,
   getEquipmentTypes,
   restoreComponentCompatibility,
   restoreComponentType,
   restoreEquipmentBrand,
   restoreEquipmentComponent,
+  restoreEquipmentFamily,
   restoreEquipmentModel,
   restoreEquipmentType,
   updateComponentCompatibility,
   updateComponentType,
   updateEquipmentBrand,
   updateEquipmentComponent,
+  updateEquipmentFamily,
   updateEquipmentModel,
   updateEquipmentType,
 } from "../../services/equipment.service"
@@ -58,6 +63,7 @@ const editingId = ref("")
 
 const equipmentTypes = ref([])
 const brands = ref([])
+const equipmentFamilies = ref([])
 const equipmentModels = ref([])
 
 const componentTypes = ref([])
@@ -73,6 +79,10 @@ const tabDefinitions = [
   {
     id: "brands",
     label: "Marcas",
+  },
+  {
+    id: "families",
+    label: "Familias",
   },
   {
     id: "models",
@@ -118,6 +128,18 @@ const brandForm = reactive({
 })
 
 
+
+const familyForm = reactive({
+  code: "",
+  brand: "",
+  equipment_type: "",
+  name: "",
+  description: "",
+  technical_notes: "",
+  is_active: true,
+  display_order: 0,
+})
+
 const modelForm = reactive({
   code: "",
   brand: "",
@@ -125,6 +147,7 @@ const modelForm = reactive({
   name: "",
   commercial_name: "",
   family: "",
+  equipment_family: "",
   manufacturer_reference: "",
   color_mode: "not_applicable",
   technology: "not_defined",
@@ -157,7 +180,6 @@ const componentTypeForm = reactive({
   requires_color: false,
   requires_serial_number: false,
   requires_meter: false,
-  controls_stock: true,
   is_active: true,
   display_order: 0,
 })
@@ -189,14 +211,13 @@ const componentForm = reactive({
 
 const compatibilityForm = reactive({
   component: "",
-  equipment_family: null,
+  equipment_family: "",
   equipment_model: "",
-  compatibility_type: "compatible",
-  position: "not_applicable",
-  manufacturer_reference: "",
-  requires_adjustment: false,
-  adjustment_instructions: "",
-  is_preferred: false,
+  position: "",
+  manufacturer_code_override: "",
+  expected_life_meter_override: null,
+  expected_life_days_override: null,
+  is_required: true,
   technical_notes: "",
   is_active: true,
   display_order: 0,
@@ -207,6 +228,7 @@ const currentItems = computed(() => {
   const collections = {
     types: equipmentTypes.value,
     brands: brands.value,
+    families: equipmentFamilies.value,
     models: equipmentModels.value,
     componentTypes: componentTypes.value,
     components: components.value,
@@ -230,6 +252,7 @@ const modalTitle = computed(() => {
   const names = {
     types: "tipo de equipo",
     brands: "marca",
+    families: "familia",
     models: "modelo",
     componentTypes: "tipo de componente",
     components: "unidad o componente",
@@ -250,6 +273,13 @@ const activeComponentTypes = computed(() => {
     (item) =>
       !item.is_archived &&
       item.is_active
+  )
+})
+
+
+const activeEquipmentFamilies = computed(() => {
+  return equipmentFamilies.value.filter(
+    (item) => !item.is_archived && item.is_active
   )
 })
 
@@ -349,6 +379,7 @@ async function loadCatalogs() {
     const [
       typesResponse,
       brandsResponse,
+      familiesResponse,
       modelsResponse,
       componentTypesResponse,
       componentsResponse,
@@ -360,6 +391,11 @@ async function loadCatalogs() {
           includeArchived.value,
       }),
       getEquipmentBrands({
+        search: search.value,
+        includeArchived:
+          includeArchived.value,
+      }),
+      getEquipmentFamilies({
         search: search.value,
         includeArchived:
           includeArchived.value,
@@ -391,6 +427,9 @@ async function loadCatalogs() {
 
     brands.value =
       normalizeList(brandsResponse)
+
+    equipmentFamilies.value =
+      normalizeList(familiesResponse)
 
     equipmentModels.value =
       normalizeList(modelsResponse)
@@ -439,6 +478,17 @@ function resetForms() {
     display_order: 0,
   })
 
+  Object.assign(familyForm, {
+    code: "",
+    brand: "",
+    equipment_type: "",
+    name: "",
+    description: "",
+    technical_notes: "",
+    is_active: true,
+    display_order: 0,
+  })
+
   Object.assign(modelForm, {
     code: "",
     brand: "",
@@ -446,6 +496,7 @@ function resetForms() {
     name: "",
     commercial_name: "",
     family: "",
+    equipment_family: "",
     manufacturer_reference: "",
     color_mode: "not_applicable",
     technology: "not_defined",
@@ -477,7 +528,6 @@ function resetForms() {
     requires_color: false,
     requires_serial_number: false,
     requires_meter: false,
-    controls_stock: true,
     is_active: true,
     display_order: 0,
   })
@@ -507,14 +557,13 @@ function resetForms() {
 
   Object.assign(compatibilityForm, {
     component: "",
-    equipment_family: null,
+    equipment_family: "",
     equipment_model: "",
-    compatibility_type: "compatible",
-    position: "not_applicable",
-    manufacturer_reference: "",
-    requires_adjustment: false,
-    adjustment_instructions: "",
-    is_preferred: false,
+    position: "",
+    manufacturer_code_override: "",
+    expected_life_meter_override: null,
+    expected_life_days_override: null,
+    is_required: true,
     technical_notes: "",
     is_active: true,
     display_order: 0,
@@ -577,6 +626,19 @@ function openEditModal(item) {
     })
   }
 
+  if (activeTab.value === "families") {
+    Object.assign(familyForm, {
+      code: item.code || "",
+      brand: item.brand || "",
+      equipment_type: item.equipment_type || "",
+      name: item.name || "",
+      description: item.description || "",
+      technical_notes: item.technical_notes || "",
+      is_active: Boolean(item.is_active),
+      display_order: Number(item.display_order || 0),
+    })
+  }
+
   if (activeTab.value === "models") {
     Object.assign(modelForm, {
       code: item.code || "",
@@ -587,8 +649,9 @@ function openEditModal(item) {
       commercial_name:
         item.commercial_name || "",
       family: item.family || "",
+      equipment_family: item.equipment_family || "",
       manufacturer_reference:
-        item.manufacturer_reference || "",
+        item.effective_manufacturer_code || "",
       color_mode:
         item.color_mode ||
         "not_applicable",
@@ -657,8 +720,6 @@ function openEditModal(item) {
         ),
       requires_meter:
         Boolean(item.requires_meter),
-      controls_stock:
-        Boolean(item.controls_stock),
       is_active:
         Boolean(item.is_active),
       display_order:
@@ -723,37 +784,22 @@ function openEditModal(item) {
     "compatibilities"
   ) {
     Object.assign(compatibilityForm, {
-      component:
-        item.component || "",
-      equipment_family:
-        item.equipment_family || null,
-      equipment_model:
-        item.equipment_model || "",
-      compatibility_type:
-        item.compatibility_type ||
-        "compatible",
-      position:
-        item.position ||
-        "not_applicable",
-      manufacturer_reference:
-        item.manufacturer_reference || "",
-      requires_adjustment:
-        Boolean(
-          item.requires_adjustment
-        ),
-      adjustment_instructions:
-        item.adjustment_instructions || "",
-      is_preferred:
-        Boolean(item.is_preferred),
-      technical_notes:
-        item.technical_notes || "",
-      is_active:
-        Boolean(item.is_active),
-      display_order:
-        Number(item.display_order || 0),
+      component: item.component || "",
+      equipment_family: item.equipment_family || "",
+      equipment_model: item.equipment_model || "",
+      position: item.position || "",
+      manufacturer_code_override:
+        item.manufacturer_code_override || "",
+      expected_life_meter_override:
+        item.expected_life_meter_override ?? null,
+      expected_life_days_override:
+        item.expected_life_days_override ?? null,
+      is_required: Boolean(item.is_required),
+      technical_notes: item.technical_notes || "",
+      is_active: Boolean(item.is_active),
+      display_order: Number(item.display_order || 0),
     })
   }
-
   modalOpen.value = true
 }
 
@@ -799,6 +845,13 @@ function validateCurrentForm() {
         "tener dos letras."
       )
     }
+  }
+
+  if (activeTab.value === "families") {
+    if (!familyForm.code.trim()) return "El código de la familia es obligatorio."
+    if (!familyForm.brand) return "Selecciona una marca."
+    if (!familyForm.equipment_type) return "Selecciona un tipo de equipo."
+    if (!familyForm.name.trim()) return "El nombre de la familia es obligatorio."
   }
 
   if (activeTab.value === "models") {
@@ -916,11 +969,9 @@ function validateCurrentForm() {
     }
 
     if (
-      !compatibilityForm.equipment_model
+      !compatibilityForm.equipment_family
     ) {
-      return (
-        "Selecciona un modelo de equipo."
-      )
+      return "Selecciona una familia de equipos."
     }
   }
 
@@ -1022,6 +1073,23 @@ async function saveCurrent() {
         await createEquipmentBrand(
           payload
         )
+      }
+    }
+
+    if (activeTab.value === "families") {
+      const payload = {
+        ...familyForm,
+        code: familyForm.code.trim().toUpperCase(),
+        name: familyForm.name.trim(),
+        description: familyForm.description.trim(),
+        technical_notes: familyForm.technical_notes.trim(),
+        display_order: Number(familyForm.display_order || 0),
+      }
+
+      if (editingId.value) {
+        await updateEquipmentFamily(editingId.value, payload)
+      } else {
+        await createEquipmentFamily(payload)
       }
     }
 
@@ -1161,24 +1229,18 @@ async function saveCurrent() {
     ) {
       const payload = {
         ...compatibilityForm,
-        equipment_family: null,
-        manufacturer_reference:
-          compatibilityForm
-            .manufacturer_reference
-            .trim(),
-        adjustment_instructions:
-          compatibilityForm
-            .adjustment_instructions
-            .trim(),
-        technical_notes:
-          compatibilityForm
-            .technical_notes
-            .trim(),
-        display_order:
-          Number(
-            compatibilityForm
-              .display_order || 0
-          ),
+        equipment_model: compatibilityForm.equipment_model || null,
+        position: compatibilityForm.position.trim(),
+        manufacturer_code_override:
+          compatibilityForm.manufacturer_code_override.trim(),
+        expected_life_meter_override: normalizeNullableNumber(
+          compatibilityForm.expected_life_meter_override
+        ),
+        expected_life_days_override: normalizeNullableNumber(
+          compatibilityForm.expected_life_days_override
+        ),
+        technical_notes: compatibilityForm.technical_notes.trim(),
+        display_order: Number(compatibilityForm.display_order || 0),
       }
 
       if (editingId.value) {
@@ -1237,6 +1299,10 @@ async function archiveItem(item) {
         item.id,
         reason.trim()
       )
+    }
+
+    if (activeTab.value === "families") {
+      await archiveEquipmentFamily(item.id, reason)
     }
 
     if (activeTab.value === "models") {
@@ -1305,6 +1371,10 @@ async function restoreItem(item) {
       await restoreEquipmentBrand(
         item.id
       )
+    }
+
+    if (activeTab.value === "families") {
+      await restoreEquipmentFamily(item.id)
     }
 
     if (activeTab.value === "models") {
@@ -1585,7 +1655,7 @@ onMounted(() => {
               <th>Categoría</th>
               <th>Color</th>
               <th>Serie</th>
-              <th>Stock</th>
+              <th>Asignaciones</th>
               <th>Componentes</th>
               <th>Estado</th>
               <th>Acciones</th>
@@ -1602,7 +1672,7 @@ onMounted(() => {
               <th>Color</th>
               <th>Control</th>
               <th>Compatibilidades</th>
-              <th>Inventario</th>
+              <th>Asignaciones</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -1962,14 +2032,6 @@ onMounted(() => {
               </td>
 
               <td>
-                {{
-                  item.controls_stock
-                    ? "Sí"
-                    : "No"
-                }}
-              </td>
-
-              <td>
                 {{ item.component_count || 0 }}
               </td>
 
@@ -2079,7 +2141,7 @@ onMounted(() => {
               </td>
 
               <td>
-                {{ item.inventory_count || 0 }}
+                {{ item.assignment_count || 0 }}
               </td>
 
               <td>
@@ -2163,7 +2225,7 @@ onMounted(() => {
 
                 <small>
                   {{
-                    item.manufacturer_reference ||
+                    item.effective_manufacturer_code ||
                     "Sin referencia específica"
                   }}
                 </small>
@@ -2175,7 +2237,7 @@ onMounted(() => {
 
               <td>
                 {{
-                  item.compatibility_type_name ||
+                  item.is_required ? "Obligatorio" : "Opcional" ||
                   item.compatibility_type
                 }}
               </td>
@@ -2956,7 +3018,7 @@ onMounted(() => {
                   <input
                     v-model="
                       componentTypeForm
-                        .controls_stock
+                        .is_active
                     "
                     type="checkbox"
                   />
