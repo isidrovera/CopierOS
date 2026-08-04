@@ -1,15 +1,26 @@
 # -*- coding: utf-8 -*-
+
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+# Carga las variables definidas en:
+# C:\\CopierOS\\backend\\.env
+load_dotenv(
+    dotenv_path=BASE_DIR / ".env",
+)
 
 
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
     "solo-desarrollo-cambiar",
 )
+
 
 DEBUG = (
     os.getenv(
@@ -18,6 +29,14 @@ DEBUG = (
     ).lower()
     == "true"
 )
+
+
+# Clave Fernet utilizada para cifrar credenciales SNMP.
+COPIEROS_MONITORING_ENCRYPTION_KEY = os.getenv(
+    "COPIEROS_MONITORING_ENCRYPTION_KEY",
+    "",
+)
+
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -43,6 +62,7 @@ INSTALLED_APPS = [
     "apps.repairs.apps.RepairsConfig",
     "apps.rentals.apps.RentalsConfig",
     "apps.services.apps.ServicesConfig",
+    "apps.monitoring.apps.MonitoringConfig",
 ]
 
 

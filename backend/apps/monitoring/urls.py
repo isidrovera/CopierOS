@@ -1,0 +1,278 @@
+# -*- coding: utf-8 -*-
+
+from django.urls import include, path
+
+from rest_framework.routers import DefaultRouter
+
+from apps.monitoring.views import (
+    AccessoryReadingViewSet,
+    AgentCommandLogViewSet,
+    AgentCommandViewSet,
+    AgentConfigurationVersionViewSet,
+    AgentLogViewSet,
+    AgentSyncViewSet,
+    ComponentReadingViewSet,
+    ConsumableReadingViewSet,
+    CounterReadingViewSet,
+    DeviceAlertViewSet,
+    DeviceEventViewSet,
+    DevicePollingStateViewSet,
+    DeviceProfileAssignmentViewSet,
+    DeviceSnapshotViewSet,
+    DiscoveryHostViewSet,
+    JobReadingViewSet,
+    MonitoredDeviceViewSet,
+    MonitoringAgentAuthenticationTestAPIView,
+    MonitoringAgentConfigurationAPIView,
+    MonitoringAgentHeartbeatAPIView,
+    MonitoringAgentRegistrationAPIView,
+    MonitoringAgentViewSet,
+    MonitoringConfigurationViewSet,
+    MonitoringDataRetentionPolicyViewSet,
+    MonitoringDiscoveryViewSet,
+    MonitoringIngestionBatchViewSet,
+    MonitoringInstallationTokenViewSet,
+    MonitoringNetworkExclusionViewSet,
+    MonitoringNetworkViewSet,
+    MonitoringNotificationDeliveryViewSet,
+    MonitoringNotificationInstanceViewSet,
+    MonitoringNotificationRuleViewSet,
+    MonitoringReportExecutionViewSet,
+    MonitoringReportScheduleViewSet,
+    RawOIDReadingViewSet,
+    SNMPCredentialViewSet,
+    SNMPProfileMetricViewSet,
+    SNMPProfileTestMetricViewSet,
+    SNMPProfileTestViewSet,
+    SNMPProfileViewSet,
+    SnapshotIngestionAPIView,
+    TrayReadingViewSet,
+)
+
+
+app_name = "monitoring"
+
+
+router = DefaultRouter()
+
+router.register(
+    "installation-tokens",
+    MonitoringInstallationTokenViewSet,
+    basename="installation-token",
+)
+router.register(
+    "agents",
+    MonitoringAgentViewSet,
+    basename="agent",
+)
+router.register(
+    "networks",
+    MonitoringNetworkViewSet,
+    basename="network",
+)
+router.register(
+    "network-exclusions",
+    MonitoringNetworkExclusionViewSet,
+    basename="network-exclusion",
+)
+router.register(
+    "snmp-credentials",
+    SNMPCredentialViewSet,
+    basename="snmp-credential",
+)
+router.register(
+    "devices",
+    MonitoredDeviceViewSet,
+    basename="device",
+)
+router.register(
+    "device-polling-states",
+    DevicePollingStateViewSet,
+    basename="device-polling-state",
+)
+router.register(
+    "snapshots",
+    DeviceSnapshotViewSet,
+    basename="snapshot",
+)
+router.register(
+    "counter-readings",
+    CounterReadingViewSet,
+    basename="counter-reading",
+)
+router.register(
+    "consumable-readings",
+    ConsumableReadingViewSet,
+    basename="consumable-reading",
+)
+router.register(
+    "component-readings",
+    ComponentReadingViewSet,
+    basename="component-reading",
+)
+router.register(
+    "tray-readings",
+    TrayReadingViewSet,
+    basename="tray-reading",
+)
+router.register(
+    "accessory-readings",
+    AccessoryReadingViewSet,
+    basename="accessory-reading",
+)
+router.register(
+    "device-alerts",
+    DeviceAlertViewSet,
+    basename="device-alert",
+)
+router.register(
+    "job-readings",
+    JobReadingViewSet,
+    basename="job-reading",
+)
+router.register(
+    "raw-oid-readings",
+    RawOIDReadingViewSet,
+    basename="raw-oid-reading",
+)
+router.register(
+    "discoveries",
+    MonitoringDiscoveryViewSet,
+    basename="discovery",
+)
+router.register(
+    "discovery-hosts",
+    DiscoveryHostViewSet,
+    basename="discovery-host",
+)
+router.register(
+    "snmp-profiles",
+    SNMPProfileViewSet,
+    basename="snmp-profile",
+)
+router.register(
+    "snmp-profile-metrics",
+    SNMPProfileMetricViewSet,
+    basename="snmp-profile-metric",
+)
+router.register(
+    "device-profile-assignments",
+    DeviceProfileAssignmentViewSet,
+    basename="device-profile-assignment",
+)
+router.register(
+    "snmp-profile-tests",
+    SNMPProfileTestViewSet,
+    basename="snmp-profile-test",
+)
+router.register(
+    "snmp-profile-test-metrics",
+    SNMPProfileTestMetricViewSet,
+    basename="snmp-profile-test-metric",
+)
+router.register(
+    "device-events",
+    DeviceEventViewSet,
+    basename="device-event",
+)
+router.register(
+    "agent-commands",
+    AgentCommandViewSet,
+    basename="agent-command",
+)
+router.register(
+    "agent-command-logs",
+    AgentCommandLogViewSet,
+    basename="agent-command-log",
+)
+router.register(
+    "agent-syncs",
+    AgentSyncViewSet,
+    basename="agent-sync",
+)
+router.register(
+    "agent-logs",
+    AgentLogViewSet,
+    basename="agent-log",
+)
+router.register(
+    "notification-rules",
+    MonitoringNotificationRuleViewSet,
+    basename="notification-rule",
+)
+router.register(
+    "notification-instances",
+    MonitoringNotificationInstanceViewSet,
+    basename="notification-instance",
+)
+router.register(
+    "notification-deliveries",
+    MonitoringNotificationDeliveryViewSet,
+    basename="notification-delivery",
+)
+router.register(
+    "report-schedules",
+    MonitoringReportScheduleViewSet,
+    basename="report-schedule",
+)
+router.register(
+    "report-executions",
+    MonitoringReportExecutionViewSet,
+    basename="report-execution",
+)
+router.register(
+    "configurations",
+    MonitoringConfigurationViewSet,
+    basename="configuration",
+)
+router.register(
+    "agent-configuration-versions",
+    AgentConfigurationVersionViewSet,
+    basename="agent-configuration-version",
+)
+router.register(
+    "ingestion-batches",
+    MonitoringIngestionBatchViewSet,
+    basename="ingestion-batch",
+)
+router.register(
+    "retention-policies",
+    MonitoringDataRetentionPolicyViewSet,
+    basename="retention-policy",
+)
+
+
+urlpatterns = [
+    path(
+        "agents/register/",
+        MonitoringAgentRegistrationAPIView.as_view(),
+        name="agent-register",
+    ),
+    path(
+        "agents/heartbeat/",
+        MonitoringAgentHeartbeatAPIView.as_view(),
+        name="agent-heartbeat",
+    ),
+    path(
+        "agents/auth-test/",
+        MonitoringAgentAuthenticationTestAPIView.as_view(),
+        name="agent-auth-test",
+    ),
+    path(
+        "agents/configuration/",
+        MonitoringAgentConfigurationAPIView.as_view(),
+        name="agent-configuration",
+    ),
+    path(
+        "snapshots/ingest/",
+        SnapshotIngestionAPIView.as_view(),
+        name="snapshot-ingest",
+    ),
+    path(
+        "",
+        include(
+            router.urls
+        ),
+    ),
+    
+]

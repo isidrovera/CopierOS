@@ -42,7 +42,6 @@ import {
 } from "../../services/repairs.service"
 
 import {
-  getComponentInventories,
   getEquipment,
 } from "../../services/equipment.service"
 
@@ -79,19 +78,16 @@ const replacements = ref([])
 const comments = ref([])
 const history = ref([])
 
-const inventoryResults = ref([])
 const equipmentResults = ref([])
 const rentalEquipmentResults = ref([])
 const warehouseResults = ref([])
 const userResults = ref([])
 
-const inventorySearch = ref("")
 const equipmentSearch = ref("")
 const rentalEquipmentSearch = ref("")
 const warehouseSearch = ref("")
 const userSearch = ref("")
 
-const searchingInventory = ref(false)
 const searchingEquipment = ref(false)
 const searchingRentalEquipment = ref(false)
 const searchingWarehouses = ref(false)
@@ -116,7 +112,7 @@ const decisionForm = reactive({
 
 const sourceForm = reactive({
   source_type: "",
-  inventory: "",
+  component_serial_number: "",
   rental_warehouse: "",
   donor_equipment: "",
   donor_rental_equipment: "",
@@ -163,7 +159,7 @@ const replacementForm = reactive({
   replacement_type: "none",
   status: "not_applicable",
   source_equipment: "",
-  replacement_inventory: "",
+  replacement_serial_number: "",
   responsible_user: "",
   due_at: "",
   external_reference: "",
@@ -743,8 +739,8 @@ function setCurrentSourceForm() {
   sourceForm.source_type =
     source.source_type || ""
 
-  sourceForm.inventory =
-    source.inventory || ""
+  sourceForm.component_serial_number =
+    source.component_serial_number || ""
 
   sourceForm.rental_warehouse =
     source.rental_warehouse || ""
@@ -801,30 +797,6 @@ async function runAction(
       "No se pudo completar la acción."
   } finally {
     actionLoading.value = false
-  }
-}
-
-
-async function searchInventory() {
-  searchingInventory.value = true
-
-  try {
-    const response =
-      await getComponentInventories({
-        search: inventorySearch.value,
-        component:
-          item.value?.component || "",
-        isActive: true,
-      })
-
-    inventoryResults.value =
-      normalizeResults(response)
-  } catch (error) {
-    errorMessage.value =
-      error?.message ||
-      "No se pudo buscar el inventario."
-  } finally {
-    searchingInventory.value = false
   }
 }
 
@@ -914,18 +886,6 @@ async function searchUsers() {
   } finally {
     searchingUsers.value = false
   }
-}
-
-
-function inventoryLabel(inventory) {
-  return [
-    inventory.internal_code,
-    inventory.component_name,
-    inventory.serial_number,
-    inventory.warehouse_location,
-  ]
-    .filter(Boolean)
-    .join(" · ")
 }
 
 
@@ -1053,6 +1013,8 @@ function buildSourcePayload() {
     item: itemId.value,
     source_type:
       sourceForm.source_type,
+    component_serial_number:
+      sourceForm.component_serial_number.trim(),
     available_quantity:
       sourceForm.available_quantity || 0,
     reserved_quantity:
@@ -1063,14 +1025,6 @@ function buildSourcePayload() {
       sourceForm.justification.trim(),
     is_confirmed:
       sourceForm.is_confirmed,
-  }
-
-  if (
-    sourceForm.source_type ===
-    "component_stock"
-  ) {
-    payload.inventory =
-      sourceForm.inventory
   }
 
   if (
@@ -1312,9 +1266,8 @@ function submitReplacement() {
     source_equipment:
       replacementForm.source_equipment ||
       null,
-    replacement_inventory:
-      replacementForm.replacement_inventory ||
-      null,
+    replacement_serial_number:
+      replacementForm.replacement_serial_number.trim(),
     responsible_user:
       replacementForm.responsible_user ||
       null,
@@ -1373,13 +1326,6 @@ function goBack() {
 watch(
   () => sourceForm.source_type,
   (sourceType) => {
-    if (
-      sourceType === "component_stock" &&
-      !inventoryResults.value.length
-    ) {
-      searchInventory()
-    }
-
     if (
       sourceType === "rental_warehouse" &&
       !warehouseResults.value.length
@@ -1726,48 +1672,32 @@ onMounted(async () => {
                 </select>
               </label>
 
-              <div
+              <template
                 v-if="
                   sourceForm.source_type ===
                   'component_stock'
                 "
-                class="repair-part-item-detail__search span-2"
               >
                 <label>
-                  <span>Buscar inventario</span>
+                  <span>Serie del componente</span>
 
-                  <div>
-                    <input
-                      v-model="inventorySearch"
-                      type="search"
-                      placeholder="Código, repuesto, serie o ubicación"
-                      @keyup.enter="searchInventory"
-                    />
-
-                    <button
-                      type="button"
-                      :disabled="searchingInventory"
-                      @click="searchInventory"
-                    >
-                      Buscar
-                    </button>
-                  </div>
+                  <input
+                    v-model="sourceForm.component_serial_number"
+                    type="text"
+                    placeholder="Serie física, cuando corresponda"
+                  />
                 </label>
 
-                <select v-model="sourceForm.inventory">
-                  <option value="">
-                    Seleccionar inventario
-                  </option>
+                <label>
+                  <span>Ubicación referencial</span>
 
-                  <option
-                    v-for="inventory in inventoryResults"
-                    :key="inventory.id"
-                    :value="inventory.id"
-                  >
-                    {{ inventoryLabel(inventory) }}
-                  </option>
-                </select>
-              </div>
+                  <input
+                    v-model="sourceForm.warehouse_location"
+                    type="text"
+                    placeholder="Estante, área o referencia"
+                  />
+                </label>
+              </template>
 
               <div
                 v-if="
@@ -2415,23 +2345,13 @@ onMounted(async () => {
               </label>
 
               <label>
-                <span>Inventario de reposición</span>
+                <span>Serie del componente de reposición</span>
 
-                <select
-                  v-model="replacementForm.replacement_inventory"
-                >
-                  <option value="">
-                    Seleccionar inventario
-                  </option>
-
-                  <option
-                    v-for="inventory in inventoryResults"
-                    :key="inventory.id"
-                    :value="inventory.id"
-                  >
-                    {{ inventoryLabel(inventory) }}
-                  </option>
-                </select>
+                <input
+                  v-model="replacementForm.replacement_serial_number"
+                  type="text"
+                  placeholder="Serie física, cuando corresponda"
+                />
               </label>
 
               <label>

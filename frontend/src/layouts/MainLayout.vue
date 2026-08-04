@@ -114,6 +114,26 @@ const navigationItems = [
       "service-order-edit",
     ],
   },
+
+{
+  key: "monitoring",
+  label: "Monitoreo",
+  description: "Agentes, redes y equipos SNMP",
+  path: "/monitoreo",
+  color: "#0f766e",
+  routeNames: [
+    "monitoring-dashboard",
+    "monitoring-agents",
+    "monitoring-agent-detail",
+    "monitoring-tokens",
+    "monitoring-networks",
+    "monitoring-credentials",
+    "monitoring-devices",
+    "monitoring-device-detail",
+    "monitoring-profiles",
+    "monitoring-snapshots",
+  ],
+},
   {
     key: "repairs",
     label: "Taller",
@@ -767,6 +787,23 @@ onBeforeUnmount(() => {
 
                   <path d="M14.1 14.1l1.8 1.8" />
                 </svg>
+
+
+<!-- Monitoreo -->
+<svg
+  v-else-if="item.key === 'monitoring'"
+  viewBox="0 0 24 24"
+  aria-hidden="true"
+>
+  <path d="M4 19V9" />
+  <path d="M10 19V5" />
+  <path d="M16 19v-7" />
+  <path d="M22 19V3" />
+  <circle cx="4" cy="7" r="2" />
+  <circle cx="10" cy="3" r="2" />
+  <circle cx="16" cy="10" r="2" />
+  <circle cx="22" cy="1" r="2" />
+</svg>
 
                 <!-- Configuración -->
                 <svg

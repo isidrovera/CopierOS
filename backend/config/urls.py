@@ -56,6 +56,12 @@ urlpatterns = [
         "api/services/",
         include("apps.services.urls"),
     ),
+    path(
+        "api/monitoring/",
+        include(
+            "apps.monitoring.urls"
+        ),
+    ),
 ]
 
 

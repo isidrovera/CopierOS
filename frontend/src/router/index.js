@@ -49,6 +49,17 @@ import ServiceOrdersListView from "../views/services/ServiceOrdersListView.vue"
 import ServiceOrderFormView from "../views/services/ServiceOrderFormView.vue"
 import ServiceOrderDetailView from "../views/services/ServiceOrderDetailView.vue"
 
+import MonitoringDashboardView from "../views/monitoring/MonitoringDashboardView.vue"
+import MonitoringAgentsView from "../views/monitoring/MonitoringAgentsView.vue"
+import MonitoringAgentDetailView from "../views/monitoring/MonitoringAgentDetailView.vue"
+import MonitoringInstallationTokensView from "../views/monitoring/MonitoringInstallationTokensView.vue"
+import MonitoringNetworksView from "../views/monitoring/MonitoringNetworksView.vue"
+import MonitoringCredentialsView from "../views/monitoring/MonitoringCredentialsView.vue"
+import MonitoringDevicesView from "../views/monitoring/MonitoringDevicesView.vue"
+import MonitoringDeviceDetailView from "../views/monitoring/MonitoringDeviceDetailView.vue"
+import MonitoringProfilesView from "../views/monitoring/MonitoringProfilesView.vue"
+import MonitoringSnapshotsView from "../views/monitoring/MonitoringSnapshotsView.vue"
+
 
 const routes = [
   {
@@ -471,6 +482,102 @@ const routes = [
           title: "Detalle de reparación",
         },
       },
+
+
+/* ========================================================= */
+/* MONITOREO                                                 */
+/* ========================================================= */
+
+{
+  path: "monitoreo",
+  name: "monitoring-dashboard",
+  component: MonitoringDashboardView,
+  meta: {
+    requiresAuth: true,
+    title: "Monitoreo",
+  },
+},
+{
+  path: "monitoreo/agentes",
+  name: "monitoring-agents",
+  component: MonitoringAgentsView,
+  meta: {
+    requiresAuth: true,
+    title: "Agentes de monitoreo",
+  },
+},
+{
+  path: "monitoreo/agentes/:id",
+  name: "monitoring-agent-detail",
+  component: MonitoringAgentDetailView,
+  meta: {
+    requiresAuth: true,
+    title: "Detalle del agente",
+  },
+},
+{
+  path: "monitoreo/tokens",
+  name: "monitoring-tokens",
+  component: MonitoringInstallationTokensView,
+  meta: {
+    requiresAuth: true,
+    title: "Tokens de instalación",
+  },
+},
+{
+  path: "monitoreo/redes",
+  name: "monitoring-networks",
+  component: MonitoringNetworksView,
+  meta: {
+    requiresAuth: true,
+    title: "Redes de monitoreo",
+  },
+},
+{
+  path: "monitoreo/credenciales",
+  name: "monitoring-credentials",
+  component: MonitoringCredentialsView,
+  meta: {
+    requiresAuth: true,
+    title: "Credenciales SNMP",
+  },
+},
+{
+  path: "monitoreo/dispositivos",
+  name: "monitoring-devices",
+  component: MonitoringDevicesView,
+  meta: {
+    requiresAuth: true,
+    title: "Dispositivos monitoreados",
+  },
+},
+{
+  path: "monitoreo/dispositivos/:id",
+  name: "monitoring-device-detail",
+  component: MonitoringDeviceDetailView,
+  meta: {
+    requiresAuth: true,
+    title: "Detalle del dispositivo",
+  },
+},
+{
+  path: "monitoreo/perfiles",
+  name: "monitoring-profiles",
+  component: MonitoringProfilesView,
+  meta: {
+    requiresAuth: true,
+    title: "Perfiles SNMP",
+  },
+},
+{
+  path: "monitoreo/capturas",
+  name: "monitoring-snapshots",
+  component: MonitoringSnapshotsView,
+  meta: {
+    requiresAuth: true,
+    title: "Capturas de monitoreo",
+  },
+},
 
       /* ========================================================= */
       /* SEGURIDAD                                                 */
