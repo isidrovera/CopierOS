@@ -12,21 +12,23 @@ import {
 } from "vue-router"
 
 import {
+  getEquipment,
+  getEquipmentById,
+} from "../../services/equipment.service"
+
+import {
+  assignRepair,
   createRepair,
+  getActiveRepairByEquipment,
   getRepairById,
   updateRepair,
 } from "../../services/repairs.service"
 
 import {
-  clearSession,
-  getToken,
-} from "../../services/auth.service"
+  getUsers,
+} from "../../services/users.service"
 
 import "./RepairFormView.css"
-
-
-const EQUIPMENT_API_URL =
-  "http://127.0.0.1:8000/api/equipment/"
 
 
 const route = useRoute()
@@ -34,28 +36,79 @@ const router = useRouter()
 
 const loading = ref(false)
 const loadingEquipment = ref(false)
+const loadingTechnicians = ref(false)
 const saving = ref(false)
 
 const errorMessage = ref("")
 const successMessage = ref("")
 
 const equipment = ref([])
+const technicians = ref([])
+
 const equipmentSearch = ref("")
+const technicianSearch = ref("")
 
-const repairId = computed(
-  () => route.params.id || ""
-)
+const originalTechnicianId = ref("")
 
-const isEditing = computed(
-  () => Boolean(repairId.value)
-)
 
-const pageTitle = computed(
-  () =>
-    isEditing.value
-      ? "Editar reparación"
-      : "Nueva reparación"
-)
+const repairId = computed(() => {
+  return String(
+    route.params.id || ""
+  )
+})
+
+
+const isEditing = computed(() => {
+  return Boolean(
+    repairId.value
+  )
+})
+
+
+const sourceEquipmentId = computed(() => {
+  return String(
+    route.query.equipment || ""
+  ).trim()
+})
+
+
+const comesFromEquipment = computed(() => {
+  return (
+    !isEditing.value &&
+    Boolean(sourceEquipmentId.value)
+  )
+})
+
+
+const equipmentSelectionLocked = computed(() => {
+  return (
+    isEditing.value ||
+    comesFromEquipment.value
+  )
+})
+
+
+const pageTitle = computed(() => {
+  return isEditing.value
+    ? "Editar reparación"
+    : "Nueva reparación"
+})
+
+
+const pageDescription = computed(() => {
+  if (comesFromEquipment.value) {
+    return (
+      "Registra una reparación para el equipo seleccionado " +
+      "desde su ficha."
+    )
+  }
+
+  return (
+    "Registra la información inicial, condiciones, técnico " +
+    "y requisitos de la reparación."
+  )
+})
+
 
 const form = reactive({
   code: "",
@@ -64,25 +117,46 @@ const form = reactive({
   priority: "normal",
   reported_problem: "",
   initial_observations: "",
+
+  technician: "",
+  assignment_reason: "",
+
   work_summary: "",
   pending_work: "",
   final_condition: "not_defined",
   final_observations: "",
+
   requires_parts: false,
   requires_external_service: false,
   requires_follow_up: false,
   follow_up_date: "",
+
   minimum_photos_required: 10,
   closure_notes: "",
 })
 
 
 const selectedEquipment = computed(() => {
-  return equipment.value.find(
-    (item) =>
-      String(item.id) ===
-      String(form.equipment)
-  ) || null
+  return (
+    equipment.value.find(
+      (item) =>
+        String(item.id) ===
+        String(form.equipment)
+    ) ||
+    null
+  )
+})
+
+
+const selectedTechnician = computed(() => {
+  return (
+    technicians.value.find(
+      (item) =>
+        String(item.id) ===
+        String(form.technician)
+    ) ||
+    null
+  )
 })
 
 
@@ -123,6 +197,92 @@ const filteredEquipment = computed(() => {
 })
 
 
+const filteredTechnicians = computed(() => {
+  const query = String(
+    technicianSearch.value || ""
+  )
+    .trim()
+    .toLowerCase()
+
+  if (!query) {
+    return technicians.value
+  }
+
+  return technicians.value.filter(
+    (item) => {
+      const values = [
+        getUserName(item),
+        item.username,
+        item.email,
+        item.dni,
+        item.document_number,
+        item.job_title,
+        item.position,
+      ]
+
+      return values.some(
+        (value) =>
+          String(value || "")
+            .toLowerCase()
+            .includes(query)
+      )
+    }
+  )
+})
+
+
+function normalizeCollection(data) {
+  if (Array.isArray(data)) {
+    return data
+  }
+
+  if (
+    data &&
+    Array.isArray(data.results)
+  ) {
+    return data.results
+  }
+
+  return []
+}
+
+
+function appendEquipment(item) {
+  if (!item?.id) {
+    return
+  }
+
+  const exists =
+    equipment.value.some(
+      (currentItem) =>
+        String(currentItem.id) ===
+        String(item.id)
+    )
+
+  if (!exists) {
+    equipment.value.unshift(item)
+  }
+}
+
+
+function appendTechnician(item) {
+  if (!item?.id) {
+    return
+  }
+
+  const exists =
+    technicians.value.some(
+      (currentItem) =>
+        String(currentItem.id) ===
+        String(item.id)
+    )
+
+  if (!exists) {
+    technicians.value.unshift(item)
+  }
+}
+
+
 function getEquipmentBrand(item) {
   return (
     item?.brand_name ||
@@ -156,7 +316,7 @@ function getEquipmentName(item) {
   const model =
     getEquipmentModel(item)
 
-  const name = [
+  const completeName = [
     brand,
     model,
   ]
@@ -165,7 +325,7 @@ function getEquipmentName(item) {
     .trim()
 
   return (
-    name ||
+    completeName ||
     item.display_name ||
     item.name ||
     item.serial_number ||
@@ -192,125 +352,253 @@ function getEquipmentOptionLabel(item) {
 }
 
 
-function normalizeCollection(data) {
-  if (Array.isArray(data)) {
-    return data
+function getTechnicalStatusName(item) {
+  if (!item) {
+    return "Sin estado"
   }
 
-  if (
-    data &&
-    Array.isArray(data.results)
-  ) {
-    return data.results
+  if (item.technical_status_name) {
+    return item.technical_status_name
   }
 
-  return []
-}
-
-
-function getValidationError(data) {
-  if (!data) {
-    return null
+  const names = {
+    unreviewed: "Sin revisar",
+    for_review: "Para revisión",
+    in_review: "En revisión",
+    completed: "Finalizada",
+    with_problems: "Con problemas",
+    for_parts: "De partes",
   }
 
-  if (typeof data === "string") {
-    return data
-  }
-
-  if (Array.isArray(data)) {
-    return data.length
-      ? getValidationError(data[0])
-      : null
-  }
-
-  if (typeof data === "object") {
-    for (
-      const value
-      of Object.values(data)
-    ) {
-      const error =
-        getValidationError(value)
-
-      if (error) {
-        return error
-      }
-    }
-  }
-
-  return null
-}
-
-
-async function equipmentRequest(url) {
-  const token = getToken()
-
-  const response = await fetch(
-    url,
-    {
-      headers: {
-        Accept: "application/json",
-        Authorization:
-          token
-            ? `Token ${token}`
-            : "",
-      },
-    }
+  return (
+    names[item.technical_status] ||
+    item.technical_status ||
+    "Sin estado"
   )
-
-  let data = null
-
-  try {
-    data = await response.json()
-  } catch {
-    data = null
-  }
-
-  if (response.status === 401) {
-    clearSession()
-
-    router.push({
-      name: "login",
-    })
-
-    throw new Error(
-      "Tu sesión terminó. Inicia sesión nuevamente."
-    )
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      data?.detail ||
-      getValidationError(data) ||
-      "No se pudieron cargar los equipos."
-    )
-  }
-
-  return data
 }
 
 
-async function loadEquipment() {
+function getCommercialStatusName(item) {
+  if (!item) {
+    return "Sin estado"
+  }
+
+  if (item.commercial_status_name) {
+    return item.commercial_status_name
+  }
+
+  const names = {
+    warehouse: "En almacén",
+    reserved: "Separada",
+    sold: "Vendida",
+    delivery_preparation:
+      "En preparación de entrega",
+    in_transit: "En tránsito",
+    delivered: "Entregada",
+    contract_assigned:
+      "Asignada a contrato",
+    installed: "Instalada",
+    return_process:
+      "En proceso de retorno",
+    returned:
+      "Retornada a almacén",
+    temporary_loan:
+      "Préstamo temporal",
+    demonstration:
+      "Demostración",
+    replacement:
+      "Equipo de reemplazo",
+    out_of_service:
+      "Fuera de servicio",
+    disposed: "De baja",
+  }
+
+  return (
+    names[item.commercial_status] ||
+    item.commercial_status ||
+    "Sin estado"
+  )
+}
+
+
+function getUserName(user) {
+  if (!user) {
+    return "Usuario sin nombre"
+  }
+
+  const fullName =
+    [
+      user.first_name,
+      user.last_name,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim()
+
+  return (
+    user.full_name ||
+    user.display_name ||
+    fullName ||
+    user.name ||
+    user.username ||
+    user.email ||
+    "Usuario sin nombre"
+  )
+}
+
+
+function getUserOptionLabel(user) {
+  const name =
+    getUserName(user)
+
+  const additional =
+    user.job_title ||
+    user.position ||
+    user.email ||
+    user.username ||
+    ""
+
+  return additional
+    ? `${name} · ${additional}`
+    : name
+}
+
+
+async function loadEquipmentList() {
   loadingEquipment.value = true
 
   try {
-    const data =
-      await equipmentRequest(
-        EQUIPMENT_API_URL
-      )
+    const response =
+      await getEquipment({
+        includeArchived: false,
+        isActive: true,
+      })
 
     equipment.value =
-      normalizeCollection(data)
+      normalizeCollection(response)
         .filter(
           (item) =>
             !item.is_archived &&
-            item.archived_at == null
+            item.archived_at == null &&
+            item.is_active !== false
         )
   } catch (error) {
     errorMessage.value =
-      error.message
+      error.message ||
+      "No se pudieron cargar los equipos."
   } finally {
     loadingEquipment.value = false
   }
+}
+
+
+async function loadTechnicians() {
+  loadingTechnicians.value = true
+
+  try {
+    const response =
+      await getUsers({
+        includeArchived: false,
+        isActive: true,
+      })
+
+    technicians.value =
+      normalizeCollection(response)
+        .filter(
+          (item) =>
+            item.is_active !== false &&
+            !item.is_archived &&
+            item.archived_at == null
+        )
+        .sort(
+          (firstItem, secondItem) =>
+            getUserName(firstItem)
+              .localeCompare(
+                getUserName(secondItem),
+                "es",
+                {
+                  sensitivity: "base",
+                }
+              )
+        )
+  } catch (error) {
+    technicians.value = []
+
+    errorMessage.value =
+      error.message ||
+      "No se pudieron cargar los usuarios."
+  } finally {
+    loadingTechnicians.value = false
+  }
+}
+
+
+async function loadSourceEquipment() {
+  if (!sourceEquipmentId.value) {
+    return
+  }
+
+  loadingEquipment.value = true
+  errorMessage.value = ""
+
+  try {
+    const item =
+      await getEquipmentById(
+        sourceEquipmentId.value
+      )
+
+    if (
+      item.is_archived ||
+      item.archived_at
+    ) {
+      throw new Error(
+        "No puedes crear una reparación para un equipo archivado."
+      )
+    }
+
+    appendEquipment(item)
+
+    form.equipment = item.id
+
+    const activeRepair =
+      await getActiveRepairByEquipment(
+        item.id
+      )
+
+    if (activeRepair?.id) {
+      await router.replace({
+        name: "repair-detail",
+        params: {
+          id: activeRepair.id,
+        },
+      })
+    }
+  } catch (error) {
+    errorMessage.value =
+      error.message ||
+      "No se pudo cargar el equipo seleccionado."
+  } finally {
+    loadingEquipment.value = false
+  }
+}
+
+
+function getRepairTechnicianId(repair) {
+  const technician =
+    repair?.assigned_technician
+
+  if (
+    technician &&
+    typeof technician === "object"
+  ) {
+    return String(
+      technician.id || ""
+    )
+  }
+
+  return String(
+    technician || ""
+  )
 }
 
 
@@ -334,6 +622,17 @@ function setFormData(repair) {
 
   form.initial_observations =
     repair.initial_observations || ""
+
+  const technicianId =
+    getRepairTechnicianId(repair)
+
+  form.technician =
+    technicianId
+
+  originalTechnicianId.value =
+    technicianId
+
+  form.assignment_reason = ""
 
   form.work_summary =
     repair.work_summary || ""
@@ -392,11 +691,72 @@ async function loadRepair() {
       )
 
     setFormData(repair)
+
+    if (repair.equipment) {
+      const equipmentIdentifier =
+        typeof repair.equipment ===
+        "object"
+          ? repair.equipment.id
+          : repair.equipment
+
+      form.equipment =
+        equipmentIdentifier
+
+      const item =
+        await getEquipmentById(
+          equipmentIdentifier
+        )
+
+      appendEquipment(item)
+    }
+
+    const technicianId =
+      getRepairTechnicianId(repair)
+
+    if (technicianId) {
+      const existingTechnician =
+        technicians.value.find(
+          (item) =>
+            String(item.id) ===
+            technicianId
+        )
+
+      if (
+        !existingTechnician &&
+        repair.assigned_technician_detail
+      ) {
+        appendTechnician(
+          repair.assigned_technician_detail
+        )
+      }
+    }
   } catch (error) {
     errorMessage.value =
-      error.message
+      error.message ||
+      "No se pudo cargar la reparación."
   } finally {
     loading.value = false
+  }
+}
+
+
+async function validateActiveRepair() {
+  if (
+    isEditing.value ||
+    !form.equipment
+  ) {
+    return
+  }
+
+  const activeRepair =
+    await getActiveRepairByEquipment(
+      form.equipment
+    )
+
+  if (activeRepair?.id) {
+    throw new Error(
+      "El equipo seleccionado ya tiene una reparación activa."
+    )
   }
 }
 
@@ -516,18 +876,68 @@ function buildPayload() {
 }
 
 
+function technicianChanged() {
+  return (
+    String(
+      form.technician || ""
+    ) !==
+    String(
+      originalTechnicianId.value || ""
+    )
+  )
+}
+
+
+async function assignSelectedTechnician(
+  savedRepairId
+) {
+  if (
+    !form.technician ||
+    !savedRepairId
+  ) {
+    return
+  }
+
+  if (
+    isEditing.value &&
+    !technicianChanged()
+  ) {
+    return
+  }
+
+  await assignRepair(
+    savedRepairId,
+    {
+      technician:
+        form.technician,
+
+      reason:
+        String(
+          form.assignment_reason || ""
+        ).trim(),
+    }
+  )
+}
+
+
 async function handleSubmit() {
+  if (saving.value) {
+    return
+  }
+
   saving.value = true
   errorMessage.value = ""
   successMessage.value = ""
 
+  let savedRepair = null
+
   try {
     validateForm()
 
+    await validateActiveRepair()
+
     const payload =
       buildPayload()
-
-    let savedRepair = null
 
     if (isEditing.value) {
       savedRepair =
@@ -542,29 +952,59 @@ async function handleSubmit() {
         )
     }
 
-    successMessage.value =
-      isEditing.value
-        ? "La reparación se actualizó correctamente."
-        : "La reparación se creó correctamente."
-
     const savedId =
       savedRepair?.id ||
       repairId.value
 
-    window.setTimeout(
-      () => {
-        router.push({
-          name: "repair-detail",
-          params: {
-            id: savedId,
-          },
-        })
+    if (!savedId) {
+      throw new Error(
+        "La reparación se guardó, pero no se recibió su identificador."
+      )
+    }
+
+    try {
+      await assignSelectedTechnician(
+        savedId
+      )
+    } catch (assignmentError) {
+      errorMessage.value =
+        (
+          isEditing.value
+            ? "La reparación se actualizó, pero no se pudo reasignar al técnico. "
+            : "La reparación se creó, pero no se pudo asignar al técnico. "
+        ) +
+        (
+          assignmentError.message ||
+          "Revisa la asignación desde el detalle."
+        )
+
+      await router.push({
+        name: "repair-detail",
+        params: {
+          id: savedId,
+        },
+      })
+
+      return
+    }
+
+    successMessage.value =
+      isEditing.value
+        ? "La reparación se actualizó correctamente."
+        : form.technician
+          ? "La reparación se creó y fue asignada correctamente."
+          : "La reparación se creó correctamente."
+
+    await router.push({
+      name: "repair-detail",
+      params: {
+        id: savedId,
       },
-      600
-    )
+    })
   } catch (error) {
     errorMessage.value =
-      error.message
+      error.message ||
+      "No se pudo guardar la reparación."
   } finally {
     saving.value = false
   }
@@ -580,9 +1020,16 @@ function handleFollowUpChange() {
 }
 
 
-function goBack() {
+function handleTechnicianChange() {
+  if (!form.technician) {
+    form.assignment_reason = ""
+  }
+}
+
+
+async function goBack() {
   if (isEditing.value) {
-    router.push({
+    await router.push({
       name: "repair-detail",
       params: {
         id: repairId.value,
@@ -592,18 +1039,43 @@ function goBack() {
     return
   }
 
-  router.push({
+  if (
+    comesFromEquipment.value &&
+    sourceEquipmentId.value
+  ) {
+    await router.push({
+      name: "equipment-detail",
+      params: {
+        id:
+          sourceEquipmentId.value,
+      },
+    })
+
+    return
+  }
+
+  await router.push({
     name: "repairs",
   })
 }
 
 
-onMounted(
-  async () => {
-    await loadEquipment()
+onMounted(async () => {
+  await Promise.all([
+    loadEquipmentList(),
+    loadTechnicians(),
+  ])
+
+  if (isEditing.value) {
     await loadRepair()
+
+    return
   }
-)
+
+  if (sourceEquipmentId.value) {
+    await loadSourceEquipment()
+  }
+})
 </script>
 
 <template>
@@ -627,8 +1099,7 @@ onMounted(
         </h1>
 
         <p>
-          Registra la información inicial,
-          condiciones y requisitos de la reparación.
+          {{ pageDescription }}
         </p>
       </div>
 
@@ -645,7 +1116,12 @@ onMounted(
         <button
           class="primary-button"
           type="button"
-          :disabled="saving || loading"
+          :disabled="
+            saving ||
+            loading ||
+            loadingEquipment ||
+            loadingTechnicians
+          "
           @click="handleSubmit"
         >
           {{
@@ -687,7 +1163,9 @@ onMounted(
       class="repair-form"
       @submit.prevent="handleSubmit"
     >
-      <article class="form-card equipment-card">
+      <article
+        class="form-card equipment-card"
+      >
         <div class="card-heading">
           <div class="heading-icon">
             ▣
@@ -698,14 +1176,21 @@ onMounted(
               Equipo
             </h2>
 
-            <p>
+            <p v-if="comesFromEquipment">
+              La máquina fue seleccionada desde su ficha.
+            </p>
+
+            <p v-else>
               Selecciona la máquina que ingresará al taller.
             </p>
           </div>
         </div>
 
         <div class="form-grid">
-          <label class="field full-width">
+          <label
+            v-if="!equipmentSelectionLocked"
+            class="field full-width"
+          >
             <span>
               Buscar equipo
             </span>
@@ -714,7 +1199,7 @@ onMounted(
               v-model="equipmentSearch"
               type="search"
               placeholder="Serie, código, marca o modelo"
-              :disabled="isEditing"
+              :disabled="loadingEquipment"
             />
           </label>
 
@@ -728,7 +1213,7 @@ onMounted(
               v-model="form.equipment"
               :disabled="
                 loadingEquipment ||
-                isEditing
+                equipmentSelectionLocked
               "
               required
             >
@@ -745,12 +1230,22 @@ onMounted(
                 :key="item.id"
                 :value="item.id"
               >
-                {{ getEquipmentOptionLabel(item) }}
+                {{
+                  getEquipmentOptionLabel(
+                    item
+                  )
+                }}
               </option>
             </select>
 
             <small v-if="isEditing">
               El equipo no puede cambiarse después de crear la reparación.
+            </small>
+
+            <small
+              v-else-if="comesFromEquipment"
+            >
+              Para elegir otra máquina, vuelve a la lista de equipos.
             </small>
           </label>
         </div>
@@ -765,7 +1260,11 @@ onMounted(
 
           <div class="equipment-main">
             <strong>
-              {{ getEquipmentName(selectedEquipment) }}
+              {{
+                getEquipmentName(
+                  selectedEquipment
+                )
+              }}
             </strong>
 
             <span>
@@ -797,25 +1296,152 @@ onMounted(
 
             <strong>
               {{
-                selectedEquipment.technical_status_name ||
-                selectedEquipment.technical_status ||
-                "Sin estado"
+                getTechnicalStatusName(
+                  selectedEquipment
+                )
               }}
             </strong>
           </div>
 
           <div class="equipment-data">
             <span>
-              Disponibilidad
+              Estado comercial
             </span>
 
             <strong>
               {{
-                selectedEquipment.is_available
-                  ? "Disponible"
-                  : "No disponible"
+                getCommercialStatusName(
+                  selectedEquipment
+                )
               }}
             </strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="form-card">
+        <div class="card-heading">
+          <div class="heading-icon">
+            👤
+          </div>
+
+          <div>
+            <h2>
+              Técnico responsable
+            </h2>
+
+            <p>
+              Puedes asignar la reparación ahora o dejarla pendiente.
+            </p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>
+              Buscar usuario
+            </span>
+
+            <input
+              v-model="technicianSearch"
+              type="search"
+              placeholder="Nombre, usuario o correo"
+              :disabled="loadingTechnicians"
+            />
+          </label>
+
+          <label class="field">
+            <span>
+              Técnico asignado
+            </span>
+
+            <select
+              v-model="form.technician"
+              :disabled="loadingTechnicians"
+              @change="handleTechnicianChange"
+            >
+              <option value="">
+                {{
+                  loadingTechnicians
+                    ? "Cargando usuarios..."
+                    : "Dejar pendiente de asignación"
+                }}
+              </option>
+
+              <option
+                v-for="user in filteredTechnicians"
+                :key="user.id"
+                :value="user.id"
+              >
+                {{
+                  getUserOptionLabel(
+                    user
+                  )
+                }}
+              </option>
+            </select>
+
+            <small>
+              La asignación colocará la reparación a cargo del usuario seleccionado.
+            </small>
+          </label>
+
+          <label
+            v-if="form.technician"
+            class="field full-width"
+          >
+            <span>
+              Motivo o indicación para el técnico
+            </span>
+
+            <textarea
+              v-model="form.assignment_reason"
+              rows="3"
+              maxlength="2000"
+              placeholder="Ejemplo: revisar primero unidad de imagen y sistema de alimentación"
+            ></textarea>
+
+            <small>
+              {{ form.assignment_reason.length }}/2000
+            </small>
+          </label>
+        </div>
+
+        <div
+          v-if="selectedTechnician"
+          class="selected-technician"
+        >
+          <div class="technician-avatar">
+            {{
+              getUserName(
+                selectedTechnician
+              )
+                .charAt(0)
+                .toUpperCase()
+            }}
+          </div>
+
+          <div class="technician-information">
+            <span>
+              Técnico seleccionado
+            </span>
+
+            <strong>
+              {{
+                getUserName(
+                  selectedTechnician
+                )
+              }}
+            </strong>
+
+            <small>
+              {{
+                selectedTechnician.email ||
+                selectedTechnician.username ||
+                selectedTechnician.job_title ||
+                "Usuario activo"
+              }}
+            </small>
           </div>
         </div>
       </article>
@@ -837,7 +1463,9 @@ onMounted(
           </div>
         </div>
 
-        <div class="form-grid three-columns">
+        <div
+          class="form-grid three-columns"
+        >
           <label class="field">
             <span>
               Código
@@ -924,7 +1552,9 @@ onMounted(
             </select>
           </label>
 
-          <label class="field full-width">
+          <label
+            class="field full-width"
+          >
             <span>
               Problema reportado
               <strong>*</strong>
@@ -939,7 +1569,9 @@ onMounted(
             ></textarea>
           </label>
 
-          <label class="field full-width">
+          <label
+            class="field full-width"
+          >
             <span>
               Observaciones iniciales
             </span>
@@ -977,7 +1609,9 @@ onMounted(
               type="checkbox"
             />
 
-            <span class="switch-control"></span>
+            <span
+              class="switch-control"
+            ></span>
 
             <div>
               <strong>
@@ -992,11 +1626,15 @@ onMounted(
 
           <label class="switch-card">
             <input
-              v-model="form.requires_external_service"
+              v-model="
+                form.requires_external_service
+              "
               type="checkbox"
             />
 
-            <span class="switch-control"></span>
+            <span
+              class="switch-control"
+            ></span>
 
             <div>
               <strong>
@@ -1011,12 +1649,18 @@ onMounted(
 
           <label class="switch-card">
             <input
-              v-model="form.requires_follow_up"
+              v-model="
+                form.requires_follow_up
+              "
               type="checkbox"
-              @change="handleFollowUpChange"
+              @change="
+                handleFollowUpChange
+              "
             />
 
-            <span class="switch-control"></span>
+            <span
+              class="switch-control"
+            ></span>
 
             <div>
               <strong>
@@ -1038,7 +1682,9 @@ onMounted(
             </span>
 
             <input
-              v-model.number="form.minimum_photos_required"
+              v-model.number="
+                form.minimum_photos_required
+              "
               type="number"
               min="1"
               max="100"
@@ -1056,10 +1702,16 @@ onMounted(
             </span>
 
             <input
-              v-model="form.follow_up_date"
+              v-model="
+                form.follow_up_date
+              "
               type="date"
-              :disabled="!form.requires_follow_up"
-              :required="form.requires_follow_up"
+              :disabled="
+                !form.requires_follow_up
+              "
+              :required="
+                form.requires_follow_up
+              "
             />
           </label>
         </div>
@@ -1086,7 +1738,9 @@ onMounted(
         </div>
 
         <div class="form-grid">
-          <label class="field full-width">
+          <label
+            class="field full-width"
+          >
             <span>
               Resumen del trabajo
             </span>
@@ -1098,7 +1752,9 @@ onMounted(
             ></textarea>
           </label>
 
-          <label class="field full-width">
+          <label
+            class="field full-width"
+          >
             <span>
               Trabajo pendiente
             </span>
@@ -1126,7 +1782,9 @@ onMounted(
                 Operativa
               </option>
 
-              <option value="operational_with_observations">
+              <option
+                value="operational_with_observations"
+              >
                 Operativa con observaciones
               </option>
 
@@ -1144,19 +1802,25 @@ onMounted(
             </select>
           </label>
 
-          <label class="field full-width">
+          <label
+            class="field full-width"
+          >
             <span>
               Observaciones finales
             </span>
 
             <textarea
-              v-model="form.final_observations"
+              v-model="
+                form.final_observations
+              "
               rows="4"
               placeholder="Condición de salida y observaciones finales"
             ></textarea>
           </label>
 
-          <label class="field full-width">
+          <label
+            class="field full-width"
+          >
             <span>
               Notas de cierre
             </span>
@@ -1183,14 +1847,20 @@ onMounted(
         <button
           class="primary-button"
           type="submit"
-          :disabled="saving"
+          :disabled="
+            saving ||
+            loadingEquipment ||
+            loadingTechnicians
+          "
         >
           {{
             saving
               ? "Guardando..."
               : isEditing
                 ? "Guardar cambios"
-                : "Crear reparación"
+                : form.technician
+                  ? "Crear y asignar"
+                  : "Crear reparación"
           }}
         </button>
       </footer>

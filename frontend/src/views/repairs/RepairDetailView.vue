@@ -10,9 +10,6 @@ import {
   useRouter,
 } from "vue-router"
 
-import RepairChecklistSection from "./components/RepairChecklistSection.vue"
-import RepairPhotosSection from "./components/RepairPhotosSection.vue"
-
 import {
   archiveRepair,
   cancelRepair,
@@ -36,97 +33,61 @@ import "./RepairDetailView.css"
 const route = useRoute()
 const router = useRouter()
 
-const repairId = computed(
-  () => route.params.id
-)
-
-const loading = ref(false)
-const processing = ref(false)
-const errorMessage = ref("")
-const successMessage = ref("")
-
 const repair = ref(null)
 
 const assignments = ref([])
 const checklists = ref([])
-const diagnoses = ref([])
 const components = ref([])
+const diagnoses = ref([])
 const photos = ref([])
 const tests = ref([])
 const snmpValidations = ref([])
 const statusHistory = ref([])
 
+const loading = ref(false)
+const loadingRelations = ref(false)
+const processing = ref(false)
+
+const errorMessage = ref("")
+const successMessage = ref("")
+
 const activeTab = ref("general")
-const requestedChecklistItem = ref(null)
 
-const statusFormVisible = ref(false)
-const selectedNewStatus = ref("")
-const statusReason = ref("")
-const statusObservations = ref("")
-
-const cancelFormVisible = ref(false)
-const cancelReason = ref("")
-
-const reopenFormVisible = ref(false)
-const reopenReason = ref("")
+const actionModalOpen = ref(false)
+const actionModalType = ref("")
+const actionReason = ref("")
+const selectedStatus = ref("")
+const selectedFinalCondition = ref("not_defined")
+const workSummary = ref("")
+const finalObservations = ref("")
+const closureNotes = ref("")
+const modalError = ref("")
 
 
-const tabs = computed(() => [
-  {
-    id: "general",
-    label: "General",
-    icon: "▣",
-    count: null,
-  },
-  {
-    id: "assignments",
-    label: "Asignaciones",
-    icon: "♙",
-    count: assignments.value.length,
-  },
-  {
-    id: "checklist",
-    label: "Checklist",
-    icon: "✓",
-    count: totalChecklistItems.value,
-  },
-  {
-    id: "diagnoses",
-    label: "Diagnósticos",
-    icon: "⌕",
-    count: diagnoses.value.length,
-  },
-  {
-    id: "photos",
-    label: "Fotografías",
-    icon: "▧",
-    count: photos.value.length,
-  },
-  {
-    id: "components",
-    label: "Repuestos",
-    icon: "⚙",
-    count: components.value.length,
-  },
-  {
-    id: "tests",
-    label: "Pruebas",
-    icon: "◉",
-    count: tests.value.length,
-  },
-  {
-    id: "snmp",
-    label: "SNMP",
-    icon: "⌁",
-    count: snmpValidations.value.length,
-  },
-  {
-    id: "history",
-    label: "Historial",
-    icon: "◷",
-    count: statusHistory.value.length,
-  },
-])
+const repairId = computed(() => {
+  return String(
+    route.params.id || ""
+  )
+})
+
+
+const equipmentId = computed(() => {
+  const value =
+    repair.value?.equipment
+
+  if (
+    value &&
+    typeof value === "object"
+  ) {
+    return String(
+      value.id || ""
+    )
+  }
+
+  return String(
+    value || ""
+  )
+})
 
 
 const equipmentName = computed(() => {
@@ -138,167 +99,317 @@ const equipmentName = computed(() => {
     repair.value.equipment_name ||
     [
       repair.value.equipment_brand_name ||
-      repair.value.brand_name,
+        repair.value.brand_name,
       repair.value.equipment_model_name ||
-      repair.value.model_name,
+        repair.value.model_name,
     ]
       .filter(Boolean)
       .join(" ")
       .trim() ||
+    repair.value.equipment_serial_number ||
     "Equipo sin identificar"
   )
 })
 
 
-const totalChecklistItems = computed(() => {
-  return checklists.value.reduce(
-    (total, checklist) => {
-      if (
-        Array.isArray(
-          checklist.items
-        )
-      ) {
-        return (
-          total +
-          checklist.items.length
-        )
-      }
-
-      return (
-        total +
-        Number(
-          checklist.item_count || 0
-        )
-      )
-    },
-    0
+const isArchived = computed(() => {
+  return Boolean(
+    repair.value?.is_archived ||
+    repair.value?.archived_at
   )
 })
 
 
-const completedChecklistItems = computed(() => {
-  return checklists.value.reduce(
-    (total, checklist) => {
-      if (
-        Array.isArray(
-          checklist.items
-        )
-      ) {
-        const completed =
-          checklist.items.filter(
-            (item) =>
-              [
-                "ok",
-                "observed",
-                "not_applicable",
-              ].includes(
-                item.status
-              )
-          ).length
+const canEdit = computed(() => {
+  if (
+    !repair.value ||
+    isArchived.value
+  ) {
+    return false
+  }
 
-        return total + completed
-      }
-
-      return (
-        total +
-        Number(
-          checklist.completed_item_count ||
-          0
-        )
-      )
-    },
-    0
+  return ![
+    "delivered",
+    "cancelled",
+  ].includes(
+    repair.value.status
   )
 })
 
 
-const requiredPhotos = computed(() => {
-  return Number(
-    repair.value
-      ?.minimum_photos_required ||
-    0
+const canCancel = computed(() => {
+  if (
+    !repair.value ||
+    isArchived.value
+  ) {
+    return false
+  }
+
+  return ![
+    "completed",
+    "delivered",
+    "cancelled",
+  ].includes(
+    repair.value.status
   )
 })
 
 
-const countedPhotos = computed(() => {
-  return photos.value.filter(
-    (photo) =>
-      photo.counts_for_minimum &&
-      !photo.is_archived
-  ).length
+const canReopen = computed(() => {
+  if (
+    !repair.value ||
+    isArchived.value
+  ) {
+    return false
+  }
+
+  return [
+    "completed",
+    "delivered",
+    "cancelled",
+  ].includes(
+    repair.value.status
+  )
 })
 
 
-const completedTests = computed(() => {
-  return tests.value.filter(
-    (test) =>
-      test.status === "completed"
-  ).length
+const photoProgress = computed(() => {
+  const required = Math.max(
+    Number(
+      repair.value
+        ?.minimum_photos_required ||
+      0
+    ),
+    1
+  )
+
+  const current =
+    photos.value.filter(
+      (photo) =>
+        photo.counts_for_minimum !==
+        false &&
+        !photo.is_archived
+    ).length
+
+  return Math.min(
+    Math.round(
+      (
+        current /
+        required
+      ) *
+      100
+    ),
+    100
+  )
 })
 
 
-const statusOptions = computed(() => {
-  const currentStatus =
-    repair.value?.status
+const checklistProgress = computed(() => {
+  if (!checklists.value.length) {
+    return repair.value
+      ?.checklist_completed
+      ? 100
+      : 0
+  }
 
-  const transitions = {
-    pending: [
-      "assigned",
-      "under_review",
-      "cancelled",
-    ],
-    assigned: [
-      "under_review",
-      "cancelled",
-    ],
-    under_review: [
-      "waiting_parts",
-      "in_repair",
-      "testing",
-      "cancelled",
-    ],
-    waiting_parts: [
-      "in_repair",
-      "testing",
-      "cancelled",
-    ],
-    in_repair: [
-      "waiting_parts",
-      "testing",
-      "cancelled",
-    ],
-    testing: [
-      "in_repair",
-      "completed",
-      "cancelled",
-    ],
-    completed: [
-      "delivered",
-    ],
-    delivered: [],
-    cancelled: [],
+  const completed =
+    checklists.value.filter(
+      (item) =>
+        item.status === "completed" ||
+        item.is_completed === true
+    ).length
+
+  return Math.round(
+    (
+      completed /
+      checklists.value.length
+    ) *
+    100
+  )
+})
+
+
+const testsProgress = computed(() => {
+  if (!tests.value.length) {
+    return repair.value
+      ?.tests_completed
+      ? 100
+      : 0
+  }
+
+  const completed =
+    tests.value.filter(
+      (item) =>
+        [
+          "completed",
+          "passed",
+          "failed",
+        ].includes(item.status) ||
+        item.result
+    ).length
+
+  return Math.round(
+    (
+      completed /
+      tests.value.length
+    ) *
+    100
+  )
+})
+
+
+const snmpProgress = computed(() => {
+  if (!snmpValidations.value.length) {
+    return repair.value
+      ?.snmp_validation_completed
+      ? 100
+      : 0
+  }
+
+  const completed =
+    snmpValidations.value.filter(
+      (item) =>
+        [
+          "completed",
+          "failed",
+        ].includes(item.status) ||
+        item.is_successful !== null
+    ).length
+
+  return Math.round(
+    (
+      completed /
+      snmpValidations.value.length
+    ) *
+    100
+  )
+})
+
+
+const actionModalTitle = computed(() => {
+  const titles = {
+    status:
+      "Cambiar estado",
+    cancel:
+      "Cancelar reparación",
+    reopen:
+      "Reabrir reparación",
+    archive:
+      "Archivar reparación",
   }
 
   return (
-    transitions[currentStatus] || []
+    titles[actionModalType.value] ||
+    "Actualizar reparación"
   )
 })
 
 
-function normalizeCollection(data) {
-  if (Array.isArray(data)) {
-    return data
+const statusOptions = [
+  {
+    value: "pending",
+    label: "Pendiente",
+  },
+  {
+    value: "assigned",
+    label: "Asignada",
+  },
+  {
+    value: "under_review",
+    label: "En revisión",
+  },
+  {
+    value: "waiting_parts",
+    label: "Esperando repuestos",
+  },
+  {
+    value: "in_repair",
+    label: "En reparación",
+  },
+  {
+    value: "testing",
+    label: "En pruebas",
+  },
+  {
+    value: "completed",
+    label: "Finalizada",
+  },
+  {
+    value: "delivered",
+    label: "Entregada",
+  },
+  {
+    value: "cancelled",
+    label: "Cancelada",
+  },
+]
+
+
+const finalConditionOptions = [
+  {
+    value: "not_defined",
+    label: "No definida",
+  },
+  {
+    value: "operational",
+    label: "Operativa",
+  },
+  {
+    value:
+      "operational_with_observations",
+    label:
+      "Operativa con observaciones",
+  },
+  {
+    value: "requires_parts",
+    label: "Requiere repuestos",
+  },
+  {
+    value: "not_repairable",
+    label: "No reparable",
+  },
+  {
+    value: "for_parts",
+    label: "Para repuestos",
+  },
+]
+
+
+function normalizeList(response) {
+  if (Array.isArray(response)) {
+    return response
   }
 
   if (
-    data &&
-    Array.isArray(data.results)
+    response &&
+    Array.isArray(response.results)
   ) {
-    return data.results
+    return response.results
   }
 
   return []
+}
+
+
+function formatDate(value) {
+  if (!value) {
+    return "Sin registro"
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return "Sin registro"
+  }
+
+  return new Intl.DateTimeFormat(
+    "es-PE",
+    {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }
+  ).format(date)
 }
 
 
@@ -309,11 +420,7 @@ function formatDateTime(value) {
 
   const date = new Date(value)
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return "Sin registro"
   }
 
@@ -330,62 +437,7 @@ function formatDateTime(value) {
 }
 
 
-function formatDate(value) {
-  if (!value) {
-    return "Sin registro"
-  }
-
-  const date = new Date(
-    `${value}T00:00:00`
-  )
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "Sin registro"
-  }
-
-  return new Intl.DateTimeFormat(
-    "es-PE",
-    {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }
-  ).format(date)
-}
-
-
-function getStatusClass(status) {
-  const classes = {
-    pending: "pending",
-    assigned: "assigned",
-    under_review: "review",
-    waiting_parts: "waiting",
-    in_repair: "repair",
-    testing: "testing",
-    completed: "completed",
-    delivered: "delivered",
-    cancelled: "cancelled",
-  }
-
-  return (
-    classes[status] ||
-    "neutral"
-  )
-}
-
-
-function getStatusName(
-  status,
-  displayName = ""
-) {
-  if (displayName) {
-    return displayName
-  }
-
+function getStatusName(value) {
   const names = {
     pending: "Pendiente",
     assigned: "Asignada",
@@ -400,28 +452,34 @@ function getStatusName(
   }
 
   return (
-    names[status] ||
+    names[value] ||
+    value ||
     "Sin estado"
   )
 }
 
 
-function getPriorityClass(priority) {
+function getStatusClass(value) {
+  const classes = {
+    pending: "pending",
+    assigned: "assigned",
+    under_review: "review",
+    waiting_parts: "waiting",
+    in_repair: "repair",
+    testing: "testing",
+    completed: "completed",
+    delivered: "delivered",
+    cancelled: "cancelled",
+  }
+
   return (
-    priority ||
-    "normal"
+    classes[value] ||
+    "neutral"
   )
 }
 
 
-function getPriorityName(
-  priority,
-  displayName = ""
-) {
-  if (displayName) {
-    return displayName
-  }
-
+function getPriorityName(value) {
   const names = {
     low: "Baja",
     normal: "Normal",
@@ -430,21 +488,14 @@ function getPriorityName(
   }
 
   return (
-    names[priority] ||
+    names[value] ||
+    value ||
     "Normal"
   )
 }
 
 
-function getRepairTypeName() {
-  if (
-    repair.value?.repair_type_name
-  ) {
-    return (
-      repair.value.repair_type_name
-    )
-  }
-
+function getRepairTypeName(value) {
   const names = {
     initial_review:
       "Revisión inicial",
@@ -463,25 +514,14 @@ function getRepairTypeName() {
   }
 
   return (
-    names[
-      repair.value?.repair_type
-    ] ||
+    names[value] ||
+    value ||
     "Sin tipo"
   )
 }
 
 
-function getFinalConditionName() {
-  if (
-    repair.value
-      ?.final_condition_name
-  ) {
-    return (
-      repair.value
-        .final_condition_name
-    )
-  }
-
+function getFinalConditionName(value) {
   const names = {
     not_defined:
       "No definida",
@@ -498,352 +538,399 @@ function getFinalConditionName() {
   }
 
   return (
-    names[
-      repair.value
-        ?.final_condition
-    ] ||
+    names[value] ||
+    value ||
     "No definida"
   )
 }
 
 
-function getPhotoUrl(photo) {
-  const image =
-    photo?.image || ""
-
-  if (!image) {
-    return ""
-  }
-
-  if (
-    String(image).startsWith(
-      "http"
-    )
-  ) {
-    return image
-  }
-
-  return (
-    `http://127.0.0.1:8000${image}`
-  )
-}
-
-
-function getBooleanName(value) {
+function getBooleanText(value) {
   return value
     ? "Sí"
     : "No"
 }
 
 
+function getRecordStatusName(value) {
+  const names = {
+    pending: "Pendiente",
+    assigned: "Asignada",
+    accepted: "Aceptada",
+    rejected: "Rechazada",
+    in_progress: "En proceso",
+    under_review: "En revisión",
+    requested: "Solicitado",
+    waiting_parts:
+      "Esperando repuestos",
+    installed: "Instalado",
+    completed: "Completado",
+    cancelled: "Cancelado",
+    passed: "Aprobada",
+    failed: "Fallida",
+    ok: "Correcto",
+  }
+
+  return (
+    names[value] ||
+    value ||
+    "Sin estado"
+  )
+}
+
+
 async function loadRepair() {
-  repair.value =
-    await getRepairById(
-      repairId.value
-    )
-}
-
-
-async function loadRelatedData() {
-  const [
-    assignmentsResponse,
-    checklistsResponse,
-    diagnosesResponse,
-    componentsResponse,
-    photosResponse,
-    testsResponse,
-    snmpResponse,
-    historyResponse,
-  ] = await Promise.all([
-    getRepairAssignments({
-      repair: repairId.value,
-      ordering: "-assigned_at",
-    }),
-    getRepairChecklists({
-      repair: repairId.value,
-      ordering: "-is_main_checklist,-created_at",
-    }),
-    getRepairDiagnoses({
-      repair: repairId.value,
-      ordering: "-is_main_diagnosis,-diagnosed_at",
-    }),
-    getRepairComponents({
-      repair: repairId.value,
-      ordering: "-created_at",
-    }),
-    getRepairPhotos({
-      repair: repairId.value,
-      ordering: "display_order,created_at",
-    }),
-    getRepairTests({
-      repair: repairId.value,
-      ordering: "display_order,created_at",
-    }),
-    getRepairSNMPValidations({
-      repair: repairId.value,
-      ordering: "-created_at",
-    }),
-    getRepairStatusHistory({
-      repair: repairId.value,
-      ordering: "-changed_at",
-    }),
-  ])
-
-  assignments.value =
-    normalizeCollection(
-      assignmentsResponse
-    )
-
-  checklists.value =
-    normalizeCollection(
-      checklistsResponse
-    )
-
-  diagnoses.value =
-    normalizeCollection(
-      diagnosesResponse
-    )
-
-  components.value =
-    normalizeCollection(
-      componentsResponse
-    )
-
-  photos.value =
-    normalizeCollection(
-      photosResponse
-    )
-
-  tests.value =
-    normalizeCollection(
-      testsResponse
-    )
-
-  snmpValidations.value =
-    normalizeCollection(
-      snmpResponse
-    )
-
-  statusHistory.value =
-    normalizeCollection(
-      historyResponse
-    )
-}
-
-
-async function loadData() {
   loading.value = true
   errorMessage.value = ""
 
   try {
-    await loadRepair()
-    await loadRelatedData()
+    repair.value =
+      await getRepairById(
+        repairId.value
+      )
   } catch (error) {
+    repair.value = null
+
     errorMessage.value =
-      error.message
+      error.message ||
+      "No se pudo cargar la reparación."
   } finally {
     loading.value = false
   }
 }
 
 
-async function refreshData() {
-  processing.value = true
-  errorMessage.value = ""
+async function loadRelations() {
+  loadingRelations.value = true
 
   try {
-    await loadRepair()
-    await loadRelatedData()
+    const responses =
+      await Promise.all([
+        getRepairAssignments({
+          repair: repairId.value,
+          includeArchived: true,
+          ordering: "-created_at",
+        }),
+        getRepairChecklists({
+          repair: repairId.value,
+          includeArchived: true,
+          ordering: "-created_at",
+        }),
+        getRepairComponents({
+          repair: repairId.value,
+          includeArchived: true,
+          ordering: "-created_at",
+        }),
+        getRepairDiagnoses({
+          repair: repairId.value,
+          includeArchived: true,
+          ordering: "-created_at",
+        }),
+        getRepairPhotos({
+          repair: repairId.value,
+          includeArchived: true,
+          ordering: "-created_at",
+        }),
+        getRepairTests({
+          repair: repairId.value,
+          includeArchived: true,
+          ordering: "-created_at",
+        }),
+        getRepairSNMPValidations({
+          repair: repairId.value,
+          includeArchived: true,
+          ordering: "-created_at",
+        }),
+        getRepairStatusHistory({
+          repair: repairId.value,
+          includeArchived: true,
+          ordering: "-created_at",
+        }),
+      ])
 
-    successMessage.value =
-      "Información actualizada."
+    assignments.value =
+      normalizeList(responses[0])
 
-    window.setTimeout(
-      () => {
-        successMessage.value = ""
-      },
-      1800
-    )
+    checklists.value =
+      normalizeList(responses[1])
+
+    components.value =
+      normalizeList(responses[2])
+
+    diagnoses.value =
+      normalizeList(responses[3])
+
+    photos.value =
+      normalizeList(responses[4])
+
+    tests.value =
+      normalizeList(responses[5])
+
+    snmpValidations.value =
+      normalizeList(responses[6])
+
+    statusHistory.value =
+      normalizeList(responses[7])
   } catch (error) {
+    assignments.value = []
+    checklists.value = []
+    components.value = []
+    diagnoses.value = []
+    photos.value = []
+    tests.value = []
+    snmpValidations.value = []
+    statusHistory.value = []
+
     errorMessage.value =
-      error.message
+      error.message ||
+      "No se pudieron cargar los registros relacionados."
   } finally {
-    processing.value = false
+    loadingRelations.value = false
   }
 }
 
 
-function handleChecklistPhotoRequest(payload) {
-  requestedChecklistItem.value =
-    payload?.checklistItem ||
-    null
-
-  activeTab.value = "photos"
+async function reloadAll() {
+  await Promise.all([
+    loadRepair(),
+    loadRelations(),
+  ])
 }
 
 
-function clearRequestedChecklistItem() {
-  requestedChecklistItem.value = null
+async function goBack() {
+  await router.push({
+    name: "repairs",
+  })
 }
 
 
-function openStatusForm() {
-  selectedNewStatus.value =
-    statusOptions.value[0] || ""
+async function goToEdit() {
+  if (!repair.value?.id) {
+    return
+  }
 
-  statusReason.value = ""
-  statusObservations.value = ""
-  statusFormVisible.value = true
+  await router.push({
+    name: "repair-edit",
+    params: {
+      id: repair.value.id,
+    },
+  })
 }
 
 
-function closeStatusForm() {
-  statusFormVisible.value = false
-  selectedNewStatus.value = ""
-  statusReason.value = ""
-  statusObservations.value = ""
-}
-
-
-async function submitStatusChange() {
-  if (!selectedNewStatus.value) {
+async function goToEquipment() {
+  if (!equipmentId.value) {
     errorMessage.value =
-      "Selecciona el nuevo estado."
+      "La reparación no tiene un equipo relacionado."
 
     return
   }
 
+  await router.push({
+    name: "equipment-detail",
+    params: {
+      id: equipmentId.value,
+    },
+  })
+}
+
+
+async function goToPartRequest() {
+  if (!repair.value?.id) {
+    return
+  }
+
+  await router.push({
+    name:
+      "repair-part-request-create",
+    query: {
+      repair: repair.value.id,
+    },
+  })
+}
+
+
+function openActionModal(type) {
+  if (
+    !repair.value ||
+    processing.value
+  ) {
+    return
+  }
+
+  actionModalType.value = type
+  actionReason.value = ""
+  modalError.value = ""
+
+  selectedStatus.value =
+    repair.value.status || ""
+
+  selectedFinalCondition.value =
+    repair.value.final_condition ||
+    "not_defined"
+
+  workSummary.value =
+    repair.value.work_summary || ""
+
+  finalObservations.value =
+    repair.value.final_observations ||
+    ""
+
+  closureNotes.value =
+    repair.value.closure_notes || ""
+
+  actionModalOpen.value = true
+}
+
+
+function closeActionModal() {
+  if (processing.value) {
+    return
+  }
+
+  actionModalOpen.value = false
+  actionModalType.value = ""
+  actionReason.value = ""
+  selectedStatus.value = ""
+  selectedFinalCondition.value =
+    "not_defined"
+
+  workSummary.value = ""
+  finalObservations.value = ""
+  closureNotes.value = ""
+  modalError.value = ""
+}
+
+
+async function submitAction() {
+  if (!repair.value?.id) {
+    return
+  }
+
   processing.value = true
+  modalError.value = ""
   errorMessage.value = ""
+  successMessage.value = ""
 
   try {
-    await changeRepairStatus(
-      repairId.value,
-      {
+    if (
+      actionModalType.value ===
+      "status"
+    ) {
+      if (!selectedStatus.value) {
+        throw new Error(
+          "Selecciona el nuevo estado."
+        )
+      }
+
+      const payload = {
         status:
-          selectedNewStatus.value,
+          selectedStatus.value,
         reason:
-          statusReason.value.trim(),
+          actionReason.value.trim(),
         observations:
-          statusObservations.value.trim(),
+          actionReason.value.trim(),
       }
-    )
 
-    successMessage.value =
-      "El estado se actualizó correctamente."
+      if (
+        [
+          "completed",
+          "delivered",
+        ].includes(
+          selectedStatus.value
+        )
+      ) {
+        payload.final_condition =
+          selectedFinalCondition.value
 
-    closeStatusForm()
-    await loadData()
-  } catch (error) {
-    errorMessage.value =
-      error.message
-  } finally {
-    processing.value = false
-  }
-}
+        payload.work_summary =
+          workSummary.value.trim()
 
+        payload.final_observations =
+          finalObservations.value.trim()
 
-async function submitCancellation() {
-  if (
-    !cancelReason.value.trim()
-  ) {
-    errorMessage.value =
-      "Debes indicar el motivo de cancelación."
-
-    return
-  }
-
-  processing.value = true
-  errorMessage.value = ""
-
-  try {
-    await cancelRepair(
-      repairId.value,
-      {
-        reason:
-          cancelReason.value.trim(),
+        payload.closure_notes =
+          closureNotes.value.trim()
       }
-    )
 
-    cancelFormVisible.value = false
-    cancelReason.value = ""
+      await changeRepairStatus(
+        repair.value.id,
+        payload
+      )
 
-    successMessage.value =
-      "La reparación fue cancelada."
+      successMessage.value =
+        "Estado actualizado correctamente."
+    }
 
-    await loadData()
-  } catch (error) {
-    errorMessage.value =
-      error.message
-  } finally {
-    processing.value = false
-  }
-}
-
-
-async function submitReopening() {
-  if (
-    !reopenReason.value.trim()
-  ) {
-    errorMessage.value =
-      "Debes indicar el motivo de reapertura."
-
-    return
-  }
-
-  processing.value = true
-  errorMessage.value = ""
-
-  try {
-    await reopenRepair(
-      repairId.value,
-      {
-        reason:
-          reopenReason.value.trim(),
+    if (
+      actionModalType.value ===
+      "cancel"
+    ) {
+      if (!actionReason.value.trim()) {
+        throw new Error(
+          "Indica el motivo de cancelación."
+        )
       }
-    )
 
-    reopenFormVisible.value = false
-    reopenReason.value = ""
+      await cancelRepair(
+        repair.value.id,
+        {
+          reason:
+            actionReason.value.trim(),
+          observations:
+            actionReason.value.trim(),
+        }
+      )
 
-    successMessage.value =
-      "La reparación fue reabierta."
+      successMessage.value =
+        "Reparación cancelada correctamente."
+    }
 
-    await loadData()
+    if (
+      actionModalType.value ===
+      "reopen"
+    ) {
+      if (!actionReason.value.trim()) {
+        throw new Error(
+          "Indica el motivo de reapertura."
+        )
+      }
+
+      await reopenRepair(
+        repair.value.id,
+        {
+          reason:
+            actionReason.value.trim(),
+          observations:
+            actionReason.value.trim(),
+        }
+      )
+
+      successMessage.value =
+        "Reparación reabierta correctamente."
+    }
+
+    if (
+      actionModalType.value ===
+      "archive"
+    ) {
+      await archiveRepair(
+        repair.value.id,
+        actionReason.value.trim()
+      )
+
+      successMessage.value =
+        "Reparación archivada correctamente."
+    }
+
+    actionModalOpen.value = false
+
+    await reloadAll()
   } catch (error) {
-    errorMessage.value =
-      error.message
-  } finally {
-    processing.value = false
-  }
-}
-
-
-async function handleArchive() {
-  const reason = window.prompt(
-    "Indica el motivo del archivo:"
-  )
-
-  if (reason === null) {
-    return
-  }
-
-  processing.value = true
-  errorMessage.value = ""
-
-  try {
-    await archiveRepair(
-      repairId.value,
-      reason.trim()
-    )
-
-    successMessage.value =
-      "La reparación fue archivada."
-
-    await loadData()
-  } catch (error) {
-    errorMessage.value =
-      error.message
+    modalError.value =
+      error.message ||
+      "No se pudo completar la acción."
   } finally {
     processing.value = false
   }
@@ -851,46 +938,66 @@ async function handleArchive() {
 
 
 async function handleRestore() {
+  if (!repair.value?.id) {
+    return
+  }
+
+  const confirmed =
+    window.confirm(
+      "¿Confirmas que deseas restaurar esta reparación?"
+    )
+
+  if (!confirmed) {
+    return
+  }
+
   processing.value = true
   errorMessage.value = ""
+  successMessage.value = ""
 
   try {
     await restoreRepair(
-      repairId.value
+      repair.value.id
     )
 
     successMessage.value =
-      "La reparación fue restaurada."
+      "Reparación restaurada correctamente."
 
-    await loadData()
+    await reloadAll()
   } catch (error) {
     errorMessage.value =
-      error.message
+      error.message ||
+      "No se pudo restaurar la reparación."
   } finally {
     processing.value = false
   }
 }
 
 
-function goToEdit() {
-  router.push({
-    name: "repair-edit",
-    params: {
-      id: repairId.value,
-    },
-  })
+function openPhoto(photo) {
+  const url =
+    photo.file_url ||
+    photo.image_url ||
+    photo.file ||
+    photo.image
+
+  if (!url) {
+    errorMessage.value =
+      "La fotografía no tiene un archivo disponible."
+
+    return
+  }
+
+  window.open(
+    url,
+    "_blank",
+    "noopener,noreferrer"
+  )
 }
 
 
-function goBack() {
-  router.push({
-    name: "repairs",
-  })
-}
-
-
-onMounted(() => {
-  loadData()
+onMounted(async () => {
+  await reloadAll()
 })
 </script>
 
@@ -903,22 +1010,20 @@ onMounted(() => {
           type="button"
           @click="goBack"
         >
-          ← Volver a reparaciones
+          ← Volver
         </button>
 
-        <div class="heading-line">
-          <div>
-            <span class="page-kicker">
-              Taller técnico
-            </span>
+        <span class="page-kicker">
+          Expediente de taller
+        </span>
 
-            <h1>
-              {{
-                repair?.code ||
-                "Reparación"
-              }}
-            </h1>
-          </div>
+        <div class="heading-line">
+          <h1>
+            {{
+              repair?.code ||
+              "Detalle de reparación"
+            }}
+          </h1>
 
           <span
             v-if="repair"
@@ -930,115 +1035,132 @@ onMounted(() => {
             "
           >
             {{
+              repair.status_name ||
               getStatusName(
-                repair.status,
-                repair.status_name
+                repair.status
+              )
+            }}
+          </span>
+
+          <span
+            v-if="repair"
+            class="priority-badge"
+            :class="
+              repair.priority ||
+              'normal'
+            "
+          >
+            {{
+              repair.priority_name ||
+              getPriorityName(
+                repair.priority
               )
             }}
           </span>
         </div>
 
-        <p>
-          Expediente técnico completo de la reparación.
+        <p v-if="repair">
+          Solicitada el
+          {{
+            formatDateTime(
+              repair.requested_at
+            )
+          }}
         </p>
       </div>
 
-      <div class="detail-actions">
+      <div
+        v-if="repair"
+        class="detail-actions"
+      >
         <button
           class="secondary-button"
           type="button"
           :disabled="
-            loading ||
-            processing
+            processing ||
+            !equipmentId
           "
-          @click="refreshData"
+          @click="goToEquipment"
         >
-          ↻ Actualizar
+          Ver equipo
         </button>
 
         <button
-          v-if="
-            repair &&
-            !repair.is_archived
-          "
+          v-if="canEdit"
           class="secondary-button"
           type="button"
-          :disabled="
-            loading ||
-            processing
-          "
+          :disabled="processing"
           @click="goToEdit"
         >
-          ✎ Editar
+          Editar
         </button>
 
         <button
           v-if="
-            repair?.is_active &&
-            statusOptions.length
+            !isArchived &&
+            repair.is_active
           "
           class="primary-button"
           type="button"
-          :disabled="
-            loading ||
-            processing
+          :disabled="processing"
+          @click="
+            openActionModal('status')
           "
-          @click="openStatusForm"
         >
           Cambiar estado
         </button>
 
         <button
           v-if="
-            repair?.is_active &&
-            repair?.status !==
-              'cancelled'
-          "
-          class="danger-outline-button"
-          type="button"
-          :disabled="processing"
-          @click="
-            cancelFormVisible = true
-          "
-        >
-          Cancelar
-        </button>
-
-        <button
-          v-if="
-            repair?.status ===
-              'completed' ||
-            repair?.status ===
-              'delivered'
+            !isArchived &&
+            repair.is_active
           "
           class="warning-button"
           type="button"
           :disabled="processing"
+          @click="goToPartRequest"
+        >
+          Solicitar repuestos
+        </button>
+
+        <button
+          v-if="canReopen"
+          class="success-button"
+          type="button"
+          :disabled="processing"
           @click="
-            reopenFormVisible = true
+            openActionModal('reopen')
           "
         >
           Reabrir
         </button>
 
         <button
-          v-if="
-            repair &&
-            !repair.is_archived &&
-            !repair.is_active
-          "
+          v-if="canCancel"
           class="danger-outline-button"
           type="button"
           :disabled="processing"
-          @click="handleArchive"
+          @click="
+            openActionModal('cancel')
+          "
+        >
+          Cancelar
+        </button>
+
+        <button
+          v-if="!isArchived"
+          class="danger-button"
+          type="button"
+          :disabled="processing"
+          @click="
+            openActionModal('archive')
+          "
         >
           Archivar
         </button>
 
         <button
-          v-if="
-            repair?.is_archived
-          "
+          v-else
           class="success-button"
           type="button"
           :disabled="processing"
@@ -1069,18 +1191,24 @@ onMounted(() => {
     >
       <span class="spinner"></span>
 
-      Cargando expediente de reparación...
+      Cargando reparación...
     </div>
 
     <template v-else-if="repair">
-      <section class="equipment-hero">
+      <section
+        class="equipment-hero equipment-hero-link"
+        role="button"
+        tabindex="0"
+        @click="goToEquipment"
+        @keydown.enter="goToEquipment"
+      >
         <div class="equipment-icon">
           ▣
         </div>
 
         <div class="equipment-title">
           <span>
-            Equipo
+            Equipo relacionado
           </span>
 
           <strong>
@@ -1097,9 +1225,7 @@ onMounted(() => {
         </div>
 
         <div class="hero-data">
-          <span>
-            Código interno
-          </span>
+          <span>Código interno</span>
 
           <strong>
             {{
@@ -1115,36 +1241,17 @@ onMounted(() => {
           </span>
 
           <strong>
-            {{ getRepairTypeName() }}
-          </strong>
-        </div>
-
-        <div class="hero-data">
-          <span>
-            Prioridad
-          </span>
-
-          <strong
-            class="priority-badge"
-            :class="
-              getPriorityClass(
-                repair.priority
-              )
-            "
-          >
             {{
-              getPriorityName(
-                repair.priority,
-                repair.priority_name
+              repair.repair_type_name ||
+              getRepairTypeName(
+                repair.repair_type
               )
             }}
           </strong>
         </div>
 
         <div class="hero-data">
-          <span>
-            Técnico
-          </span>
+          <span>Técnico</span>
 
           <strong>
             {{
@@ -1153,130 +1260,92 @@ onMounted(() => {
             }}
           </strong>
         </div>
+
+        <div class="hero-data">
+          <span>Acceso directo</span>
+
+          <strong class="equipment-link-label">
+            Ver ficha del equipo →
+          </strong>
+        </div>
       </section>
 
       <section class="progress-grid">
         <article class="progress-card">
-          <div class="progress-card-header">
-            <span>
-              Checklist
-            </span>
+          <header class="progress-card-header">
+            <span>Fotografías</span>
 
             <strong>
-              {{
-                completedChecklistItems
-              }}
-              /
-              {{
-                totalChecklistItems
-              }}
+              {{ photoProgress }}%
             </strong>
-          </div>
+          </header>
 
           <div class="progress-track">
             <div
               class="progress-fill"
               :style="{
                 width:
-                  totalChecklistItems
-                    ? `${
-                        (
-                          completedChecklistItems /
-                          totalChecklistItems
-                        ) * 100
-                      }%`
-                    : '0%',
+                  `${photoProgress}%`,
               }"
             ></div>
           </div>
         </article>
 
         <article class="progress-card">
-          <div class="progress-card-header">
-            <span>
-              Fotografías
-            </span>
+          <header class="progress-card-header">
+            <span>Checklist</span>
 
             <strong>
-              {{ countedPhotos }}
-              /
-              {{ requiredPhotos }}
+              {{ checklistProgress }}%
             </strong>
-          </div>
+          </header>
 
           <div class="progress-track">
             <div
               class="progress-fill"
               :style="{
                 width:
-                  requiredPhotos
-                    ? `${Math.min(
-                        (
-                          countedPhotos /
-                          requiredPhotos
-                        ) * 100,
-                        100
-                      )}%`
-                    : '0%',
+                  `${checklistProgress}%`,
               }"
             ></div>
           </div>
         </article>
 
         <article class="progress-card">
-          <div class="progress-card-header">
-            <span>
-              Pruebas
-            </span>
+          <header class="progress-card-header">
+            <span>Pruebas</span>
 
             <strong>
-              {{ completedTests }}
-              /
-              {{ tests.length }}
+              {{ testsProgress }}%
             </strong>
-          </div>
+          </header>
 
           <div class="progress-track">
             <div
               class="progress-fill"
               :style="{
                 width:
-                  tests.length
-                    ? `${
-                        (
-                          completedTests /
-                          tests.length
-                        ) * 100
-                      }%`
-                    : '0%',
+                  `${testsProgress}%`,
               }"
             ></div>
           </div>
         </article>
 
         <article class="progress-card">
-          <div class="progress-card-header">
-            <span>
-              Validación SNMP
-            </span>
+          <header class="progress-card-header">
+            <span>Validación SNMP</span>
 
             <strong>
-              {{
-                repair.snmp_validation_completed
-                  ? "Completa"
-                  : "Pendiente"
-              }}
+              {{ snmpProgress }}%
             </strong>
-          </div>
+          </header>
 
           <div class="progress-track">
             <div
               class="progress-fill"
               :style="{
                 width:
-                  repair.snmp_validation_completed
-                    ? '100%'
-                    : '0%',
+                  `${snmpProgress}%`,
               }"
             ></div>
           </div>
@@ -1285,64 +1354,194 @@ onMounted(() => {
 
       <nav class="detail-tabs">
         <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          type="button"
           class="tab-button"
           :class="{
             active:
-              activeTab === tab.id,
+              activeTab === 'general',
           }"
+          type="button"
           @click="
-            activeTab = tab.id
+            activeTab = 'general'
           "
         >
           <span class="tab-icon">
-            {{ tab.icon }}
+            ◉
           </span>
 
-          <span>
-            {{ tab.label }}
-          </span>
+          General
+        </button>
 
-          <small
-            v-if="
-              tab.count !== null
-            "
-          >
-            {{ tab.count }}
+        <button
+          class="tab-button"
+          :class="{
+            active:
+              activeTab === 'assignments',
+          }"
+          type="button"
+          @click="
+            activeTab = 'assignments'
+          "
+        >
+          Asignaciones
+
+          <small>
+            {{ assignments.length }}
+          </small>
+        </button>
+
+        <button
+          class="tab-button"
+          :class="{
+            active:
+              activeTab === 'checklists',
+          }"
+          type="button"
+          @click="
+            activeTab = 'checklists'
+          "
+        >
+          Checklist
+
+          <small>
+            {{ checklists.length }}
+          </small>
+        </button>
+
+        <button
+          class="tab-button"
+          :class="{
+            active:
+              activeTab === 'diagnoses',
+          }"
+          type="button"
+          @click="
+            activeTab = 'diagnoses'
+          "
+        >
+          Diagnósticos
+
+          <small>
+            {{ diagnoses.length }}
+          </small>
+        </button>
+
+        <button
+          class="tab-button"
+          :class="{
+            active:
+              activeTab === 'components',
+          }"
+          type="button"
+          @click="
+            activeTab = 'components'
+          "
+        >
+          Componentes
+
+          <small>
+            {{ components.length }}
+          </small>
+        </button>
+
+        <button
+          class="tab-button"
+          :class="{
+            active:
+              activeTab === 'photos',
+          }"
+          type="button"
+          @click="
+            activeTab = 'photos'
+          "
+        >
+          Fotografías
+
+          <small>
+            {{ photos.length }}
+          </small>
+        </button>
+
+        <button
+          class="tab-button"
+          :class="{
+            active:
+              activeTab === 'tests',
+          }"
+          type="button"
+          @click="
+            activeTab = 'tests'
+          "
+        >
+          Pruebas
+
+          <small>
+            {{ tests.length }}
+          </small>
+        </button>
+
+        <button
+          class="tab-button"
+          :class="{
+            active:
+              activeTab === 'snmp',
+          }"
+          type="button"
+          @click="
+            activeTab = 'snmp'
+          "
+        >
+          SNMP
+
+          <small>
+            {{ snmpValidations.length }}
+          </small>
+        </button>
+
+        <button
+          class="tab-button"
+          :class="{
+            active:
+              activeTab === 'history',
+          }"
+          type="button"
+          @click="
+            activeTab = 'history'
+          "
+        >
+          Historial
+
+          <small>
+            {{ statusHistory.length }}
           </small>
         </button>
       </nav>
 
       <section
-        v-if="
-          activeTab === 'general'
-        "
+        v-if="activeTab === 'general'"
         class="tab-panel"
       >
         <div class="panel-grid">
-          <article class="detail-card wide-card">
-            <div class="card-heading">
+          <article class="detail-card">
+            <header class="card-heading">
               <h2>
                 Problema reportado
               </h2>
-            </div>
+            </header>
 
             <p class="text-content">
               {{
                 repair.reported_problem ||
-                "Sin información"
+                "Sin problema reportado"
               }}
             </p>
           </article>
 
-          <article class="detail-card wide-card">
-            <div class="card-heading">
+          <article class="detail-card">
+            <header class="card-heading">
               <h2>
                 Observaciones iniciales
               </h2>
-            </div>
+            </header>
 
             <p class="text-content">
               {{
@@ -1353,21 +1552,187 @@ onMounted(() => {
           </article>
 
           <article class="detail-card">
-            <div class="card-heading">
+            <header class="card-heading">
               <h2>
-                Requisitos
+                Datos de la reparación
               </h2>
-            </div>
+            </header>
 
             <dl class="detail-list">
               <div>
-                <dt>
-                  Requiere repuestos
-                </dt>
+                <dt>Código</dt>
+                <dd>{{ repair.code }}</dd>
+              </div>
+
+              <div>
+                <dt>Tipo</dt>
 
                 <dd>
                   {{
-                    getBooleanName(
+                    repair.repair_type_name ||
+                    getRepairTypeName(
+                      repair.repair_type
+                    )
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Prioridad</dt>
+
+                <dd>
+                  {{
+                    repair.priority_name ||
+                    getPriorityName(
+                      repair.priority
+                    )
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Solicitada por</dt>
+
+                <dd>
+                  {{
+                    repair.requested_by_name ||
+                    "Sin registro"
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Técnico</dt>
+
+                <dd>
+                  {{
+                    repair.assigned_technician_name ||
+                    "Sin técnico"
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Asignada por</dt>
+
+                <dd>
+                  {{
+                    repair.assigned_by_name ||
+                    "Sin registro"
+                  }}
+                </dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="detail-card">
+            <header class="card-heading">
+              <h2>
+                Fechas
+              </h2>
+            </header>
+
+            <dl class="detail-list">
+              <div>
+                <dt>Solicitud</dt>
+
+                <dd>
+                  {{
+                    formatDateTime(
+                      repair.requested_at
+                    )
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Asignación</dt>
+
+                <dd>
+                  {{
+                    formatDateTime(
+                      repair.assigned_at
+                    )
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Inicio revisión</dt>
+
+                <dd>
+                  {{
+                    formatDateTime(
+                      repair.review_started_at
+                    )
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Inicio reparación</dt>
+
+                <dd>
+                  {{
+                    formatDateTime(
+                      repair.repair_started_at
+                    )
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Inicio pruebas</dt>
+
+                <dd>
+                  {{
+                    formatDateTime(
+                      repair.testing_started_at
+                    )
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Finalización</dt>
+
+                <dd>
+                  {{
+                    formatDateTime(
+                      repair.completed_at
+                    )
+                  }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Entrega</dt>
+
+                <dd>
+                  {{
+                    formatDateTime(
+                      repair.delivered_at
+                    )
+                  }}
+                </dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="detail-card">
+            <header class="card-heading">
+              <h2>
+                Requisitos
+              </h2>
+            </header>
+
+            <dl class="detail-list">
+              <div>
+                <dt>Requiere repuestos</dt>
+
+                <dd>
+                  {{
+                    getBooleanText(
                       repair.requires_parts
                     )
                   }}
@@ -1375,13 +1740,11 @@ onMounted(() => {
               </div>
 
               <div>
-                <dt>
-                  Servicio externo
-                </dt>
+                <dt>Servicio externo</dt>
 
                 <dd>
                   {{
-                    getBooleanName(
+                    getBooleanText(
                       repair.requires_external_service
                     )
                   }}
@@ -1389,13 +1752,11 @@ onMounted(() => {
               </div>
 
               <div>
-                <dt>
-                  Seguimiento
-                </dt>
+                <dt>Seguimiento</dt>
 
                 <dd>
                   {{
-                    getBooleanName(
+                    getBooleanText(
                       repair.requires_follow_up
                     )
                   }}
@@ -1404,7 +1765,7 @@ onMounted(() => {
 
               <div>
                 <dt>
-                  Fecha de seguimiento
+                  Fecha seguimiento
                 </dt>
 
                 <dd>
@@ -1431,168 +1792,76 @@ onMounted(() => {
           </article>
 
           <article class="detail-card">
-            <div class="card-heading">
+            <header class="card-heading">
               <h2>
-                Fechas del proceso
+                Condición final
               </h2>
-            </div>
+            </header>
 
-            <dl class="detail-list">
-              <div>
-                <dt>
-                  Solicitada
-                </dt>
+            <span class="final-condition">
+              {{
+                repair.final_condition_name ||
+                getFinalConditionName(
+                  repair.final_condition
+                )
+              }}
+            </span>
 
-                <dd>
-                  {{
-                    formatDateTime(
-                      repair.requested_at
-                    )
-                  }}
-                </dd>
-              </div>
-
-              <div>
-                <dt>
-                  Asignada
-                </dt>
-
-                <dd>
-                  {{
-                    formatDateTime(
-                      repair.assigned_at
-                    )
-                  }}
-                </dd>
-              </div>
-
-              <div>
-                <dt>
-                  Revisión iniciada
-                </dt>
-
-                <dd>
-                  {{
-                    formatDateTime(
-                      repair.review_started_at
-                    )
-                  }}
-                </dd>
-              </div>
-
-              <div>
-                <dt>
-                  Reparación iniciada
-                </dt>
-
-                <dd>
-                  {{
-                    formatDateTime(
-                      repair.repair_started_at
-                    )
-                  }}
-                </dd>
-              </div>
-
-              <div>
-                <dt>
-                  Pruebas iniciadas
-                </dt>
-
-                <dd>
-                  {{
-                    formatDateTime(
-                      repair.testing_started_at
-                    )
-                  }}
-                </dd>
-              </div>
-
-              <div>
-                <dt>
-                  Finalizada
-                </dt>
-
-                <dd>
-                  {{
-                    formatDateTime(
-                      repair.completed_at
-                    )
-                  }}
-                </dd>
-              </div>
-
-              <div>
-                <dt>
-                  Entregada
-                </dt>
-
-                <dd>
-                  {{
-                    formatDateTime(
-                      repair.delivered_at
-                    )
-                  }}
-                </dd>
-              </div>
-            </dl>
+            <p class="text-content final-text">
+              {{
+                repair.final_observations ||
+                "Sin observaciones finales"
+              }}
+            </p>
           </article>
 
-          <article class="detail-card wide-card">
-            <div class="card-heading">
+          <article
+            class="detail-card wide-card"
+          >
+            <header class="card-heading">
               <h2>
-                Resumen del trabajo
+                Trabajo realizado
               </h2>
-            </div>
+            </header>
 
             <p class="text-content">
               {{
                 repair.work_summary ||
-                "Aún no se ha registrado el resumen del trabajo."
+                "Sin resumen registrado"
               }}
             </p>
           </article>
 
-          <article class="detail-card wide-card">
-            <div class="card-heading">
+          <article
+            class="detail-card wide-card"
+          >
+            <header class="card-heading">
               <h2>
                 Trabajo pendiente
               </h2>
-            </div>
+            </header>
 
             <p class="text-content">
               {{
                 repair.pending_work ||
-                "No hay trabajo pendiente registrado."
+                "Sin trabajo pendiente"
               }}
             </p>
           </article>
 
-          <article class="detail-card">
-            <div class="card-heading">
+          <article
+            class="detail-card wide-card"
+          >
+            <header class="card-heading">
               <h2>
-                Condición final
+                Notas de cierre
               </h2>
-            </div>
-
-            <strong class="final-condition">
-              {{
-                getFinalConditionName()
-              }}
-            </strong>
-          </article>
-
-          <article class="detail-card">
-            <div class="card-heading">
-              <h2>
-                Cierre
-              </h2>
-            </div>
+            </header>
 
             <p class="text-content">
               {{
                 repair.closure_notes ||
-                "Sin notas de cierre."
+                "Sin notas de cierre"
               }}
             </p>
           </article>
@@ -1600,828 +1869,771 @@ onMounted(() => {
       </section>
 
       <section
-        v-if="
-          activeTab === 'assignments'
-        "
+        v-else
         class="tab-panel"
       >
         <div
-          v-if="
-            !assignments.length
-          "
-          class="empty-panel"
+          v-if="loadingRelations"
+          class="empty-records"
         >
-          No existen asignaciones registradas.
+          Cargando registros...
         </div>
 
-        <div
-          v-else
-          class="records-list"
+        <template
+          v-else-if="
+            activeTab === 'assignments'
+          "
         >
-          <article
-            v-for="
-              assignment
-              in assignments
-            "
-            :key="assignment.id"
-            class="record-card"
+          <div
+            v-if="!assignments.length"
+            class="empty-records"
           >
-            <div class="record-main">
-              <strong>
-                {{
-                  assignment.technician_name ||
-                  "Técnico sin nombre"
-                }}
-              </strong>
+            No existen asignaciones.
+          </div>
 
-              <span>
-                {{
-                  assignment.assignment_reason ||
-                  "Sin motivo de asignación"
-                }}
-              </span>
-            </div>
-
-            <span
-              class="record-status"
-              :class="
-                assignment.status
-              "
+          <div
+            v-else
+            class="records-list"
+          >
+            <article
+              v-for="item in assignments"
+              :key="item.id"
+              class="record-card"
             >
-              {{
-                assignment.status_name ||
-                assignment.status
-              }}
-            </span>
+              <div class="record-icon">
+                👤
+              </div>
 
-            <div class="record-date">
-              {{
-                formatDateTime(
-                  assignment.assigned_at
-                )
-              }}
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section
-        v-if="
-          activeTab === 'checklist'
-        "
-        class="tab-panel"
-      >
-        <RepairChecklistSection
-          :repair-id="repair.id"
-          :repair="repair"
-          @updated="refreshData"
-          @request-photo="
-            handleChecklistPhotoRequest
-          "
-        />
-      </section>
-
-      <section
-        v-if="
-          activeTab === 'diagnoses'
-        "
-        class="tab-panel"
-      >
-        <div
-          v-if="
-            !diagnoses.length
-          "
-          class="empty-panel"
-        >
-          No hay diagnósticos registrados.
-        </div>
-
-        <div
-          v-else
-          class="records-list"
-        >
-          <article
-            v-for="
-              diagnosis
-              in diagnoses
-            "
-            :key="diagnosis.id"
-            class="diagnosis-card"
-          >
-            <div class="diagnosis-heading">
-              <div>
+              <div class="record-content">
                 <strong>
                   {{
-                    diagnosis.diagnosis_type_name ||
-                    "Diagnóstico técnico"
+                    item.technician_name ||
+                    item.assigned_technician_name ||
+                    "Técnico"
                   }}
                 </strong>
 
-                <span>
+                <p>
                   {{
-                    diagnosis.technician_name ||
-                    "Técnico no identificado"
+                    item.reason ||
+                    item.observations ||
+                    "Sin observaciones"
                   }}
-                </span>
+                </p>
               </div>
 
-              <div class="diagnosis-badges">
-                <span
-                  v-if="
-                    diagnosis.is_main_diagnosis
-                  "
-                  class="main-badge"
-                >
-                  Principal
-                </span>
-
-                <span
-                  v-if="
-                    diagnosis.is_confirmed
-                  "
-                  class="verified-badge"
-                >
-                  Confirmado
-                </span>
-              </div>
-            </div>
-
-            <p>
-              {{
-                diagnosis.technical_diagnosis ||
-                "Sin diagnóstico técnico"
-              }}
-            </p>
-
-            <div class="diagnosis-footer">
-              <span>
-                Severidad:
+              <span
+                class="record-status"
+                :class="
+                  item.status ||
+                  'pending'
+                "
+              >
                 {{
-                  diagnosis.severity_name ||
-                  diagnosis.severity
-                }}
-              </span>
-
-              <span>
-                Reparabilidad:
-                {{
-                  diagnosis.repairability_name ||
-                  diagnosis.repairability
-                }}
-              </span>
-
-              <span>
-                {{
-                  formatDateTime(
-                    diagnosis.diagnosed_at
+                  getRecordStatusName(
+                    item.status
                   )
                 }}
               </span>
-            </div>
-          </article>
-        </div>
-      </section>
 
-      <section
-        v-if="
-          activeTab === 'photos'
-        "
-        class="tab-panel"
-      >
-        <RepairPhotosSection
-          :repair-id="repair.id"
-          :repair="repair"
-          :requested-checklist-item="
-            requestedChecklistItem
+              <time class="record-date">
+                {{
+                  formatDateTime(
+                    item.assigned_at ||
+                    item.created_at
+                  )
+                }}
+              </time>
+            </article>
+          </div>
+        </template>
+
+        <template
+          v-else-if="
+            activeTab === 'checklists'
           "
-          @updated="refreshData"
-          @request-completed="
-            clearRequestedChecklistItem
-          "
-        />
-      </section>
-
-      <section
-        v-if="
-          activeTab === 'components'
-        "
-        class="tab-panel"
-      >
-        <div
-          v-if="
-            !components.length
-          "
-          class="empty-panel"
         >
-          No hay repuestos o componentes registrados.
-        </div>
-
-        <div
-          v-else
-          class="table-container"
-        >
-          <table>
-            <thead>
-              <tr>
-                <th>
-                  Componente
-                </th>
-
-                <th>
-                  Movimiento
-                </th>
-
-                <th>
-                  Estado
-                </th>
-
-                <th>
-                  Cantidad
-                </th>
-
-                <th>
-                  Instalado
-                </th>
-
-                <th>
-                  Costo
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr
-                v-for="
-                  component
-                  in components
-                "
-                :key="component.id"
-              >
-                <td>
-                  <strong>
-                    {{
-                      component.component_name
-                    }}
-                  </strong>
-
-                  <small>
-                    {{
-                      component.component_code
-                    }}
-                  </small>
-                </td>
-
-                <td>
-                  {{
-                    component.movement_type_name ||
-                    component.movement_type
-                  }}
-                </td>
-
-                <td>
-                  <span
-                    class="record-status"
-                    :class="
-                      component.status
-                    "
-                  >
-                    {{
-                      component.status_name ||
-                      component.status
-                    }}
-                  </span>
-                </td>
-
-                <td>
-                  {{ component.quantity }}
-                </td>
-
-                <td>
-                  {{
-                    component.installed_quantity ||
-                    0
-                  }}
-                </td>
-
-                <td>
-                  S/
-                  {{
-                    component.total_cost ||
-                    "0.00"
-                  }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section
-        v-if="
-          activeTab === 'tests'
-        "
-        class="tab-panel"
-      >
-        <div
-          v-if="
-            !tests.length
-          "
-          class="empty-panel"
-        >
-          No hay pruebas técnicas registradas.
-        </div>
-
-        <div
-          v-else
-          class="records-list"
-        >
-          <article
-            v-for="
-              test
-              in tests
-            "
-            :key="test.id"
-            class="test-card"
+          <div
+            v-if="!checklists.length"
+            class="empty-records"
           >
-            <div class="test-icon">
-              {{
-                test.result === "passed"
-                  ? "✓"
-                  : test.result === "failed"
-                    ? "×"
-                    : "○"
-              }}
-            </div>
+            No existen checklist.
+          </div>
 
-            <div class="record-main">
-              <strong>
-                {{ test.name }}
-              </strong>
-
-              <span>
-                {{
-                  test.test_type_name ||
-                  test.test_type
-                }}
-              </span>
-
-              <small>
-                {{
-                  test.result_name ||
-                  test.result
-                }}
-              </small>
-            </div>
-
-            <span
-              class="record-status"
-              :class="
-                test.status
-              "
+          <div
+            v-else
+            class="records-list"
+          >
+            <article
+              v-for="item in checklists"
+              :key="item.id"
+              class="record-card"
             >
-              {{
-                test.status_name ||
-                test.status
-              }}
-            </span>
-          </article>
-        </div>
-      </section>
+              <div class="record-icon">
+                ✓
+              </div>
 
-      <section
-        v-if="
-          activeTab === 'snmp'
-        "
-        class="tab-panel"
-      >
-        <div
-          v-if="
-            !snmpValidations.length
-          "
-          class="empty-panel"
-        >
-          No hay validaciones SNMP registradas.
-        </div>
-
-        <div
-          v-else
-          class="records-list"
-        >
-          <article
-            v-for="
-              validation
-              in snmpValidations
-            "
-            :key="validation.id"
-            class="snmp-card"
-          >
-            <div class="snmp-indicator">
-              {{
-                validation.is_successful
-                  ? "✓"
-                  : "⌁"
-              }}
-            </div>
-
-            <div class="record-main">
-              <strong>
-                {{
-                  validation.host ||
-                  "Host no registrado"
-                }}
-              </strong>
-
-              <span>
-                {{
-                  validation.detected_brand ||
-                  ""
-                }}
-                {{
-                  validation.detected_model ||
-                  ""
-                }}
-              </span>
-
-              <small>
-                Serie detectada:
-                {{
-                  validation.device_serial_number ||
-                  "Sin serie"
-                }}
-              </small>
-            </div>
-
-            <div class="snmp-matches">
-              <span
-                :class="{
-                  success:
-                    validation.serial_matches,
-                  danger:
-                    validation.serial_matches === false,
-                }"
-              >
-                Serie
-              </span>
-
-              <span
-                :class="{
-                  success:
-                    validation.brand_matches,
-                  danger:
-                    validation.brand_matches === false,
-                }"
-              >
-                Marca
-              </span>
-
-              <span
-                :class="{
-                  success:
-                    validation.model_matches,
-                  danger:
-                    validation.model_matches === false,
-                }"
-              >
-                Modelo
-              </span>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section
-        v-if="
-          activeTab === 'history'
-        "
-        class="tab-panel"
-      >
-        <div
-          v-if="
-            !statusHistory.length
-          "
-          class="empty-panel"
-        >
-          No existe historial de estados.
-        </div>
-
-        <div
-          v-else
-          class="timeline"
-        >
-          <article
-            v-for="
-              history
-              in statusHistory
-            "
-            :key="history.id"
-            class="timeline-item"
-          >
-            <span
-              class="timeline-dot"
-              :class="
-                getStatusClass(
-                  history.new_status
-                )
-              "
-            ></span>
-
-            <div class="timeline-content">
-              <div class="timeline-heading">
+              <div class="record-content">
                 <strong>
                   {{
-                    history.new_status_name ||
-                    getStatusName(
-                      history.new_status
-                    )
+                    item.name ||
+                    item.code ||
+                    "Checklist"
                   }}
                 </strong>
 
-                <span>
+                <p>
                   {{
-                    formatDateTime(
-                      history.changed_at
-                    )
+                    item.observations ||
+                    "Sin observaciones"
                   }}
-                </span>
+                </p>
               </div>
 
-              <p>
-                {{
-                  history.reason ||
-                  "Cambio de estado"
-                }}
-              </p>
-
-              <small>
-                Modificado por:
-                {{
-                  history.changed_by_name ||
-                  "Sistema"
-                }}
-              </small>
-
-              <small
-                v-if="
-                  history.duration_minutes
+              <span
+                class="record-status"
+                :class="
+                  item.status ||
+                  'pending'
                 "
               >
-                Duración anterior:
                 {{
-                  history.duration_minutes
+                  getRecordStatusName(
+                    item.status
+                  )
                 }}
-                minutos
-              </small>
-            </div>
-          </article>
-        </div>
+              </span>
+
+              <time class="record-date">
+                {{
+                  formatDateTime(
+                    item.completed_at ||
+                    item.created_at
+                  )
+                }}
+              </time>
+            </article>
+          </div>
+        </template>
+
+        <template
+          v-else-if="
+            activeTab === 'diagnoses'
+          "
+        >
+          <div
+            v-if="!diagnoses.length"
+            class="empty-records"
+          >
+            No existen diagnósticos.
+          </div>
+
+          <div
+            v-else
+            class="records-list"
+          >
+            <article
+              v-for="item in diagnoses"
+              :key="item.id"
+              class="record-card"
+            >
+              <div class="record-icon">
+                ⌕
+              </div>
+
+              <div class="record-content">
+                <strong>
+                  {{
+                    item.title ||
+                    item.diagnosis_type_name ||
+                    "Diagnóstico"
+                  }}
+                </strong>
+
+                <p>
+                  {{
+                    item.description ||
+                    item.diagnosis ||
+                    item.observations ||
+                    "Sin descripción"
+                  }}
+                </p>
+              </div>
+
+              <span
+                class="record-status"
+                :class="
+                  item.is_confirmed
+                    ? 'completed'
+                    : 'pending'
+                "
+              >
+                {{
+                  item.is_confirmed
+                    ? "Confirmado"
+                    : "Pendiente"
+                }}
+              </span>
+
+              <time class="record-date">
+                {{
+                  formatDateTime(
+                    item.diagnosed_at ||
+                    item.created_at
+                  )
+                }}
+              </time>
+            </article>
+          </div>
+        </template>
+
+        <template
+          v-else-if="
+            activeTab === 'components'
+          "
+        >
+          <div
+            v-if="!components.length"
+            class="empty-records"
+          >
+            No existen componentes registrados.
+          </div>
+
+          <div
+            v-else
+            class="records-list"
+          >
+            <article
+              v-for="item in components"
+              :key="item.id"
+              class="record-card"
+            >
+              <div class="record-icon">
+                ⚙
+              </div>
+
+              <div class="record-content">
+                <strong>
+                  {{
+                    item.component_name ||
+                    item.inventory_name ||
+                    "Componente"
+                  }}
+                </strong>
+
+                <p>
+                  {{
+                    item.notes ||
+                    item.observations ||
+                    "Sin observaciones"
+                  }}
+                </p>
+              </div>
+
+              <span
+                class="record-status"
+                :class="
+                  item.status ||
+                  'pending'
+                "
+              >
+                {{
+                  getRecordStatusName(
+                    item.status
+                  )
+                }}
+              </span>
+
+              <time class="record-date">
+                {{
+                  formatDateTime(
+                    item.installed_at ||
+                    item.created_at
+                  )
+                }}
+              </time>
+            </article>
+          </div>
+        </template>
+
+        <template
+          v-else-if="
+            activeTab === 'photos'
+          "
+        >
+          <div
+            v-if="!photos.length"
+            class="empty-records"
+          >
+            No existen fotografías.
+          </div>
+
+          <div
+            v-else
+            class="photos-grid"
+          >
+            <article
+              v-for="photo in photos"
+              :key="photo.id"
+              class="photo-card"
+              @click="openPhoto(photo)"
+            >
+              <img
+                v-if="
+                  photo.file_url ||
+                  photo.image_url ||
+                  photo.file ||
+                  photo.image
+                "
+                :src="
+                  photo.file_url ||
+                  photo.image_url ||
+                  photo.file ||
+                  photo.image
+                "
+                :alt="
+                  photo.title ||
+                  'Fotografía'
+                "
+              />
+
+              <div
+                v-else
+                class="photo-placeholder"
+              >
+                Sin imagen
+              </div>
+
+              <footer>
+                <strong>
+                  {{
+                    photo.title ||
+                    photo.category_name ||
+                    "Fotografía"
+                  }}
+                </strong>
+
+                <small>
+                  {{
+                    formatDateTime(
+                      photo.taken_at ||
+                      photo.created_at
+                    )
+                  }}
+                </small>
+              </footer>
+            </article>
+          </div>
+        </template>
+
+        <template
+          v-else-if="
+            activeTab === 'tests'
+          "
+        >
+          <div
+            v-if="!tests.length"
+            class="empty-records"
+          >
+            No existen pruebas.
+          </div>
+
+          <div
+            v-else
+            class="records-list"
+          >
+            <article
+              v-for="item in tests"
+              :key="item.id"
+              class="record-card test-card"
+            >
+              <div class="test-icon">
+                ✓
+              </div>
+
+              <div class="record-content">
+                <strong>
+                  {{
+                    item.name ||
+                    item.test_type_name ||
+                    "Prueba técnica"
+                  }}
+                </strong>
+
+                <p>
+                  {{
+                    item.observations ||
+                    item.result_notes ||
+                    "Sin observaciones"
+                  }}
+                </p>
+              </div>
+
+              <span
+                class="record-status"
+                :class="
+                  item.result ||
+                  item.status ||
+                  'pending'
+                "
+              >
+                {{
+                  getRecordStatusName(
+                    item.result ||
+                    item.status
+                  )
+                }}
+              </span>
+            </article>
+          </div>
+        </template>
+
+        <template
+          v-else-if="
+            activeTab === 'snmp'
+          "
+        >
+          <div
+            v-if="!snmpValidations.length"
+            class="empty-records"
+          >
+            No existen validaciones SNMP.
+          </div>
+
+          <div
+            v-else
+            class="records-list"
+          >
+            <article
+              v-for="
+                item in snmpValidations
+              "
+              :key="item.id"
+              class="record-card snmp-card"
+            >
+              <div class="snmp-indicator">
+                S
+              </div>
+
+              <div class="record-content">
+                <strong>
+                  {{
+                    item.host ||
+                    "Validación SNMP"
+                  }}
+                </strong>
+
+                <p>
+                  {{
+                    item.error_message ||
+                    item.observations ||
+                    "Sin observaciones"
+                  }}
+                </p>
+              </div>
+
+              <div class="snmp-matches">
+                <span
+                  :class="{
+                    success:
+                      item.serial_matches,
+                    danger:
+                      item.serial_matches ===
+                      false,
+                  }"
+                >
+                  Serie
+                </span>
+
+                <span
+                  :class="{
+                    success:
+                      item.brand_matches,
+                    danger:
+                      item.brand_matches ===
+                      false,
+                  }"
+                >
+                  Marca
+                </span>
+
+                <span
+                  :class="{
+                    success:
+                      item.model_matches,
+                    danger:
+                      item.model_matches ===
+                      false,
+                  }"
+                >
+                  Modelo
+                </span>
+              </div>
+            </article>
+          </div>
+        </template>
+
+        <template
+          v-else-if="
+            activeTab === 'history'
+          "
+        >
+          <div
+            v-if="!statusHistory.length"
+            class="empty-records"
+          >
+            No existe historial de estados.
+          </div>
+
+          <div
+            v-else
+            class="timeline"
+          >
+            <article
+              v-for="item in statusHistory"
+              :key="item.id"
+              class="timeline-item"
+            >
+              <span
+                class="timeline-dot"
+                :class="
+                  getStatusClass(
+                    item.new_status
+                  )
+                "
+              ></span>
+
+              <div class="timeline-content">
+                <header class="timeline-heading">
+                  <strong>
+                    {{
+                      getStatusName(
+                        item.previous_status
+                      )
+                    }}
+                    →
+                    {{
+                      getStatusName(
+                        item.new_status
+                      )
+                    }}
+                  </strong>
+
+                  <span>
+                    {{
+                      formatDateTime(
+                        item.changed_at ||
+                        item.created_at
+                      )
+                    }}
+                  </span>
+                </header>
+
+                <p>
+                  {{
+                    item.reason ||
+                    item.observations ||
+                    "Sin observaciones"
+                  }}
+                </p>
+
+                <small>
+                  {{
+                    item.changed_by_name ||
+                    "Sistema"
+                  }}
+                </small>
+              </div>
+            </article>
+          </div>
+        </template>
       </section>
     </template>
 
-    <div
-      v-if="statusFormVisible"
-      class="modal-backdrop"
-      @click.self="closeStatusForm"
-    >
-      <form
-        class="action-modal"
-        @submit.prevent="
-          submitStatusChange
-        "
+    <Teleport to="body">
+      <div
+        v-if="actionModalOpen"
+        class="modal-backdrop"
+        @click.self="closeActionModal"
       >
-        <div class="modal-heading">
-          <div>
-            <h2>
-              Cambiar estado
-            </h2>
+        <section
+          class="action-modal"
+          role="dialog"
+          aria-modal="true"
+        >
+          <header class="modal-heading">
+            <div>
+              <h2>
+                {{ actionModalTitle }}
+              </h2>
 
-            <p>
-              Actualiza la etapa actual de la reparación.
-            </p>
+              <p>
+                {{
+                  repair?.code ||
+                  "Reparación"
+                }}
+              </p>
+            </div>
+
+            <button
+              class="modal-close"
+              type="button"
+              :disabled="processing"
+              @click="closeActionModal"
+            >
+              ×
+            </button>
+          </header>
+
+          <div
+            v-if="modalError"
+            class="detail-message error"
+          >
+            {{ modalError }}
           </div>
 
-          <button
-            type="button"
-            class="modal-close"
-            @click="closeStatusForm"
-          >
-            ×
-          </button>
-        </div>
-
-        <label class="modal-field">
-          <span>
-            Nuevo estado
-          </span>
-
-          <select
-            v-model="
-              selectedNewStatus
+          <label
+            v-if="
+              actionModalType === 'status'
             "
-            required
+            class="modal-field"
           >
-            <option
-              v-for="
-                item
-                in statusOptions
-              "
-              :key="item"
-              :value="item"
+            <span>
+              Nuevo estado
+            </span>
+
+            <select
+              v-model="selectedStatus"
+            >
+              <option
+                v-for="option in statusOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+
+          <template
+            v-if="
+              actionModalType ===
+                'status' &&
+              [
+                'completed',
+                'delivered',
+              ].includes(
+                selectedStatus
+              )
+            "
+          >
+            <label class="modal-field">
+              <span>
+                Condición final
+              </span>
+
+              <select
+                v-model="
+                  selectedFinalCondition
+                "
+              >
+                <option
+                  v-for="
+                    option in
+                    finalConditionOptions
+                  "
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
+
+            <label class="modal-field">
+              <span>
+                Resumen del trabajo
+              </span>
+
+              <textarea
+                v-model="workSummary"
+                rows="4"
+              ></textarea>
+            </label>
+
+            <label class="modal-field">
+              <span>
+                Observaciones finales
+              </span>
+
+              <textarea
+                v-model="
+                  finalObservations
+                "
+                rows="4"
+              ></textarea>
+            </label>
+
+            <label class="modal-field">
+              <span>
+                Notas de cierre
+              </span>
+
+              <textarea
+                v-model="closureNotes"
+                rows="4"
+              ></textarea>
+            </label>
+          </template>
+
+          <label class="modal-field">
+            <span>
+              {{
+                actionModalType ===
+                'cancel'
+                  ? "Motivo de cancelación"
+                  : actionModalType ===
+                    'reopen'
+                    ? "Motivo de reapertura"
+                    : actionModalType ===
+                      'archive'
+                      ? "Motivo de archivado"
+                      : "Motivo u observaciones"
+              }}
+            </span>
+
+            <textarea
+              v-model="actionReason"
+              rows="4"
+              placeholder="Escribe una observación"
+            ></textarea>
+          </label>
+
+          <footer class="modal-actions">
+            <button
+              class="secondary-button"
+              type="button"
+              :disabled="processing"
+              @click="closeActionModal"
+            >
+              Cancelar
+            </button>
+
+            <button
+              class="primary-button"
+              type="button"
+              :disabled="processing"
+              @click="submitAction"
             >
               {{
-                getStatusName(item)
+                processing
+                  ? "Procesando..."
+                  : "Confirmar"
               }}
-            </option>
-          </select>
-        </label>
-
-        <label class="modal-field">
-          <span>
-            Motivo
-          </span>
-
-          <textarea
-            v-model="statusReason"
-            rows="3"
-            placeholder="Motivo del cambio"
-          ></textarea>
-        </label>
-
-        <label class="modal-field">
-          <span>
-            Observaciones
-          </span>
-
-          <textarea
-            v-model="
-              statusObservations
-            "
-            rows="4"
-            placeholder="Observaciones adicionales"
-          ></textarea>
-        </label>
-
-        <div class="modal-actions">
-          <button
-            class="secondary-button"
-            type="button"
-            @click="closeStatusForm"
-          >
-            Cancelar
-          </button>
-
-          <button
-            class="primary-button"
-            type="submit"
-            :disabled="processing"
-          >
-            {{
-              processing
-                ? "Procesando..."
-                : "Cambiar estado"
-            }}
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <div
-      v-if="cancelFormVisible"
-      class="modal-backdrop"
-      @click.self="
-        cancelFormVisible = false
-      "
-    >
-      <form
-        class="action-modal"
-        @submit.prevent="
-          submitCancellation
-        "
-      >
-        <div class="modal-heading">
-          <div>
-            <h2>
-              Cancelar reparación
-            </h2>
-
-            <p>
-              Esta acción detendrá el proceso técnico.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            class="modal-close"
-            @click="
-              cancelFormVisible = false
-            "
-          >
-            ×
-          </button>
-        </div>
-
-        <label class="modal-field">
-          <span>
-            Motivo de cancelación
-          </span>
-
-          <textarea
-            v-model="cancelReason"
-            rows="5"
-            required
-            placeholder="Describe el motivo"
-          ></textarea>
-        </label>
-
-        <div class="modal-actions">
-          <button
-            class="secondary-button"
-            type="button"
-            @click="
-              cancelFormVisible = false
-            "
-          >
-            Volver
-          </button>
-
-          <button
-            class="danger-button"
-            type="submit"
-            :disabled="processing"
-          >
-            Confirmar cancelación
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <div
-      v-if="reopenFormVisible"
-      class="modal-backdrop"
-      @click.self="
-        reopenFormVisible = false
-      "
-    >
-      <form
-        class="action-modal"
-        @submit.prevent="
-          submitReopening
-        "
-      >
-        <div class="modal-heading">
-          <div>
-            <h2>
-              Reabrir reparación
-            </h2>
-
-            <p>
-              Registra el motivo de la reapertura.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            class="modal-close"
-            @click="
-              reopenFormVisible = false
-            "
-          >
-            ×
-          </button>
-        </div>
-
-        <label class="modal-field">
-          <span>
-            Motivo
-          </span>
-
-          <textarea
-            v-model="reopenReason"
-            rows="5"
-            required
-            placeholder="Describe el motivo de reapertura"
-          ></textarea>
-        </label>
-
-        <div class="modal-actions">
-          <button
-            class="secondary-button"
-            type="button"
-            @click="
-              reopenFormVisible = false
-            "
-          >
-            Cancelar
-          </button>
-
-          <button
-            class="warning-button"
-            type="submit"
-            :disabled="processing"
-          >
-            Reabrir reparación
-          </button>
-        </div>
-      </form>
-    </div>
+            </button>
+          </footer>
+        </section>
+      </div>
+    </Teleport>
   </section>
 </template>

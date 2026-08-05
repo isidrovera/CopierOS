@@ -7,6 +7,13 @@ button {
   animation: pageReveal 0.35s ease-out;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+}
+
+.equipment-detail-page *,
+.equipment-detail-page *::before,
+.equipment-detail-page *::after {
+  box-sizing: border-box;
 }
 
 .page-header {
@@ -38,6 +45,10 @@ button {
   font-size: 13px;
 }
 
+.page-header p strong {
+  color: #29384d;
+}
+
 .header-actions {
   display: flex;
   gap: 9px;
@@ -50,18 +61,30 @@ button {
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .primary-button {
   border: 0;
   background: #1f35c4;
-  color: white;
+  color: #ffffff;
+  box-shadow:
+    0 8px 18px
+    rgba(31, 53, 196, 0.18);
 }
 
 .secondary-button {
   border: 1px solid #dfe3ec;
-  background: white;
+  background: #ffffff;
   color: #667382;
+}
+
+.primary-button:hover:not(:disabled),
+.secondary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
 }
 
 .primary-button:disabled,
@@ -96,7 +119,7 @@ button {
   gap: 10px;
   border: 1px solid #dfe3ec;
   border-radius: 15px;
-  background: white;
+  background: #ffffff;
   color: #667382;
 }
 
@@ -109,6 +132,97 @@ button {
   animation: rotate 0.8s linear infinite;
 }
 
+/* ============================================================= */
+/* REPARACIÓN ACTIVA                                             */
+/* ============================================================= */
+
+.active-repair-card {
+  display: grid;
+  grid-template-columns:
+    auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 17px;
+  border: 1px solid #f0cc92;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      135deg,
+      #fff9e9,
+      #ffffff
+    );
+  box-shadow:
+    0 8px 22px
+    rgba(157, 105, 29, 0.08);
+}
+
+.active-repair-icon {
+  width: 45px;
+  height: 45px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #fff0c8;
+  color: #a46c13;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.active-repair-information {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.active-repair-information span {
+  color: #a46c13;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.active-repair-information strong {
+  color: #3d4654;
+  font-size: 15px;
+}
+
+.active-repair-information small {
+  overflow: hidden;
+  color: #786b54;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-repair-card > button {
+  min-height: 39px;
+  padding: 0 14px;
+  border: 1px solid #d89a35;
+  border-radius: 9px;
+  background: #d89a35;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.active-repair-card > button:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 7px 16px
+    rgba(168, 108, 19, 0.18);
+}
+
+/* ============================================================= */
+/* RESUMEN PRINCIPAL                                             */
+/* ============================================================= */
+
 .hero-card {
   display: flex;
   align-items: stretch;
@@ -116,7 +230,7 @@ button {
   padding: 20px;
   border: 1px solid #dfe3ec;
   border-radius: 16px;
-  background: white;
+  background: #ffffff;
 }
 
 .equipment-photo {
@@ -180,6 +294,7 @@ button {
   border-radius: 999px;
   font-size: 11px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .availability-badge.available {
@@ -205,6 +320,10 @@ button {
   padding-top: 17px;
 }
 
+.hero-grid div {
+  min-width: 0;
+}
+
 .hero-grid small,
 .hero-grid strong {
   display: block;
@@ -218,9 +337,14 @@ button {
 }
 
 .hero-grid strong {
+  overflow-wrap: anywhere;
   color: #2d3c50;
   font-size: 13px;
 }
+
+/* ============================================================= */
+/* ACCIONES RÁPIDAS                                              */
+/* ============================================================= */
 
 .quick-actions {
   display: flex;
@@ -233,11 +357,54 @@ button {
   padding: 0 14px;
   border: 1px solid #d5daf0;
   border-radius: 9px;
-  background: white;
+  background: #ffffff;
   color: #1f35c4;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.quick-actions button:hover:not(:disabled) {
+  border-color: #aeb8eb;
+  background: #f8f9ff;
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 14px
+    rgba(31, 53, 196, 0.08);
+}
+
+.quick-actions .repair-action-button {
+  border-color: #1f35c4;
+  background: #1f35c4;
+  color: #ffffff;
+  box-shadow:
+    0 8px 18px
+    rgba(31, 53, 196, 0.16);
+}
+
+.quick-actions
+.repair-action-button:hover:not(:disabled) {
+  border-color: #1629a5;
+  background: #1629a5;
+}
+
+.quick-actions
+.repair-action-button.active {
+  border-color: #d69a38;
+  background: #fff6e5;
+  color: #98651b;
+  box-shadow: none;
+}
+
+.quick-actions
+.repair-action-button.active:hover:not(:disabled) {
+  border-color: #c98b28;
+  background: #ffefcd;
 }
 
 .quick-actions .danger-button {
@@ -245,15 +412,29 @@ button {
   color: #a65340;
 }
 
+.quick-actions .danger-button:hover:not(:disabled) {
+  border-color: #dba99d;
+  background: #fff5f2;
+}
+
 .quick-actions .restore-button {
   border-color: #c8e4d3;
   color: #2b8050;
+}
+
+.quick-actions .restore-button:hover:not(:disabled) {
+  border-color: #a9d6ba;
+  background: #f3fbf6;
 }
 
 .quick-actions button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ============================================================= */
+/* PESTAÑAS                                                      */
+/* ============================================================= */
 
 .detail-tabs {
   display: flex;
@@ -262,7 +443,7 @@ button {
   padding: 7px;
   border: 1px solid #dfe3ec;
   border-radius: 13px;
-  background: white;
+  background: #ffffff;
 }
 
 .detail-tabs button {
@@ -279,6 +460,13 @@ button {
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.detail-tabs button:hover {
+  background: #f5f6fb;
 }
 
 .detail-tabs button.active {
@@ -295,6 +483,15 @@ button {
   font-size: 10px;
 }
 
+.detail-tabs button.active span {
+  background: #d7dcff;
+  color: #1f35c4;
+}
+
+/* ============================================================= */
+/* INFORMACIÓN GENERAL                                           */
+/* ============================================================= */
+
 .details-grid {
   display: grid;
   grid-template-columns:
@@ -307,7 +504,7 @@ button {
   overflow: hidden;
   border: 1px solid #dfe3ec;
   border-radius: 15px;
-  background: white;
+  background: #ffffff;
 }
 
 .detail-card.full-width {
@@ -333,7 +530,8 @@ button {
 
 .detail-card dl > div {
   display: grid;
-  grid-template-columns: 170px 1fr;
+  grid-template-columns:
+    170px minmax(0, 1fr);
   gap: 15px;
   padding: 11px 0;
   border-bottom: 1px solid #edf0f4;
@@ -350,6 +548,7 @@ button {
 
 .detail-card dd {
   margin: 0;
+  overflow-wrap: anywhere;
   color: #2d3c50;
   font-size: 12px;
   font-weight: 600;
@@ -383,6 +582,174 @@ button {
   white-space: pre-wrap;
 }
 
+/* ============================================================= */
+/* PESTAÑA DE REPARACIONES                                       */
+/* ============================================================= */
+
+.repairs-tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 15px 17px;
+  border-bottom: 1px solid #e8ebf1;
+  background: #fafbfd;
+}
+
+.repairs-tab-header > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.repairs-tab-header strong {
+  color: #1d2940;
+  font-size: 14px;
+}
+
+.repairs-tab-header span {
+  color: #8693a4;
+  font-size: 10px;
+}
+
+.repair-history-row {
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.repair-history-row:hover {
+  background: #f8f9ff;
+  box-shadow:
+    inset 3px 0 0
+    #1f35c4;
+}
+
+.repair-history-row.archived {
+  background: #fafafa;
+  opacity: 0.65;
+}
+
+.repair-code-link {
+  color: #1f35c4;
+  font-size: 11px;
+}
+
+.repair-status-badge,
+.repair-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.repair-status-badge.pending {
+  background: #fff3e5;
+  color: #a76625;
+}
+
+.repair-status-badge.assigned {
+  background: #f0ebfa;
+  color: #6650a1;
+}
+
+.repair-status-badge.review {
+  background: #e8f2fa;
+  color: #326f9a;
+}
+
+.repair-status-badge.waiting {
+  background: #fff2d9;
+  color: #9e691d;
+}
+
+.repair-status-badge.repair {
+  background: #e6f4f1;
+  color: #25766b;
+}
+
+.repair-status-badge.testing {
+  background: #eeeafa;
+  color: #6650a1;
+}
+
+.repair-status-badge.completed,
+.repair-status-badge.delivered {
+  background: #e7f6ed;
+  color: #277d4c;
+}
+
+.repair-status-badge.cancelled {
+  background: #fff0ed;
+  color: #ad4d42;
+}
+
+.repair-status-badge.neutral {
+  background: #edf1f4;
+  color: #687585;
+}
+
+.repair-priority-badge.low {
+  background: #edf1f4;
+  color: #687585;
+}
+
+.repair-priority-badge.normal {
+  background: #e9f1f8;
+  color: #3f6c8c;
+}
+
+.repair-priority-badge.high {
+  background: #fff3e5;
+  color: #a76625;
+}
+
+.repair-priority-badge.urgent {
+  background: #fff0ed;
+  color: #b3473b;
+}
+
+.repair-problem-text {
+  display: block;
+  max-width: 270px;
+  overflow: hidden;
+  color: #5d6a7b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-action-button {
+  min-height: 31px;
+  padding: 0 10px;
+  border: 1px solid #cfd5f7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f35c4;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.table-action-button:hover {
+  border-color: #aeb8eb;
+  background: #f3f5ff;
+}
+
+/* ============================================================= */
+/* CONTADORES                                                    */
+/* ============================================================= */
+
 .meter-summary {
   display: grid;
   grid-template-columns:
@@ -415,6 +782,10 @@ button {
   font-size: 20px;
 }
 
+/* ============================================================= */
+/* TABLAS                                                        */
+/* ============================================================= */
+
 .table-container {
   overflow-x: auto;
 }
@@ -437,12 +808,17 @@ th {
   background: #fafbfd;
   color: #7b8797;
   font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
 }
 
 td {
   color: #4b5a6e;
 }
+
+/* ============================================================= */
+/* MOVIMIENTOS                                                   */
+/* ============================================================= */
 
 .timeline {
   padding: 20px;
@@ -451,7 +827,8 @@ td {
 .timeline-item {
   position: relative;
   display: grid;
-  grid-template-columns: 18px 1fr;
+  grid-template-columns:
+    18px minmax(0, 1fr);
   gap: 12px;
   padding-bottom: 20px;
 }
@@ -495,6 +872,7 @@ td {
 .timeline-item time {
   color: #8693a4;
   font-size: 10px;
+  white-space: nowrap;
 }
 
 .timeline-item p {
@@ -508,6 +886,10 @@ td {
   font-size: 10px;
 }
 
+/* ============================================================= */
+/* DOCUMENTOS                                                    */
+/* ============================================================= */
+
 .documents-grid {
   display: grid;
   grid-template-columns:
@@ -520,6 +902,7 @@ td {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
   padding: 14px;
   border: 1px solid #dfe3ec;
   border-radius: 12px;
@@ -566,8 +949,11 @@ td {
 
 .document-information small {
   margin-top: 3px;
+  overflow: hidden;
   color: #8b96a4;
   font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .document-actions {
@@ -581,7 +967,7 @@ td {
   padding: 6px 9px;
   border: 1px solid #cfd5f7;
   border-radius: 8px;
-  background: white;
+  background: #ffffff;
   color: #1f35c4;
   font-size: 10px;
   cursor: pointer;
@@ -596,6 +982,10 @@ td {
   font-weight: 700;
 }
 
+/* ============================================================= */
+/* ESTADOS VACÍOS Y CARGA                                        */
+/* ============================================================= */
+
 .empty-state,
 .tab-loading {
   min-height: 180px;
@@ -605,94 +995,12 @@ td {
   padding: 20px;
   color: #8693a4;
   font-size: 12px;
+  text-align: center;
 }
 
-@keyframes rotate {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes pageReveal {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (max-width: 1000px) {
-  .hero-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-  .details-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .detail-card.full-width {
-    grid-column: auto;
-  }
-
-  .meter-summary {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .page-header,
-  .hero-card {
-    flex-direction: column;
-  }
-
-  .header-actions {
-    width: 100%;
-  }
-
-  .header-actions button {
-    flex: 1;
-  }
-
-  .equipment-photo {
-    width: 100%;
-    height: 240px;
-  }
-
-  .hero-grid,
-  .notes-grid,
-  .documents-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .detail-card dl > div {
-    grid-template-columns: 1fr;
-    gap: 5px;
-  }
-}
-
-@media (max-width: 520px) {
-  .header-actions {
-    flex-direction: column;
-  }
-
-  .meter-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-actions {
-    flex-direction: column;
-  }
-
-  .quick-actions button {
-    width: 100%;
-  }
-}
+/* ============================================================= */
+/* MODAL DE ESTADOS                                              */
+/* ============================================================= */
 
 .status-modal-backdrop {
   position: fixed;
@@ -701,17 +1009,22 @@ td {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(15, 23, 42, 0.58);
+  background:
+    rgba(15, 23, 42, 0.58);
   backdrop-filter: blur(7px);
 }
 
 .status-modal {
   width: min(560px, 100%);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.72);
   border-radius: 22px;
-  background: white;
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+  background: #ffffff;
+  box-shadow:
+    0 28px 80px
+    rgba(15, 23, 42, 0.28);
 }
 
 .status-modal-header {
@@ -721,7 +1034,12 @@ td {
   gap: 18px;
   padding: 24px 24px 20px;
   border-bottom: 1px solid #e8ebf3;
-  background: linear-gradient(135deg, #f4f6ff, #ffffff);
+  background:
+    linear-gradient(
+      135deg,
+      #f4f6ff,
+      #ffffff
+    );
 }
 
 .status-modal-kicker {
@@ -754,7 +1072,7 @@ td {
   flex-shrink: 0;
   border: 1px solid #dfe3ec;
   border-radius: 11px;
-  background: white;
+  background: #ffffff;
   color: #667382;
   font-size: 24px;
   line-height: 1;
@@ -783,14 +1101,15 @@ td {
 .modal-field select,
 .modal-field textarea {
   width: 100%;
-  box-sizing: border-box;
   border: 1px solid #dfe3ec;
   border-radius: 12px;
   outline: none;
-  background: #fff;
+  background: #ffffff;
   color: #1d2940;
   font: inherit;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .modal-field select {
@@ -808,7 +1127,9 @@ td {
 .modal-field select:focus,
 .modal-field textarea:focus {
   border-color: #4e63d8;
-  box-shadow: 0 0 0 4px rgba(31, 53, 196, 0.11);
+  box-shadow:
+    0 0 0 4px
+    rgba(31, 53, 196, 0.11);
 }
 
 .modal-field small {
@@ -848,15 +1169,23 @@ td {
 
 .modal-secondary-button {
   border: 1px solid #dfe3ec;
-  background: white;
+  background: #ffffff;
   color: #667382;
 }
 
 .modal-primary-button {
   border: 0;
-  background: linear-gradient(135deg, #162caa, #1f35c4 55%, #4e63d8);
-  color: white;
-  box-shadow: 0 10px 22px rgba(31, 53, 196, 0.22);
+  background:
+    linear-gradient(
+      135deg,
+      #162caa,
+      #1f35c4 55%,
+      #4e63d8
+    );
+  color: #ffffff;
+  box-shadow:
+    0 10px 22px
+    rgba(31, 53, 196, 0.22);
 }
 
 .modal-secondary-button:disabled,
@@ -866,14 +1195,28 @@ td {
   cursor: wait;
 }
 
+.button-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid
+    rgba(255, 255, 255, 0.42);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: rotate 0.7s linear infinite;
+}
+
 .modal-fade-enter-active,
 .modal-fade-leave-active {
   transition: opacity 0.2s ease;
 }
 
-.modal-fade-enter-active .status-modal,
-.modal-fade-leave-active .status-modal {
-  transition: transform 0.22s ease, opacity 0.22s ease;
+.modal-fade-enter-active
+.status-modal,
+.modal-fade-leave-active
+.status-modal {
+  transition:
+    transform 0.22s ease,
+    opacity 0.22s ease;
 }
 
 .modal-fade-enter-from,
@@ -881,13 +1224,151 @@ td {
   opacity: 0;
 }
 
-.modal-fade-enter-from .status-modal,
-.modal-fade-leave-to .status-modal {
+.modal-fade-enter-from
+.status-modal,
+.modal-fade-leave-to
+.status-modal {
   opacity: 0;
-  transform: translateY(14px) scale(0.97);
+  transform:
+    translateY(14px)
+    scale(0.97);
+}
+
+/* ============================================================= */
+/* ANIMACIONES                                                   */
+/* ============================================================= */
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pageReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================= */
+/* RESPONSIVE                                                    */
+/* ============================================================= */
+
+@media (max-width: 1000px) {
+  .hero-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-card.full-width {
+    grid-column: auto;
+  }
+
+  .meter-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .page-header,
+  .hero-card {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    flex: 1;
+  }
+
+  .active-repair-card {
+    grid-template-columns:
+      auto minmax(0, 1fr);
+  }
+
+  .active-repair-card > button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .equipment-photo {
+    width: 100%;
+    height: 240px;
+  }
+
+  .hero-title {
+    flex-direction: column;
+  }
+
+  .hero-grid,
+  .notes-grid,
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-card dl > div {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .repairs-tab-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .repairs-tab-header button {
+    width: 100%;
+  }
+
+  .timeline-item header {
+    flex-direction: column;
+    gap: 4px;
+  }
 }
 
 @media (max-width: 520px) {
+  .header-actions {
+    flex-direction: column;
+  }
+
+  .meter-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-actions {
+    flex-direction: column;
+  }
+
+  .quick-actions button {
+    width: 100%;
+  }
+
+  .active-repair-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .active-repair-icon {
+    margin: 0 auto;
+  }
+
+  .active-repair-information small {
+    white-space: normal;
+  }
+
   .status-modal-backdrop {
     align-items: end;
     padding: 0;
@@ -905,336 +1386,5 @@ td {
   .modal-secondary-button,
   .modal-primary-button {
     width: 100%;
-  }
-}
-
-/* ============================================================= */
-/* RESUMEN PRINCIPAL PARA VENTAS                                 */
-/* ============================================================= */
-.sales-overview-card {
-  display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
-  gap: 22px;
-  padding: 20px;
-  border: 1px solid #dfe3ec;
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgba(31, 53, 196, 0.06);
-}
-
-.sales-photo-column {
-  display: flex;
-  align-items: stretch;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sales-photo-column .equipment-photo {
-  width: 100%;
-  min-height: 190px;
-}
-
-.sales-photo-column .availability-badge {
-  width: 100%;
-  box-sizing: border-box;
-  justify-content: center;
-  padding: 9px 12px;
-  letter-spacing: 0.03em;
-}
-
-.sales-overview-content {
-  min-width: 0;
-}
-
-.sales-equipment-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  padding-bottom: 17px;
-  border-bottom: 1px solid #e8ebf1;
-}
-
-.equipment-type-label {
-  display: block;
-  margin-bottom: 6px;
-  color: #8693a4;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.sales-equipment-header h3 {
-  margin: 0;
-  color: #1d2940;
-  font-size: 23px;
-  line-height: 1.2;
-}
-
-.sales-equipment-header p {
-  margin: 8px 0 0;
-  color: #667382;
-  font-size: 12px;
-}
-
-.sales-equipment-header p strong {
-  color: #26354a;
-}
-
-.status-stack {
-  display: flex;
-  align-items: flex-end;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sales-information-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding-top: 17px;
-}
-
-.sales-data-card {
-  overflow: hidden;
-  border: 1px solid #dfe3ec;
-  border-radius: 13px;
-  background: #ffffff;
-}
-
-.sales-data-card > header {
-  padding: 13px 15px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
-}
-
-.sales-data-card h4 {
-  margin: 0;
-  color: #24334a;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.sales-data-card dl {
-  margin: 0;
-  padding: 8px 15px 12px;
-}
-
-.sales-data-card dl > div {
-  display: grid;
-  grid-template-columns: 145px minmax(0, 1fr);
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.75);
-}
-
-.sales-data-card dl > div:last-child {
-  border-bottom: 0;
-}
-
-.sales-data-card dt {
-  color: #758195;
-  font-size: 11px;
-}
-
-.sales-data-card dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-  color: #24334a;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.equipment-data-card {
-  border-left: 4px solid #2488ff;
-  background: #f8fbff;
-}
-
-.equipment-data-card > header {
-  background: #f2f8ff;
-}
-
-.import-data-card {
-  border-left: 4px solid #22a9b8;
-  background: #f1fbfd;
-}
-
-.import-data-card > header {
-  background: #eaf8fb;
-}
-
-.review-data-card {
-  border-left: 4px solid #e58b3a;
-  background: #fff9f4;
-}
-
-.review-data-card > header {
-  background: #fff4ea;
-}
-
-.commercial-data-card {
-  border-left: 4px solid #51a53d;
-  background: #f6fbf3;
-}
-
-.commercial-data-card > header {
-  background: #eef8e8;
-}
-
-.review-status-row,
-.commercial-summary {
-  display: flex;
-  align-items: flex-start;
-  flex-direction: column;
-  gap: 12px;
-  padding: 15px;
-}
-
-.review-status-row p {
-  margin: 0;
-  color: #657181;
-  font-size: 12px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-}
-
-.commercial-summary dl {
-  width: 100%;
-  padding: 0;
-}
-
-/* ============================================================= */
-/* BADGES DE ESTADOS                                             */
-/* ============================================================= */
-.status-badge {
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.status-badge::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.72);
-}
-
-.status-badge.large {
-  min-height: 32px;
-  padding: 6px 12px;
-  font-size: 11px;
-}
-
-.status-success {
-  border-color: #bfe5cc;
-  background: #e9f8ef;
-  color: #237a49;
-}
-
-.status-pending {
-  border-color: #f1d493;
-  background: #fff7de;
-  color: #9b6a08;
-}
-
-.status-info {
-  border-color: #b8d6f6;
-  background: #eaf4ff;
-  color: #1769aa;
-}
-
-.status-danger {
-  border-color: #efc3c3;
-  background: #fff0f0;
-  color: #b33e3e;
-}
-
-.status-purple {
-  border-color: #d7c7f5;
-  background: #f4efff;
-  color: #6f45b5;
-}
-
-.status-warning {
-  border-color: #f1cda9;
-  background: #fff3e8;
-  color: #ad5c19;
-}
-
-.status-sold {
-  border-color: #c7d0dc;
-  background: #eef2f7;
-  color: #4f5d70;
-}
-
-.status-dark {
-  border-color: #c9ced6;
-  background: #e7eaee;
-  color: #343d49;
-}
-
-.status-neutral {
-  border-color: #d7dce4;
-  background: #f3f5f7;
-  color: #667382;
-}
-
-@media (max-width: 1100px) {
-  .sales-overview-card {
-    grid-template-columns: 180px minmax(0, 1fr);
-  }
-
-  .sales-information-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .sales-overview-card {
-    grid-template-columns: 1fr;
-  }
-
-  .sales-photo-column {
-    max-width: 100%;
-  }
-
-  .sales-photo-column .equipment-photo {
-    height: 250px;
-  }
-
-  .sales-equipment-header {
-    flex-direction: column;
-  }
-
-  .status-stack {
-    width: 100%;
-    align-items: flex-start;
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 520px) {
-  .sales-data-card dl > div {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-
-  .status-badge {
-    white-space: normal;
   }
 }

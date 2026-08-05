@@ -10,8 +10,6 @@ import {
   useRouter,
 } from "vue-router"
 
-import EquipmentComponentsPanel from "./components/EquipmentComponentsPanel.vue"
-
 import {
   archiveEquipment,
   changeEquipmentCommercialStatus,
@@ -23,6 +21,10 @@ import {
   restoreEquipment,
 } from "../../services/equipment.service"
 
+import {
+  getRepairs,
+} from "../../services/repairs.service"
+
 
 const route = useRoute()
 const router = useRouter()
@@ -31,6 +33,7 @@ const equipment = ref(null)
 const movements = ref([])
 const meterReadings = ref([])
 const documents = ref([])
+const repairs = ref([])
 
 const loading = ref(false)
 const loadingRelations = ref(false)
@@ -55,38 +58,123 @@ const equipmentId = computed(() => {
 })
 
 
+const activeRepair = computed(() => {
+  return (
+    repairs.value.find(
+      (repair) =>
+        repair.is_active === true &&
+        !repair.is_archived
+    ) ||
+    null
+  )
+})
+
+
+const hasActiveRepair = computed(() => {
+  return Boolean(
+    activeRepair.value?.id
+  )
+})
+
+
 const technicalStatusOptions = [
-  { value: "unreviewed", label: "Sin revisar" },
-  { value: "for_review", label: "Para revisión" },
-  { value: "in_review", label: "En revisión" },
-  { value: "completed", label: "Finalizada" },
-  { value: "with_problems", label: "Con problemas" },
-  { value: "for_parts", label: "De partes" },
+  {
+    value: "unreviewed",
+    label: "Sin revisar",
+  },
+  {
+    value: "for_review",
+    label: "Para revisión",
+  },
+  {
+    value: "in_review",
+    label: "En revisión",
+  },
+  {
+    value: "completed",
+    label: "Finalizada",
+  },
+  {
+    value: "with_problems",
+    label: "Con problemas",
+  },
+  {
+    value: "for_parts",
+    label: "De partes",
+  },
 ]
 
+
 const commercialStatusOptions = [
-  { value: "warehouse", label: "En almacén" },
-  { value: "reserved", label: "Separada" },
-  { value: "sold", label: "Vendida" },
-  { value: "delivery_preparation", label: "En preparación de entrega" },
-  { value: "in_transit", label: "En tránsito" },
-  { value: "delivered", label: "Entregada" },
-  { value: "contract_assigned", label: "Asignada a contrato" },
-  { value: "installed", label: "Instalada" },
-  { value: "return_process", label: "En proceso de retorno" },
-  { value: "returned", label: "Retornada a almacén" },
-  { value: "temporary_loan", label: "Préstamo temporal" },
-  { value: "demonstration", label: "Demostración" },
-  { value: "replacement", label: "Equipo de reemplazo" },
-  { value: "out_of_service", label: "Fuera de servicio" },
-  { value: "disposed", label: "De baja" },
+  {
+    value: "warehouse",
+    label: "En almacén",
+  },
+  {
+    value: "reserved",
+    label: "Separada",
+  },
+  {
+    value: "sold",
+    label: "Vendida",
+  },
+  {
+    value: "delivery_preparation",
+    label: "En preparación de entrega",
+  },
+  {
+    value: "in_transit",
+    label: "En tránsito",
+  },
+  {
+    value: "delivered",
+    label: "Entregada",
+  },
+  {
+    value: "contract_assigned",
+    label: "Asignada a contrato",
+  },
+  {
+    value: "installed",
+    label: "Instalada",
+  },
+  {
+    value: "return_process",
+    label: "En proceso de retorno",
+  },
+  {
+    value: "returned",
+    label: "Retornada a almacén",
+  },
+  {
+    value: "temporary_loan",
+    label: "Préstamo temporal",
+  },
+  {
+    value: "demonstration",
+    label: "Demostración",
+  },
+  {
+    value: "replacement",
+    label: "Equipo de reemplazo",
+  },
+  {
+    value: "out_of_service",
+    label: "Fuera de servicio",
+  },
+  {
+    value: "disposed",
+    label: "De baja",
+  },
 ]
+
 
 const statusModalTitle = computed(() => {
   return statusModalType.value === "technical"
     ? "Cambiar estado técnico"
     : "Cambiar estado comercial"
 })
+
 
 const statusOptions = computed(() => {
   return statusModalType.value === "technical"
@@ -118,7 +206,10 @@ const equipmentName = computed(() => {
     ""
 
   return (
-    [brand, model]
+    [
+      brand,
+      model,
+    ]
       .filter(Boolean)
       .join(" ")
       .trim() ||
@@ -229,6 +320,22 @@ const equipmentTypeName = computed(() => {
 })
 
 
+function normalizeList(response) {
+  if (Array.isArray(response)) {
+    return response
+  }
+
+  if (
+    response &&
+    Array.isArray(response.results)
+  ) {
+    return response.results
+  }
+
+  return []
+}
+
+
 function getTechnicalStatusName(value) {
   const names = {
     unreviewed: "Sin revisar",
@@ -239,7 +346,11 @@ function getTechnicalStatusName(value) {
     for_parts: "De partes",
   }
 
-  return names[value] || value || "Sin estado"
+  return (
+    names[value] ||
+    value ||
+    "Sin estado"
+  )
 }
 
 
@@ -261,50 +372,18 @@ function getCommercialStatusName(value) {
     temporary_loan:
       "Préstamo temporal",
     demonstration: "Demostración",
-    replacement: "Equipo de reemplazo",
+    replacement:
+      "Equipo de reemplazo",
     out_of_service:
       "Fuera de servicio",
     disposed: "De baja",
   }
 
-  return names[value] || value || "Sin estado"
-}
-
-
-function getTechnicalStatusClass(value) {
-  const classes = {
-    unreviewed: "status-neutral",
-    for_review: "status-pending",
-    in_review: "status-info",
-    completed: "status-success",
-    with_problems: "status-danger",
-    for_parts: "status-dark",
-  }
-
-  return classes[value] || "status-neutral"
-}
-
-
-function getCommercialStatusClass(value) {
-  const classes = {
-    warehouse: "status-success",
-    reserved: "status-purple",
-    sold: "status-sold",
-    delivery_preparation: "status-warning",
-    in_transit: "status-info",
-    delivered: "status-sold",
-    contract_assigned: "status-purple",
-    installed: "status-info",
-    return_process: "status-warning",
-    returned: "status-success",
-    temporary_loan: "status-purple",
-    demonstration: "status-purple",
-    replacement: "status-warning",
-    out_of_service: "status-danger",
-    disposed: "status-dark",
-  }
-
-  return classes[value] || "status-neutral"
+  return (
+    names[value] ||
+    value ||
+    "Sin estado"
+  )
 }
 
 
@@ -312,7 +391,8 @@ function getPhysicalConditionName(value) {
   const names = {
     new: "Nueva",
     used: "Usada",
-    reconditioned: "Reacondicionada",
+    reconditioned:
+      "Reacondicionada",
     trade_in:
       "Recibida en parte de pago",
     third_party:
@@ -320,80 +400,130 @@ function getPhysicalConditionName(value) {
     other: "Otra",
   }
 
-  return names[value] || value || "Sin condición"
+  return (
+    names[value] ||
+    value ||
+    "Sin condición"
+  )
 }
 
 
 function getOwnershipName(value) {
   const names = {
-    own: "Propiedad de la empresa",
-    customer: "Propiedad de cliente",
-    supplier: "Propiedad de proveedor",
-    third_party: "Propiedad de tercero",
+    own:
+      "Propiedad de la empresa",
+    customer:
+      "Propiedad de cliente",
+    supplier:
+      "Propiedad de proveedor",
+    third_party:
+      "Propiedad de tercero",
     other: "Otra",
   }
 
-  return names[value] || value || "Sin propiedad"
+  return (
+    names[value] ||
+    value ||
+    "Sin propiedad"
+  )
 }
 
 
 function getMovementTypeName(value) {
   const names = {
-    registration: "Registro inicial",
-    unloading: "Descarga",
-    warehouse_entry: "Ingreso a almacén",
-    location_change: "Cambio de ubicación",
-    sent_for_review: "Envío para revisión",
-    review_started: "Inicio de revisión",
-    review_completed: "Revisión finalizada",
-    problem_reported: "Problema reportado",
-    marked_for_parts: "Destinada a partes",
-    reserved: "Separación",
+    registration:
+      "Registro inicial",
+    unloading:
+      "Descarga",
+    warehouse_entry:
+      "Ingreso a almacén",
+    location_change:
+      "Cambio de ubicación",
+    sent_for_review:
+      "Envío para revisión",
+    review_started:
+      "Inicio de revisión",
+    review_completed:
+      "Revisión finalizada",
+    problem_reported:
+      "Problema reportado",
+    marked_for_parts:
+      "Destinada a partes",
+    reserved:
+      "Separación",
     reservation_released:
       "Liberación de separación",
-    sold: "Venta",
+    sold:
+      "Venta",
     delivery_preparation:
       "Preparación de entrega",
-    dispatched: "Salida para entrega",
-    delivered: "Entrega",
+    dispatched:
+      "Salida para entrega",
+    delivered:
+      "Entrega",
     contract_assigned:
       "Asignación a contrato",
-    installed: "Instalación",
-    removal_started: "Inicio de retiro",
-    removed: "Retiro",
+    installed:
+      "Instalación",
+    removal_started:
+      "Inicio de retiro",
+    removed:
+      "Retiro",
     returned_to_warehouse:
       "Retorno a almacén",
-    temporary_loan: "Préstamo temporal",
-    demonstration: "Demostración",
+    temporary_loan:
+      "Préstamo temporal",
+    demonstration:
+      "Demostración",
     replacement_assigned:
       "Asignación como reemplazo",
-    sent_to_supplier: "Envío a proveedor",
+    sent_to_supplier:
+      "Envío a proveedor",
     received_from_supplier:
       "Recepción desde proveedor",
     ownership_change:
       "Cambio de propiedad",
-    out_of_service: "Fuera de servicio",
-    reactivated: "Reactivación",
-    disposed: "Baja del equipo",
-    archived: "Archivado",
-    restored: "Restaurado",
-    other: "Otro movimiento",
+    out_of_service:
+      "Fuera de servicio",
+    reactivated:
+      "Reactivación",
+    disposed:
+      "Baja del equipo",
+    archived:
+      "Archivado",
+    restored:
+      "Restaurado",
+    other:
+      "Otro movimiento",
   }
 
-  return names[value] || value || "Movimiento"
+  return (
+    names[value] ||
+    value ||
+    "Movimiento"
+  )
 }
 
 
 function getReadingTypeName(value) {
   const names = {
-    normal: "Lectura normal",
-    initial: "Lectura inicial",
-    correction: "Corrección",
-    reset: "Reinicio de contador",
-    estimated: "Lectura estimada",
+    normal:
+      "Lectura normal",
+    initial:
+      "Lectura inicial",
+    correction:
+      "Corrección",
+    reset:
+      "Reinicio de contador",
+    estimated:
+      "Lectura estimada",
   }
 
-  return names[value] || value || "Lectura"
+  return (
+    names[value] ||
+    value ||
+    "Lectura"
+  )
 }
 
 
@@ -401,15 +531,18 @@ function getDocumentTypeName(value) {
   const names = {
     purchase_invoice:
       "Factura o invoice de compra",
-    sale_invoice: "Factura de venta",
+    sale_invoice:
+      "Factura de venta",
     import_document:
       "Documento de importación",
     customs_document:
       "Documento aduanero",
-    packing_list: "Lista de empaque",
+    packing_list:
+      "Lista de empaque",
     shipping_document:
       "Documento de transporte",
-    delivery_note: "Guía de remisión",
+    delivery_note:
+      "Guía de remisión",
     delivery_certificate:
       "Acta de entrega",
     installation_certificate:
@@ -420,20 +553,140 @@ function getDocumentTypeName(value) {
       "Informe técnico",
     repair_report:
       "Informe de reparación",
-    technical_sheet: "Ficha técnica",
-    user_manual: "Manual de usuario",
+    technical_sheet:
+      "Ficha técnica",
+    user_manual:
+      "Manual de usuario",
     service_manual:
       "Manual de servicio",
-    warranty: "Garantía",
-    certificate: "Certificado",
-    contract: "Contrato",
-    quotation: "Cotización",
-    purchase_order: "Orden de compra",
-    photo: "Fotografía",
-    other: "Otro documento",
+    warranty:
+      "Garantía",
+    certificate:
+      "Certificado",
+    contract:
+      "Contrato",
+    quotation:
+      "Cotización",
+    purchase_order:
+      "Orden de compra",
+    photo:
+      "Fotografía",
+    other:
+      "Otro documento",
   }
 
-  return names[value] || value || "Documento"
+  return (
+    names[value] ||
+    value ||
+    "Documento"
+  )
+}
+
+
+function getRepairStatusName(value) {
+  const names = {
+    pending:
+      "Pendiente",
+    assigned:
+      "Asignada",
+    under_review:
+      "En revisión",
+    waiting_parts:
+      "Esperando repuestos",
+    in_repair:
+      "En reparación",
+    testing:
+      "En pruebas",
+    completed:
+      "Finalizada",
+    delivered:
+      "Entregada",
+    cancelled:
+      "Cancelada",
+  }
+
+  return (
+    names[value] ||
+    value ||
+    "Sin estado"
+  )
+}
+
+
+function getRepairTypeName(value) {
+  const names = {
+    initial_review:
+      "Revisión inicial",
+    preventive:
+      "Mantenimiento preventivo",
+    corrective:
+      "Mantenimiento correctivo",
+    reconditioning:
+      "Reacondicionamiento",
+    warranty:
+      "Garantía",
+    return_review:
+      "Revisión por devolución",
+    other:
+      "Otro",
+  }
+
+  return (
+    names[value] ||
+    value ||
+    "Sin tipo"
+  )
+}
+
+
+function getRepairPriorityName(value) {
+  const names = {
+    low: "Baja",
+    normal: "Normal",
+    high: "Alta",
+    urgent: "Urgente",
+  }
+
+  return (
+    names[value] ||
+    value ||
+    "Normal"
+  )
+}
+
+
+function getRepairStatusClass(value) {
+  const classes = {
+    pending: "pending",
+    assigned: "assigned",
+    under_review: "review",
+    waiting_parts: "waiting",
+    in_repair: "repair",
+    testing: "testing",
+    completed: "completed",
+    delivered: "delivered",
+    cancelled: "cancelled",
+  }
+
+  return (
+    classes[value] ||
+    "neutral"
+  )
+}
+
+
+function getRepairPriorityClass(value) {
+  const classes = {
+    low: "low",
+    normal: "normal",
+    high: "high",
+    urgent: "urgent",
+  }
+
+  return (
+    classes[value] ||
+    "normal"
+  )
 }
 
 
@@ -484,7 +737,9 @@ function formatDateTime(value) {
 
 
 function formatMeter(value) {
-  const number = Number(value || 0)
+  const number = Number(
+    value || 0
+  )
 
   if (!Number.isFinite(number)) {
     return "0"
@@ -500,7 +755,9 @@ function formatMoney(
   value,
   currency = "PEN"
 ) {
-  const number = Number(value || 0)
+  const number = Number(
+    value || 0
+  )
 
   if (!Number.isFinite(number)) {
     return "0.00"
@@ -518,7 +775,10 @@ function formatMoney(
       }
     ).format(number)
   } catch {
-    return `${number.toFixed(2)} ${currency}`
+    return (
+      `${number.toFixed(2)} ` +
+      `${currency}`
+    )
   }
 }
 
@@ -552,36 +812,57 @@ async function loadRelations() {
       movementsResponse,
       readingsResponse,
       documentsResponse,
+      repairsResponse,
     ] = await Promise.all([
       getEquipmentMovements({
-        equipment: equipmentId.value,
+        equipment:
+          equipmentId.value,
       }),
       getMeterReadings({
-        equipment: equipmentId.value,
+        equipment:
+          equipmentId.value,
       }),
       getEquipmentDocuments({
-        equipment: equipmentId.value,
+        equipment:
+          equipmentId.value,
+      }),
+      getRepairs({
+        equipment:
+          equipmentId.value,
+        includeArchived: true,
+        ordering:
+          "-requested_at",
       }),
     ])
 
     movements.value =
-      Array.isArray(movementsResponse)
-        ? movementsResponse
-        : movementsResponse?.results || []
+      normalizeList(
+        movementsResponse
+      )
 
     meterReadings.value =
-      Array.isArray(readingsResponse)
-        ? readingsResponse
-        : readingsResponse?.results || []
+      normalizeList(
+        readingsResponse
+      )
 
     documents.value =
-      Array.isArray(documentsResponse)
-        ? documentsResponse
-        : documentsResponse?.results || []
-  } catch {
+      normalizeList(
+        documentsResponse
+      )
+
+    repairs.value =
+      normalizeList(
+        repairsResponse
+      )
+  } catch (error) {
     movements.value = []
     meterReadings.value = []
     documents.value = []
+    repairs.value = []
+
+    errorMessage.value =
+      error.message ||
+      "No se pudieron cargar los registros relacionados."
   } finally {
     loadingRelations.value = false
   }
@@ -605,6 +886,49 @@ async function goToEdit() {
 }
 
 
+async function goToCreateRepair() {
+  if (
+    !equipment.value ||
+    equipment.value.is_archived ||
+    processing.value
+  ) {
+    return
+  }
+
+  if (hasActiveRepair.value) {
+    await goToRepair(
+      activeRepair.value
+    )
+
+    return
+  }
+
+  await router.push({
+    name: "repair-create",
+    query: {
+      equipment:
+        equipmentId.value,
+      origin:
+        "equipment-detail",
+    },
+  })
+}
+
+
+async function goToRepair(repair) {
+  if (!repair?.id) {
+    return
+  }
+
+  await router.push({
+    name: "repair-detail",
+    params: {
+      id: repair.id,
+    },
+  })
+}
+
+
 function openStatusModal(type) {
   if (
     !equipment.value ||
@@ -615,10 +939,14 @@ function openStatusModal(type) {
   }
 
   statusModalType.value = type
+
   selectedStatus.value =
     type === "technical"
-      ? equipment.value.technical_status
-      : equipment.value.commercial_status
+      ? equipment.value
+          .technical_status
+      : equipment.value
+          .commercial_status
+
   statusReason.value = ""
   modalError.value = ""
   statusModalOpen.value = true
@@ -642,12 +970,14 @@ async function submitStatusChange() {
   if (!selectedStatus.value) {
     modalError.value =
       "Selecciona el nuevo estado."
+
     return
   }
 
   if (!statusReason.value.trim()) {
     modalError.value =
       "Indica el motivo del cambio."
+
     return
   }
 
@@ -657,14 +987,18 @@ async function submitStatusChange() {
   modalError.value = ""
 
   try {
-    if (statusModalType.value === "technical") {
+    if (
+      statusModalType.value ===
+      "technical"
+    ) {
       await changeEquipmentTechnicalStatus(
         equipmentId.value,
         {
           technical_status:
             selectedStatus.value,
           reason:
-            statusReason.value.trim(),
+            statusReason.value
+              .trim(),
         }
       )
 
@@ -677,16 +1011,20 @@ async function submitStatusChange() {
           commercial_status:
             selectedStatus.value,
           customer:
-            equipment.value.customer ||
+            equipment.value
+              .customer ||
             null,
           customer_branch:
-            equipment.value.customer_branch ||
+            equipment.value
+              .customer_branch ||
             null,
           advisor:
-            equipment.value.advisor ||
+            equipment.value
+              .advisor ||
             null,
           reason:
-            statusReason.value.trim(),
+            statusReason.value
+              .trim(),
         }
       )
 
@@ -723,9 +1061,10 @@ async function handleArchive() {
     return
   }
 
-  const confirmed = window.confirm(
-    `¿Confirmas que deseas archivar ${equipmentName.value}?`
-  )
+  const confirmed =
+    window.confirm(
+      `¿Confirmas que deseas archivar ${equipmentName.value}?`
+    )
 
   if (!confirmed) {
     return
@@ -744,7 +1083,10 @@ async function handleArchive() {
     successMessage.value =
       "Equipo archivado correctamente."
 
-    await loadEquipment()
+    await Promise.all([
+      loadEquipment(),
+      loadRelations(),
+    ])
   } catch (error) {
     errorMessage.value =
       error.message ||
@@ -760,9 +1102,10 @@ async function handleRestore() {
     return
   }
 
-  const confirmed = window.confirm(
-    `¿Confirmas que deseas restaurar ${equipmentName.value}?`
-  )
+  const confirmed =
+    window.confirm(
+      `¿Confirmas que deseas restaurar ${equipmentName.value}?`
+    )
 
   if (!confirmed) {
     return
@@ -780,7 +1123,10 @@ async function handleRestore() {
     successMessage.value =
       "Equipo restaurado correctamente."
 
-    await loadEquipment()
+    await Promise.all([
+      loadEquipment(),
+      loadRelations(),
+    ])
   } catch (error) {
     errorMessage.value =
       error.message ||
@@ -891,241 +1237,193 @@ onMounted(async () => {
     </div>
 
     <template v-else-if="equipment">
-      <section class="sales-overview-card">
-        <div class="sales-photo-column">
-          <div class="equipment-photo">
-            <img
-              v-if="
-                equipment.main_photo_url ||
-                equipment.main_photo
-              "
-              :src="
-                equipment.main_photo_url ||
-                equipment.main_photo
-              "
-              alt="Fotografía del equipo"
-            />
-
-            <div
-              v-else
-              class="photo-placeholder"
-            >
-              ▣
-            </div>
-          </div>
-
-          <span
-            class="availability-badge"
-            :class="{
-              available:
-                equipment.is_available &&
-                !equipment.is_archived,
-              unavailable:
-                !equipment.is_available &&
-                !equipment.is_archived,
-              archived:
-                equipment.is_archived,
-            }"
-          >
-            {{
-              equipment.is_archived
-                ? "Archivado"
-                : equipment.is_available
-                  ? "Disponible para venta"
-                  : "No disponible"
-            }}
-          </span>
+      <section
+        v-if="activeRepair"
+        class="active-repair-card"
+      >
+        <div class="active-repair-icon">
+          ⚙
         </div>
 
-        <div class="sales-overview-content">
-          <header class="sales-equipment-header">
+        <div class="active-repair-information">
+          <span>
+            Reparación activa
+          </span>
+
+          <strong>
+            {{ activeRepair.code }}
+          </strong>
+
+          <small>
+            {{
+              activeRepair.status_name ||
+              getRepairStatusName(
+                activeRepair.status
+              )
+            }}
+            ·
+            {{
+              activeRepair.assigned_technician_name ||
+              "Sin técnico asignado"
+            }}
+          </small>
+        </div>
+
+        <button
+          type="button"
+          @click="goToRepair(activeRepair)"
+        >
+          Abrir reparación
+        </button>
+      </section>
+
+      <section class="hero-card">
+        <div class="equipment-photo">
+          <img
+            v-if="
+              equipment.main_photo_url ||
+              equipment.main_photo
+            "
+            :src="
+              equipment.main_photo_url ||
+              equipment.main_photo
+            "
+            alt="Fotografía del equipo"
+          />
+
+          <div
+            v-else
+            class="photo-placeholder"
+          >
+            ▣
+          </div>
+        </div>
+
+        <div class="hero-information">
+          <div class="hero-title">
             <div>
-              <span class="equipment-type-label">
+              <span>
                 {{ equipmentTypeName }}
               </span>
 
               <h3>
-                {{ brandName }} {{ modelName }}
+                {{ brandName }}
+                {{ modelName }}
               </h3>
-
-              <p>
-                Serie
-                <strong>{{ equipment.serial_number }}</strong>
-                · Código
-                <strong>{{ equipment.internal_code }}</strong>
-              </p>
             </div>
 
-            <div class="status-stack">
-              <span
-                class="status-badge"
-                :class="getTechnicalStatusClass(equipment.technical_status)"
-              >
+            <span
+              class="availability-badge"
+              :class="{
+                available:
+                  equipment.is_available &&
+                  !equipment.is_archived,
+                unavailable:
+                  !equipment.is_available &&
+                  !equipment.is_archived,
+                archived:
+                  equipment.is_archived,
+              }"
+            >
+              {{
+                equipment.is_archived
+                  ? "Archivado"
+                  : equipment.is_available
+                    ? "Disponible"
+                    : "No disponible"
+              }}
+            </span>
+          </div>
+
+          <div class="hero-grid">
+            <div>
+              <small>Serie</small>
+
+              <strong>
+                {{ equipment.serial_number }}
+              </strong>
+            </div>
+
+            <div>
+              <small>Código interno</small>
+
+              <strong>
+                {{ equipment.internal_code }}
+              </strong>
+            </div>
+
+            <div>
+              <small>Estado técnico</small>
+
+              <strong>
                 {{
                   equipment.technical_status_name ||
-                  getTechnicalStatusName(equipment.technical_status)
+                  getTechnicalStatusName(
+                    equipment.technical_status
+                  )
                 }}
-              </span>
+              </strong>
+            </div>
 
-              <span
-                class="status-badge"
-                :class="getCommercialStatusClass(equipment.commercial_status)"
-              >
+            <div>
+              <small>Estado comercial</small>
+
+              <strong>
                 {{
                   equipment.commercial_status_name ||
-                  getCommercialStatusName(equipment.commercial_status)
+                  getCommercialStatusName(
+                    equipment.commercial_status
+                  )
                 }}
-              </span>
+              </strong>
             </div>
-          </header>
 
-          <div class="sales-information-grid">
-            <section class="sales-data-card equipment-data-card">
-              <header>
-                <h4>Datos del equipo</h4>
-              </header>
+            <div>
+              <small>Ubicación</small>
 
-              <dl>
-                <div>
-                  <dt>Tipo de máquina</dt>
-                  <dd>{{ equipmentTypeName }}</dd>
-                </div>
+              <strong>
+                {{
+                  equipment.warehouse_location ||
+                  "Sin ubicación"
+                }}
+              </strong>
+            </div>
 
-                <div>
-                  <dt>Marca</dt>
-                  <dd>{{ brandName }}</dd>
-                </div>
+            <div>
+              <small>Cliente</small>
 
-                <div>
-                  <dt>Modelo</dt>
-                  <dd>{{ modelName }}</dd>
-                </div>
-
-                <div>
-                  <dt>Serie</dt>
-                  <dd>{{ equipment.serial_number }}</dd>
-                </div>
-
-                <div>
-                  <dt>Contómetro total</dt>
-                  <dd>{{ formatMeter(equipment.current_total_meter) }}</dd>
-                </div>
-
-                <div>
-                  <dt>Ubicación</dt>
-                  <dd>{{ equipment.warehouse_location || "Sin ubicación" }}</dd>
-                </div>
-
-                <div>
-                  <dt>Condición</dt>
-                  <dd>
-                    {{
-                      equipment.physical_condition_name ||
-                      getPhysicalConditionName(equipment.physical_condition)
-                    }}
-                  </dd>
-                </div>
-              </dl>
-            </section>
-
-            <section class="sales-data-card import-data-card">
-              <header>
-                <h4>Datos de importación</h4>
-              </header>
-
-              <dl>
-                <div>
-                  <dt>Proveedor</dt>
-                  <dd>{{ equipment.supplier_name || "Sin proveedor" }}</dd>
-                </div>
-
-                <div>
-                  <dt>Importación</dt>
-                  <dd>
-                    {{
-                      equipment.import_batch_name ||
-                      equipment.import_reference ||
-                      "Sin lote"
-                    }}
-                  </dd>
-                </div>
-
-                <div>
-                  <dt>Invoice</dt>
-                  <dd>
-                    {{
-                      equipment.purchase_invoice_number ||
-                      "Sin registro"
-                    }}
-                  </dd>
-                </div>
-
-                <div>
-                  <dt>Fecha de compra</dt>
-                  <dd>{{ formatDate(equipment.purchase_date) }}</dd>
-                </div>
-              </dl>
-            </section>
-
-            <section class="sales-data-card review-data-card">
-              <header>
-                <h4>Estado de revisión</h4>
-              </header>
-
-              <div class="review-status-row">
-                <span
-                  class="status-badge large"
-                  :class="getTechnicalStatusClass(equipment.technical_status)"
-                >
-                  {{
-                    equipment.technical_status_name ||
-                    getTechnicalStatusName(equipment.technical_status)
-                  }}
-                </span>
-
-                <p>
-                  {{
-                    equipment.technical_status_reason ||
-                    "Sin observaciones técnicas registradas."
-                  }}
-                </p>
-              </div>
-            </section>
-
-            <section class="sales-data-card commercial-data-card">
-              <header>
-                <h4>Situación comercial</h4>
-              </header>
-
-              <div class="commercial-summary">
-                <span
-                  class="status-badge large"
-                  :class="getCommercialStatusClass(equipment.commercial_status)"
-                >
-                  {{
-                    equipment.commercial_status_name ||
-                    getCommercialStatusName(equipment.commercial_status)
-                  }}
-                </span>
-
-                <dl>
-                  <div>
-                    <dt>Cliente</dt>
-                    <dd>{{ customerName }}</dd>
-                  </div>
-
-                  <div>
-                    <dt>Asesor</dt>
-                    <dd>{{ advisorName }}</dd>
-                  </div>
-                </dl>
-              </div>
-            </section>
+              <strong>
+                {{ customerName }}
+              </strong>
+            </div>
           </div>
         </div>
       </section>
 
       <section class="quick-actions">
+        <button
+          v-if="!hasActiveRepair"
+          class="repair-action-button"
+          type="button"
+          :disabled="
+            processing ||
+            equipment.is_archived
+          "
+          @click="goToCreateRepair"
+        >
+          Crear reparación
+        </button>
+
+        <button
+          v-else
+          class="repair-action-button active"
+          type="button"
+          :disabled="processing"
+          @click="goToRepair(activeRepair)"
+        >
+          Abrir reparación activa
+        </button>
+
         <button
           type="button"
           :disabled="
@@ -1173,9 +1471,12 @@ onMounted(async () => {
         <button
           type="button"
           :class="{
-            active: activeTab === 'general',
+            active:
+              activeTab === 'general',
           }"
-          @click="activeTab = 'general'"
+          @click="
+            activeTab = 'general'
+          "
         >
           Información general
         </button>
@@ -1183,11 +1484,32 @@ onMounted(async () => {
         <button
           type="button"
           :class="{
-            active: activeTab === 'meters',
+            active:
+              activeTab === 'repairs',
           }"
-          @click="activeTab = 'meters'"
+          @click="
+            activeTab = 'repairs'
+          "
+        >
+          Reparaciones
+
+          <span>
+            {{ repairs.length }}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          :class="{
+            active:
+              activeTab === 'meters',
+          }"
+          @click="
+            activeTab = 'meters'
+          "
         >
           Contadores
+
           <span>
             {{ meterReadings.length }}
           </span>
@@ -1196,11 +1518,15 @@ onMounted(async () => {
         <button
           type="button"
           :class="{
-            active: activeTab === 'movements',
+            active:
+              activeTab === 'movements',
           }"
-          @click="activeTab = 'movements'"
+          @click="
+            activeTab = 'movements'
+          "
         >
           Movimientos
+
           <span>
             {{ movements.length }}
           </span>
@@ -1209,11 +1535,15 @@ onMounted(async () => {
         <button
           type="button"
           :class="{
-            active: activeTab === 'documents',
+            active:
+              activeTab === 'documents',
           }"
-          @click="activeTab = 'documents'"
+          @click="
+            activeTab = 'documents'
+          "
         >
           Documentos
+
           <span>
             {{ documents.length }}
           </span>
@@ -1222,56 +1552,157 @@ onMounted(async () => {
 
       <div
         v-if="activeTab === 'general'"
-        class="details-grid compact-details-grid"
+        class="details-grid"
       >
         <section class="detail-card">
           <header>
-            <h3>Venta y separación</h3>
+            <h3>
+              Identificación
+            </h3>
           </header>
 
           <dl>
             <div>
-              <dt>Precio de venta</dt>
+              <dt>Marca</dt>
+              <dd>{{ brandName }}</dd>
+            </div>
+
+            <div>
+              <dt>Modelo</dt>
+              <dd>{{ modelName }}</dd>
+            </div>
+
+            <div>
+              <dt>Tipo</dt>
+              <dd>{{ equipmentTypeName }}</dd>
+            </div>
+
+            <div>
+              <dt>Condición física</dt>
+
               <dd>
                 {{
-                  formatMoney(
-                    equipment.sale_price,
-                    equipment.sale_currency
+                  equipment.physical_condition_name ||
+                  getPhysicalConditionName(
+                    equipment.physical_condition
                   )
                 }}
               </dd>
             </div>
 
             <div>
-              <dt>Factura de venta</dt>
-              <dd>{{ equipment.sale_invoice_number || "Sin registro" }}</dd>
+              <dt>Tipo de propiedad</dt>
+
+              <dd>
+                {{
+                  equipment.ownership_type_name ||
+                  getOwnershipName(
+                    equipment.ownership_type
+                  )
+                }}
+              </dd>
             </div>
 
             <div>
-              <dt>Fecha de separación</dt>
-              <dd>{{ formatDateTime(equipment.reservation_date) }}</dd>
-            </div>
+              <dt>Código patrimonial</dt>
 
-            <div>
-              <dt>Vencimiento de separación</dt>
-              <dd>{{ formatDateTime(equipment.reservation_expiration_date) }}</dd>
-            </div>
-
-            <div>
-              <dt>Fecha de venta</dt>
-              <dd>{{ formatDate(equipment.sale_date) }}</dd>
-            </div>
-
-            <div>
-              <dt>Fecha de entrega</dt>
-              <dd>{{ formatDateTime(equipment.delivery_date) }}</dd>
+              <dd>
+                {{
+                  equipment.asset_number ||
+                  "Sin registro"
+                }}
+              </dd>
             </div>
           </dl>
         </section>
 
         <section class="detail-card">
           <header>
-            <h3>Cliente y ubicación</h3>
+            <h3>
+              Estados
+            </h3>
+          </header>
+
+          <dl>
+            <div>
+              <dt>Estado técnico</dt>
+
+              <dd>
+                {{
+                  equipment.technical_status_name ||
+                  getTechnicalStatusName(
+                    equipment.technical_status
+                  )
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Motivo técnico</dt>
+
+              <dd>
+                {{
+                  equipment.technical_status_reason ||
+                  "Sin observaciones"
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Estado comercial</dt>
+
+              <dd>
+                {{
+                  equipment.commercial_status_name ||
+                  getCommercialStatusName(
+                    equipment.commercial_status
+                  )
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Motivo comercial</dt>
+
+              <dd>
+                {{
+                  equipment.commercial_status_reason ||
+                  "Sin observaciones"
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Registro activo</dt>
+
+              <dd>
+                {{
+                  equipment.is_active
+                    ? "Sí"
+                    : "No"
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Disponible</dt>
+
+              <dd>
+                {{
+                  equipment.is_available
+                    ? "Sí"
+                    : "No"
+                }}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="detail-card">
+          <header>
+            <h3>
+              Cliente y ubicación
+            </h3>
           </header>
 
           <dl>
@@ -1292,38 +1723,117 @@ onMounted(async () => {
 
             <div>
               <dt>Ubicación interna</dt>
-              <dd>{{ equipment.warehouse_location || "Sin ubicación" }}</dd>
+
+              <dd>
+                {{
+                  equipment.warehouse_location ||
+                  "Sin ubicación"
+                }}
+              </dd>
             </div>
 
             <div>
               <dt>Referencia</dt>
-              <dd>{{ equipment.position_reference || "Sin referencia" }}</dd>
+
+              <dd>
+                {{
+                  equipment.position_reference ||
+                  "Sin referencia"
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Fecha de entrega</dt>
+
+              <dd>
+                {{
+                  formatDateTime(
+                    equipment.delivery_date
+                  )
+                }}
+              </dd>
             </div>
           </dl>
         </section>
 
         <section class="detail-card">
           <header>
-            <h3>Configuración recibida</h3>
+            <h3>
+              Compra e importación
+            </h3>
           </header>
 
           <dl>
-            <div class="full-row">
-              <dt>Accesorios</dt>
+            <div>
+              <dt>Proveedor</dt>
+
               <dd>
                 {{
-                  equipment.accessories_description ||
-                  "Sin accesorios registrados"
+                  equipment.supplier_name ||
+                  "Sin proveedor"
                 }}
               </dd>
             </div>
 
-            <div class="full-row">
-              <dt>Observaciones comerciales</dt>
+            <div>
+              <dt>Lote o importación</dt>
+
               <dd>
                 {{
-                  equipment.commercial_notes ||
-                  "Sin observaciones comerciales"
+                  equipment.import_batch_code ||
+                  equipment.import_batch_name ||
+                  equipment.import_reference ||
+                  "Sin lote"
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Factura de compra</dt>
+
+              <dd>
+                {{
+                  equipment.purchase_invoice_number ||
+                  "Sin registro"
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Fecha de compra</dt>
+
+              <dd>
+                {{
+                  formatDate(
+                    equipment.purchase_date
+                  )
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Precio de compra</dt>
+
+              <dd>
+                {{
+                  formatMoney(
+                    equipment.purchase_price,
+                    equipment.purchase_currency
+                  )
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Costo total</dt>
+
+              <dd>
+                {{
+                  formatMoney(
+                    equipment.total_acquisition_cost,
+                    equipment.purchase_currency
+                  )
                 }}
               </dd>
             </div>
@@ -1332,32 +1842,398 @@ onMounted(async () => {
 
         <section class="detail-card">
           <header>
-            <h3>Información técnica adicional</h3>
+            <h3>
+              Venta
+            </h3>
+          </header>
+
+          <dl>
+            <div>
+              <dt>Precio de venta</dt>
+
+              <dd>
+                {{
+                  formatMoney(
+                    equipment.sale_price,
+                    equipment.sale_currency
+                  )
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Factura de venta</dt>
+
+              <dd>
+                {{
+                  equipment.sale_invoice_number ||
+                  "Sin registro"
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Fecha de venta</dt>
+
+              <dd>
+                {{
+                  formatDate(
+                    equipment.sale_date
+                  )
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Fecha de separación</dt>
+
+              <dd>
+                {{
+                  formatDateTime(
+                    equipment.reservation_date
+                  )
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Vencimiento</dt>
+
+              <dd>
+                {{
+                  formatDateTime(
+                    equipment.reservation_expiration_date
+                  )
+                }}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="detail-card">
+          <header>
+            <h3>
+              Red y firmware
+            </h3>
           </header>
 
           <dl>
             <div>
               <dt>Hostname</dt>
-              <dd>{{ equipment.hostname || "Sin registro" }}</dd>
+
+              <dd>
+                {{
+                  equipment.hostname ||
+                  "Sin registro"
+                }}
+              </dd>
             </div>
 
             <div>
               <dt>Dirección IP</dt>
-              <dd>{{ equipment.ip_address || "Sin registro" }}</dd>
+
+              <dd>
+                {{
+                  equipment.ip_address ||
+                  "Sin registro"
+                }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Dirección MAC</dt>
+
+              <dd>
+                {{
+                  equipment.mac_address ||
+                  "Sin registro"
+                }}
+              </dd>
             </div>
 
             <div>
               <dt>Firmware</dt>
-              <dd>{{ equipment.firmware_version || "Sin registro" }}</dd>
-            </div>
 
-            <div>
-              <dt>Código patrimonial</dt>
-              <dd>{{ equipment.asset_number || "Sin registro" }}</dd>
+              <dd>
+                {{
+                  equipment.firmware_version ||
+                  "Sin registro"
+                }}
+              </dd>
             </div>
           </dl>
         </section>
+
+        <section
+          class="detail-card full-width"
+        >
+          <header>
+            <h3>
+              Observaciones
+            </h3>
+          </header>
+
+          <div class="notes-grid">
+            <div>
+              <strong>
+                Configuración recibida
+              </strong>
+
+              <p>
+                {{
+                  equipment.accessories_description ||
+                  "Sin observaciones"
+                }}
+              </p>
+            </div>
+
+            <div>
+              <strong>
+                Observaciones de descarga
+              </strong>
+
+              <p>
+                {{
+                  equipment.unloading_observations ||
+                  "Sin observaciones"
+                }}
+              </p>
+            </div>
+
+            <div>
+              <strong>
+                Notas técnicas
+              </strong>
+
+              <p>
+                {{
+                  equipment.technical_notes ||
+                  "Sin observaciones"
+                }}
+              </p>
+            </div>
+
+            <div>
+              <strong>
+                Notas comerciales
+              </strong>
+
+              <p>
+                {{
+                  equipment.commercial_notes ||
+                  "Sin observaciones"
+                }}
+              </p>
+            </div>
+
+            <div>
+              <strong>
+                Observaciones generales
+              </strong>
+
+              <p>
+                {{
+                  equipment.notes ||
+                  "Sin observaciones"
+                }}
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
+
+      <section
+        v-if="activeTab === 'repairs'"
+        class="tab-card"
+      >
+        <div
+          class="repairs-tab-header"
+        >
+          <div>
+            <strong>
+              Historial de reparaciones
+            </strong>
+
+            <span>
+              {{ repairs.length }}
+              registro(s)
+            </span>
+          </div>
+
+          <button
+            v-if="!hasActiveRepair"
+            class="primary-button"
+            type="button"
+            :disabled="
+              processing ||
+              equipment.is_archived
+            "
+            @click="goToCreateRepair"
+          >
+            Crear reparación
+          </button>
+
+          <button
+            v-else
+            class="primary-button"
+            type="button"
+            :disabled="processing"
+            @click="
+              goToRepair(activeRepair)
+            "
+          >
+            Abrir reparación activa
+          </button>
+        </div>
+
+        <div
+          v-if="loadingRelations"
+          class="tab-loading"
+        >
+          Cargando reparaciones...
+        </div>
+
+        <div
+          v-else-if="!repairs.length"
+          class="empty-state"
+        >
+          No existen reparaciones registradas.
+        </div>
+
+        <div
+          v-else
+          class="table-container"
+        >
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Prioridad</th>
+                <th>Técnico</th>
+                <th>Problema reportado</th>
+                <th>Activa</th>
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr
+                v-for="repair in repairs"
+                :key="repair.id"
+                class="repair-history-row"
+                :class="{
+                  archived:
+                    repair.is_archived,
+                }"
+                @click="goToRepair(repair)"
+              >
+                <td>
+                  <strong
+                    class="repair-code-link"
+                  >
+                    {{ repair.code }}
+                  </strong>
+                </td>
+
+                <td>
+                  {{
+                    formatDateTime(
+                      repair.requested_at
+                    )
+                  }}
+                </td>
+
+                <td>
+                  {{
+                    repair.repair_type_name ||
+                    getRepairTypeName(
+                      repair.repair_type
+                    )
+                  }}
+                </td>
+
+                <td>
+                  <span
+                    class="repair-status-badge"
+                    :class="
+                      getRepairStatusClass(
+                        repair.status
+                      )
+                    "
+                  >
+                    {{
+                      repair.status_name ||
+                      getRepairStatusName(
+                        repair.status
+                      )
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    class="repair-priority-badge"
+                    :class="
+                      getRepairPriorityClass(
+                        repair.priority
+                      )
+                    "
+                  >
+                    {{
+                      repair.priority_name ||
+                      getRepairPriorityName(
+                        repair.priority
+                      )
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  {{
+                    repair.assigned_technician_name ||
+                    "Sin técnico"
+                  }}
+                </td>
+
+                <td>
+                  <span
+                    class="repair-problem-text"
+                  >
+                    {{
+                      repair.reported_problem ||
+                      "Sin problema reportado"
+                    }}
+                  </span>
+                </td>
+
+                <td>
+                  {{
+                    repair.is_active &&
+                    !repair.is_archived
+                      ? "Sí"
+                      : "No"
+                  }}
+                </td>
+
+                <td>
+                  <button
+                    class="table-action-button"
+                    type="button"
+                    @click.stop="
+                      goToRepair(repair)
+                    "
+                  >
+                    Abrir
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section
         v-if="activeTab === 'meters'"
@@ -1366,6 +2242,7 @@ onMounted(async () => {
         <div class="meter-summary">
           <article>
             <small>Total actual</small>
+
             <strong>
               {{
                 formatMeter(
@@ -1377,6 +2254,7 @@ onMounted(async () => {
 
           <article>
             <small>B/N actual</small>
+
             <strong>
               {{
                 formatMeter(
@@ -1388,6 +2266,7 @@ onMounted(async () => {
 
           <article>
             <small>Color actual</small>
+
             <strong>
               {{
                 formatMeter(
@@ -1399,6 +2278,7 @@ onMounted(async () => {
 
           <article>
             <small>Escaneo actual</small>
+
             <strong>
               {{
                 formatMeter(
@@ -1417,7 +2297,9 @@ onMounted(async () => {
         </div>
 
         <div
-          v-else-if="!meterReadings.length"
+          v-else-if="
+            !meterReadings.length
+          "
           class="empty-state"
         >
           No existen lecturas registradas.
@@ -1444,7 +2326,9 @@ onMounted(async () => {
 
             <tbody>
               <tr
-                v-for="reading in meterReadings"
+                v-for="
+                  reading in meterReadings
+                "
                 :key="reading.id"
               >
                 <td>
@@ -1467,7 +2351,8 @@ onMounted(async () => {
                 <td>
                   {{
                     reading.source_name ||
-                    reading.source
+                    reading.source ||
+                    "Sin fuente"
                   }}
                 </td>
 
@@ -1547,11 +2432,15 @@ onMounted(async () => {
           class="timeline"
         >
           <article
-            v-for="movement in movements"
+            v-for="
+              movement in movements
+            "
             :key="movement.id"
             class="timeline-item"
           >
-            <span class="timeline-dot"></span>
+            <span
+              class="timeline-dot"
+            ></span>
 
             <div>
               <header>
@@ -1592,15 +2481,6 @@ onMounted(async () => {
       </section>
 
       <section
-        v-if="activeTab === 'components'"
-        class="detail-section"
-      >
-        <EquipmentComponentsPanel
-          :equipment-id="equipmentId"
-        />
-      </section>
-
-      <section
         v-if="activeTab === 'documents'"
         class="tab-card"
       >
@@ -1623,15 +2503,21 @@ onMounted(async () => {
           class="documents-grid"
         >
           <article
-            v-for="document in documents"
+            v-for="
+              document in documents
+            "
             :key="document.id"
             class="document-card"
           >
-            <div class="document-icon">
+            <div
+              class="document-icon"
+            >
               ▤
             </div>
 
-            <div class="document-information">
+            <div
+              class="document-information"
+            >
               <strong>
                 {{
                   document.title ||
@@ -1657,9 +2543,13 @@ onMounted(async () => {
               </small>
             </div>
 
-            <div class="document-actions">
+            <div
+              class="document-actions"
+            >
               <span
-                v-if="document.is_verified"
+                v-if="
+                  document.is_verified
+                "
                 class="verified-badge"
               >
                 Verificado
@@ -1667,7 +2557,9 @@ onMounted(async () => {
 
               <button
                 type="button"
-                @click="openDocument(document)"
+                @click="
+                  openDocument(document)
+                "
               >
                 Abrir
               </button>
@@ -1677,31 +2569,44 @@ onMounted(async () => {
       </section>
     </template>
 
-
     <Teleport to="body">
       <Transition name="modal-fade">
         <div
           v-if="statusModalOpen"
           class="status-modal-backdrop"
-          @click.self="closeStatusModal"
+          @click.self="
+            closeStatusModal
+          "
         >
           <section
             class="status-modal"
             role="dialog"
             aria-modal="true"
-            :aria-label="statusModalTitle"
+            :aria-label="
+              statusModalTitle
+            "
           >
-            <header class="status-modal-header">
+            <header
+              class="status-modal-header"
+            >
               <div>
-                <span class="status-modal-kicker">
+                <span
+                  class="status-modal-kicker"
+                >
                   Actualización del equipo
                 </span>
 
-                <h3>{{ statusModalTitle }}</h3>
+                <h3>
+                  {{ statusModalTitle }}
+                </h3>
 
                 <p>
                   {{ equipmentName }}
-                  · Serie {{ equipment?.serial_number }}
+                  · Serie
+                  {{
+                    equipment
+                      ?.serial_number
+                  }}
                 </p>
               </div>
 
@@ -1710,7 +2615,9 @@ onMounted(async () => {
                 type="button"
                 :disabled="processing"
                 aria-label="Cerrar"
-                @click="closeStatusModal"
+                @click="
+                  closeStatusModal
+                "
               >
                 ×
               </button>
@@ -1718,7 +2625,9 @@ onMounted(async () => {
 
             <form
               class="status-modal-body"
-              @submit.prevent="submitStatusChange"
+              @submit.prevent="
+                submitStatusChange
+              "
             >
               <div
                 v-if="modalError"
@@ -1727,11 +2636,17 @@ onMounted(async () => {
                 {{ modalError }}
               </div>
 
-              <label class="modal-field">
-                <span>Nuevo estado</span>
+              <label
+                class="modal-field"
+              >
+                <span>
+                  Nuevo estado
+                </span>
 
                 <select
-                  v-model="selectedStatus"
+                  v-model="
+                    selectedStatus
+                  "
                   required
                 >
                   <option value="">
@@ -1739,7 +2654,9 @@ onMounted(async () => {
                   </option>
 
                   <option
-                    v-for="option in statusOptions"
+                    v-for="
+                      option in statusOptions
+                    "
                     :key="option.value"
                     :value="option.value"
                   >
@@ -1748,11 +2665,17 @@ onMounted(async () => {
                 </select>
               </label>
 
-              <label class="modal-field">
-                <span>Motivo del cambio</span>
+              <label
+                class="modal-field"
+              >
+                <span>
+                  Motivo del cambio
+                </span>
 
                 <textarea
-                  v-model="statusReason"
+                  v-model="
+                    statusReason
+                  "
                   rows="4"
                   maxlength="500"
                   placeholder="Describe brevemente por qué se cambia el estado"
@@ -1760,16 +2683,22 @@ onMounted(async () => {
                 ></textarea>
 
                 <small>
-                  {{ statusReason.length }}/500
+                  {{
+                    statusReason.length
+                  }}/500
                 </small>
               </label>
 
-              <footer class="status-modal-actions">
+              <footer
+                class="status-modal-actions"
+              >
                 <button
                   class="modal-secondary-button"
                   type="button"
                   :disabled="processing"
-                  @click="closeStatusModal"
+                  @click="
+                    closeStatusModal
+                  "
                 >
                   Cancelar
                 </button>
@@ -1799,4 +2728,7 @@ onMounted(async () => {
   </section>
 </template>
 
-<style scoped src="./styles/equipment-detail.css"></style>
+<style
+  scoped
+  src="./styles/equipment-detail.css"
+></style>
