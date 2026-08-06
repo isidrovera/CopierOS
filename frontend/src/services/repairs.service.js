@@ -448,20 +448,37 @@ export async function getRepairById(
 export async function getActiveRepairByEquipment(
   equipmentId
 ) {
-  const params =
-    new URLSearchParams()
+  if (
+    equipmentId === undefined ||
+    equipmentId === null ||
+    String(equipmentId).trim() === ""
+  ) {
+    return null
+  }
 
-  addParam(
-    params,
-    "equipment",
-    equipmentId
-  )
+  const response =
+    await getRepairs({
+      equipment: equipmentId,
+      includeArchived: false,
+      isActive: true,
+      ordering: "-requested_at",
+    })
 
-  return request(
-    buildUrl(
-      `${REPAIRS_URL}/active-by-equipment/`,
-      params
-    )
+  const repairs =
+    Array.isArray(response)
+      ? response
+      : Array.isArray(response?.results)
+        ? response.results
+        : []
+
+  return (
+    repairs.find(
+      (repair) =>
+        repair.is_active === true &&
+        repair.is_archived !== true &&
+        !repair.archived_at
+    ) ||
+    null
   )
 }
 

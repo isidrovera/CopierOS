@@ -119,6 +119,7 @@ INSTALLED_APPS = [
     "apps.rentals.apps.RentalsConfig",
     "apps.services.apps.ServicesConfig",
     "apps.monitoring.apps.MonitoringConfig",
+    "apps.attendance.apps.AttendanceConfig",
 ]
 
 
