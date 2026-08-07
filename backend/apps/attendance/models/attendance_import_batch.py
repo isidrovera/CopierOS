@@ -3,375 +3,292 @@
 import uuid
 
 from django.conf import settings
-from django.contrib.contenttypes.fields import (
-    GenericForeignKey,
-)
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
-from .attendance_import_batch import AttendanceImportBatch
 
-
-class AttendanceImportItem(models.Model):
+class AttendanceImportBatch(models.Model):
     """
-    Fila individual perteneciente a un lote de importación.
+    Lote de importación de información del módulo de asistencia.
 
-    Conserva:
+    Permite importar datos desde archivos, dispositivos biométricos,
+    APIs, migraciones y otros sistemas externos.
 
-    - Número de fila original.
-    - Contenido recibido.
-    - Contenido normalizado.
-    - Trabajador identificado.
-    - Dispositivo identificado.
-    - Fecha y hora interpretadas.
-    - Resultado de validación.
-    - Detección de duplicados.
-    - Registro creado o actualizado.
-    - Advertencias y errores.
+    El lote conserva:
+
+    - Archivo o fuente original.
+    - Configuración de interpretación.
+    - Mapeo de columnas.
+    - Reglas de validación.
+    - Reglas de duplicados.
+    - Progreso.
+    - Resultados.
+    - Errores.
+    - Revisión y aprobación.
     - Reintentos.
-    - Revisión manual.
-    - Reversión individual.
-
-    Este modelo permite auditar cada fila sin modificar ni perder
-    el contenido original del archivo o sistema de origen.
+    - Reversión.
+    - Auditoría completa.
     """
 
-    class ItemType(models.TextChoices):
-        ATTENDANCE_RECORD = (
-            "attendance_record",
-            "Marcación de asistencia",
+    class ImportType(models.TextChoices):
+        ATTENDANCE_RECORDS = (
+            "attendance_records",
+            "Marcaciones de asistencia",
         )
-        EMPLOYEE = (
-            "employee",
-            "Trabajador",
+        EMPLOYEES = (
+            "employees",
+            "Trabajadores",
         )
-        WORK_SCHEDULE = (
-            "work_schedule",
-            "Horario",
+        WORK_SCHEDULES = (
+            "work_schedules",
+            "Horarios",
         )
-        SCHEDULE_ASSIGNMENT = (
-            "schedule_assignment",
-            "Asignación de horario",
+        SCHEDULE_ASSIGNMENTS = (
+            "schedule_assignments",
+            "Asignaciones de horario",
         )
-        WORK_LOCATION = (
-            "work_location",
-            "Ubicación de trabajo",
+        WORK_LOCATIONS = (
+            "work_locations",
+            "Ubicaciones de trabajo",
         )
-        DEVICE_PERMISSION = (
-            "device_permission",
-            "Permiso de dispositivo",
+        DEVICE_PERMISSIONS = (
+            "device_permissions",
+            "Permisos de dispositivos",
         )
-        LEAVE_REQUEST = (
-            "leave_request",
-            "Permiso o licencia",
+        LEAVE_REQUESTS = (
+            "leave_requests",
+            "Permisos y licencias",
         )
-        OVERTIME_REQUEST = (
-            "overtime_request",
+        OVERTIME_REQUESTS = (
+            "overtime_requests",
             "Horas extras",
         )
-        OPERATIONAL_SESSION = (
-            "operational_session",
-            "Sesión operativa",
+        OPERATIONAL_SESSIONS = (
+            "operational_sessions",
+            "Sesiones operativas",
         )
-        MONTHLY_SUMMARY = (
-            "monthly_summary",
-            "Resumen mensual",
+        MONTHLY_SUMMARIES = (
+            "monthly_summaries",
+            "Resúmenes mensuales",
         )
         GENERIC = (
             "generic",
-            "Registro genérico",
+            "Importación genérica",
+        )
+
+    class SourceType(models.TextChoices):
+        XLSX = (
+            "xlsx",
+            "Excel XLSX",
+        )
+        XLS = (
+            "xls",
+            "Excel XLS",
+        )
+        CSV = (
+            "csv",
+            "CSV",
+        )
+        JSON = (
+            "json",
+            "JSON",
+        )
+        BIOMETRIC_DEVICE = (
+            "biometric_device",
+            "Dispositivo biométrico",
+        )
+        ATTENDANCE_DEVICE = (
+            "attendance_device",
+            "Dispositivo de asistencia",
+        )
+        EXTERNAL_API = (
+            "external_api",
+            "API externa",
+        )
+        INTERNAL_API = (
+            "internal_api",
+            "API interna",
+        )
+        MANUAL_ENTRY = (
+            "manual_entry",
+            "Registro manual",
+        )
+        DATABASE_MIGRATION = (
+            "database_migration",
+            "Migración de base de datos",
+        )
+        MANAGEMENT_COMMAND = (
+            "management_command",
+            "Comando de administración",
+        )
+        OTHER = (
+            "other",
+            "Otra fuente",
         )
 
     class Status(models.TextChoices):
-        PENDING = (
-            "pending",
-            "Pendiente",
+        DRAFT = (
+            "draft",
+            "Borrador",
         )
-        PARSING = (
-            "parsing",
-            "Interpretando",
+        UPLOADED = (
+            "uploaded",
+            "Archivo recibido",
+        )
+        PENDING_VALIDATION = (
+            "pending_validation",
+            "Pendiente de validación",
         )
         VALIDATING = (
             "validating",
             "Validando",
         )
-        VALID = (
-            "valid",
-            "Válido",
+        VALIDATED = (
+            "validated",
+            "Validado",
         )
-        VALID_WITH_WARNINGS = (
-            "valid_with_warnings",
-            "Válido con observaciones",
-        )
-        INVALID = (
-            "invalid",
-            "Inválido",
-        )
-        DUPLICATE = (
-            "duplicate",
-            "Duplicado",
-        )
-        PENDING_REVIEW = (
-            "pending_review",
-            "Pendiente de revisión",
-        )
-        APPROVED = (
-            "approved",
-            "Aprobado",
+        VALIDATED_WITH_WARNINGS = (
+            "validated_with_warnings",
+            "Validado con observaciones",
         )
         REJECTED = (
             "rejected",
             "Rechazado",
+        )
+        PENDING_IMPORT = (
+            "pending_import",
+            "Pendiente de importación",
         )
         IMPORTING = (
             "importing",
             "Importando",
         )
-        IMPORTED = (
-            "imported",
-            "Importado",
+        COMPLETED = (
+            "completed",
+            "Completado",
         )
-        UPDATED = (
-            "updated",
-            "Actualizado",
-        )
-        UNCHANGED = (
-            "unchanged",
-            "Sin cambios",
-        )
-        SKIPPED = (
-            "skipped",
-            "Omitido",
+        PARTIALLY_COMPLETED = (
+            "partially_completed",
+            "Completado parcialmente",
         )
         FAILED = (
             "failed",
             "Fallido",
         )
-        ROLLED_BACK = (
-            "rolled_back",
-            "Revertido",
+        CANCEL_REQUESTED = (
+            "cancel_requested",
+            "Cancelación solicitada",
         )
         CANCELLED = (
             "cancelled",
             "Cancelado",
         )
-
-    class ValidationResult(models.TextChoices):
-        PENDING = (
-            "pending",
-            "Pendiente",
-        )
-        VALID = (
-            "valid",
-            "Válido",
-        )
-        WARNING = (
-            "warning",
-            "Con observaciones",
-        )
-        INVALID = (
-            "invalid",
-            "Inválido",
-        )
-        DUPLICATE = (
-            "duplicate",
-            "Duplicado",
-        )
-        REVIEW_REQUIRED = (
-            "review_required",
-            "Requiere revisión",
-        )
-
-    class ImportResult(models.TextChoices):
-        PENDING = (
-            "pending",
-            "Pendiente",
-        )
-        CREATED = (
-            "created",
-            "Creado",
-        )
-        UPDATED = (
-            "updated",
-            "Actualizado",
-        )
-        UNCHANGED = (
-            "unchanged",
-            "Sin cambios",
-        )
-        SKIPPED = (
-            "skipped",
-            "Omitido",
-        )
-        REJECTED = (
-            "rejected",
-            "Rechazado",
-        )
-        FAILED = (
-            "failed",
-            "Fallido",
-        )
         ROLLED_BACK = (
             "rolled_back",
             "Revertido",
         )
 
-    class DuplicateMatchType(models.TextChoices):
-        NONE = (
-            "none",
-            "Sin duplicado",
+    class DuplicateAction(models.TextChoices):
+        IGNORE = (
+            "ignore",
+            "Ignorar duplicado",
         )
-        EXACT = (
-            "exact",
-            "Coincidencia exacta",
+        REJECT = (
+            "reject",
+            "Rechazar duplicado",
         )
-        SAME_EMPLOYEE_TIME = (
-            "same_employee_time",
-            "Mismo trabajador y hora",
+        UPDATE = (
+            "update",
+            "Actualizar registro existente",
         )
-        SAME_DEVICE_REFERENCE = (
-            "same_device_reference",
-            "Misma referencia de dispositivo",
+        CREATE_INCIDENT = (
+            "create_incident",
+            "Crear incidencia",
         )
-        SAME_EXTERNAL_REFERENCE = (
-            "same_external_reference",
-            "Misma referencia externa",
-        )
-        SAME_CHECKSUM = (
-            "same_checksum",
-            "Mismo contenido",
-        )
-        POSSIBLE = (
-            "possible",
-            "Posible duplicado",
+        REQUIRE_REVIEW = (
+            "require_review",
+            "Requiere revisión",
         )
 
-    class EmployeeMatchResult(models.TextChoices):
-        PENDING = (
-            "pending",
-            "Pendiente",
+    class InvalidRecordAction(models.TextChoices):
+        REJECT_BATCH = (
+            "reject_batch",
+            "Rechazar todo el lote",
         )
-        MATCHED = (
-            "matched",
-            "Trabajador identificado",
+        SKIP_RECORD = (
+            "skip_record",
+            "Omitir registro",
         )
-        MULTIPLE_MATCHES = (
-            "multiple_matches",
-            "Varias coincidencias",
+        IMPORT_VALID_RECORDS = (
+            "import_valid_records",
+            "Importar registros válidos",
         )
-        NOT_FOUND = (
-            "not_found",
-            "Trabajador no encontrado",
-        )
-        CREATED = (
-            "created",
-            "Trabajador creado",
-        )
-        NOT_REQUIRED = (
-            "not_required",
-            "No requerido",
+        REQUIRE_REVIEW = (
+            "require_review",
+            "Requiere revisión",
         )
 
-    class DeviceMatchResult(models.TextChoices):
-        PENDING = (
-            "pending",
-            "Pendiente",
+    class DateFormat(models.TextChoices):
+        AUTO = (
+            "auto",
+            "Detección automática",
         )
-        MATCHED = (
-            "matched",
-            "Dispositivo identificado",
+        DMY = (
+            "dmy",
+            "Día/Mes/Año",
         )
-        MULTIPLE_MATCHES = (
-            "multiple_matches",
-            "Varias coincidencias",
+        MDY = (
+            "mdy",
+            "Mes/Día/Año",
         )
-        NOT_FOUND = (
-            "not_found",
-            "Dispositivo no encontrado",
+        YMD = (
+            "ymd",
+            "Año/Mes/Día",
         )
-        CREATED = (
-            "created",
-            "Dispositivo registrado",
-        )
-        NOT_REQUIRED = (
-            "not_required",
-            "No requerido",
+        ISO = (
+            "iso",
+            "ISO 8601",
         )
 
-    class ErrorCategory(models.TextChoices):
-        NONE = (
-            "none",
-            "Sin error",
+    class TimeFormat(models.TextChoices):
+        AUTO = (
+            "auto",
+            "Detección automática",
         )
-        FILE_STRUCTURE = (
-            "file_structure",
-            "Estructura de archivo",
+        H24 = (
+            "24h",
+            "24 horas",
         )
-        REQUIRED_FIELD = (
-            "required_field",
-            "Campo obligatorio",
+        H12 = (
+            "12h",
+            "12 horas",
         )
-        INVALID_FORMAT = (
-            "invalid_format",
-            "Formato inválido",
+
+    class EmployeeMatchMode(models.TextChoices):
+        AUTO = (
+            "auto",
+            "Automático",
         )
-        INVALID_DATE = (
-            "invalid_date",
-            "Fecha inválida",
+        EMPLOYEE_CODE = (
+            "employee_code",
+            "Código de trabajador",
         )
-        INVALID_TIME = (
-            "invalid_time",
-            "Hora inválida",
+        USERNAME = (
+            "username",
+            "Usuario",
         )
-        INVALID_DATETIME = (
-            "invalid_datetime",
-            "Fecha y hora inválidas",
+        EMAIL = (
+            "email",
+            "Correo electrónico",
         )
-        INVALID_VALUE = (
-            "invalid_value",
-            "Valor inválido",
+        DOCUMENT_NUMBER = (
+            "document_number",
+            "Documento de identidad",
         )
-        EMPLOYEE_NOT_FOUND = (
-            "employee_not_found",
-            "Trabajador no encontrado",
-        )
-        EMPLOYEE_AMBIGUOUS = (
-            "employee_ambiguous",
-            "Trabajador ambiguo",
-        )
-        DEVICE_NOT_FOUND = (
-            "device_not_found",
-            "Dispositivo no encontrado",
-        )
-        DEVICE_AMBIGUOUS = (
-            "device_ambiguous",
-            "Dispositivo ambiguo",
-        )
-        DUPLICATE = (
-            "duplicate",
-            "Registro duplicado",
-        )
-        PERMISSION_DENIED = (
-            "permission_denied",
-            "Permiso denegado",
-        )
-        BUSINESS_RULE = (
-            "business_rule",
-            "Regla de negocio",
-        )
-        DATABASE = (
-            "database",
-            "Error de base de datos",
-        )
-        SYSTEM = (
-            "system",
-            "Error del sistema",
-        )
-        OTHER = (
-            "other",
-            "Otro error",
+        EXTERNAL_ID = (
+            "external_id",
+            "ID externo",
         )
 
     id = models.UUIDField(
@@ -381,140 +298,44 @@ class AttendanceImportItem(models.Model):
         verbose_name="ID",
     )
 
-    import_batch = models.ForeignKey(
-        AttendanceImportBatch,
-        on_delete=models.PROTECT,
-        related_name="items",
-        verbose_name="Lote de importación",
-    )
-
-    sequence_number = models.PositiveBigIntegerField(
-        default=1,
-        verbose_name="Número de secuencia",
-    )
-
-    source_row_number = models.PositiveBigIntegerField(
-        null=True,
-        blank=True,
+    batch_number = models.CharField(
+        max_length=60,
+        unique=True,
         db_index=True,
-        verbose_name="Número de fila original",
+        verbose_name="Número de lote",
     )
 
-    source_sheet_name = models.CharField(
-        max_length=150,
-        blank=True,
+    name = models.CharField(
+        max_length=255,
         db_index=True,
-        verbose_name="Hoja de origen",
+        verbose_name="Nombre",
     )
 
-    item_type = models.CharField(
+    description = models.TextField(
+        blank=True,
+        verbose_name="Descripción",
+    )
+
+    import_type = models.CharField(
         max_length=40,
-        choices=ItemType.choices,
-        default=ItemType.ATTENDANCE_RECORD,
+        choices=ImportType.choices,
         db_index=True,
-        verbose_name="Tipo de registro",
+        verbose_name="Tipo de importación",
+    )
+
+    source_type = models.CharField(
+        max_length=40,
+        choices=SourceType.choices,
+        db_index=True,
+        verbose_name="Tipo de fuente",
     )
 
     status = models.CharField(
-        max_length=30,
+        max_length=40,
         choices=Status.choices,
-        default=Status.PENDING,
+        default=Status.DRAFT,
         db_index=True,
         verbose_name="Estado",
-    )
-
-    validation_result = models.CharField(
-        max_length=30,
-        choices=ValidationResult.choices,
-        default=ValidationResult.PENDING,
-        db_index=True,
-        verbose_name="Resultado de validación",
-    )
-
-    import_result = models.CharField(
-        max_length=30,
-        choices=ImportResult.choices,
-        default=ImportResult.PENDING,
-        db_index=True,
-        verbose_name="Resultado de importación",
-    )
-
-    raw_data = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Datos originales",
-    )
-
-    normalized_data = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Datos normalizados",
-    )
-
-    transformed_data = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Datos transformados",
-    )
-
-    validated_data = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Datos validados",
-    )
-
-    previous_values = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Valores anteriores",
-    )
-
-    imported_values = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Valores importados",
-    )
-
-    changed_fields = models.JSONField(
-        default=list,
-        blank=True,
-        verbose_name="Campos modificados",
-    )
-
-    employee_profile = models.ForeignKey(
-        "attendance.EmployeeProfile",
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="import_items",
-        verbose_name="Trabajador identificado",
-    )
-
-    employee_match_result = models.CharField(
-        max_length=30,
-        choices=EmployeeMatchResult.choices,
-        default=EmployeeMatchResult.PENDING,
-        db_index=True,
-        verbose_name="Resultado de identificación del trabajador",
-    )
-
-    employee_match_value = models.CharField(
-        max_length=255,
-        blank=True,
-        db_index=True,
-        verbose_name="Valor usado para identificar al trabajador",
-    )
-
-    employee_match_field = models.CharField(
-        max_length=100,
-        blank=True,
-        verbose_name="Campo usado para identificar al trabajador",
-    )
-
-    employee_match_candidates = models.JSONField(
-        default=list,
-        blank=True,
-        verbose_name="Candidatos de trabajador",
     )
 
     attendance_device = models.ForeignKey(
@@ -522,184 +343,356 @@ class AttendanceImportItem(models.Model):
         null=True,
         blank=True,
         on_delete=models.PROTECT,
-        related_name="import_items",
-        verbose_name="Dispositivo identificado",
+        related_name="import_batches",
+        verbose_name="Dispositivo de asistencia",
     )
 
-    device_match_result = models.CharField(
-        max_length=30,
-        choices=DeviceMatchResult.choices,
-        default=DeviceMatchResult.PENDING,
-        db_index=True,
-        verbose_name="Resultado de identificación del dispositivo",
+    processing_run = models.ForeignKey(
+        "attendance.AttendanceProcessingRun",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="import_batches",
+        verbose_name="Ejecución de procesamiento",
     )
 
-    device_match_value = models.CharField(
+    source_file = models.FileField(
+        upload_to="attendance/imports/%Y/%m/",
+        null=True,
+        blank=True,
+        verbose_name="Archivo de origen",
+    )
+
+    original_file_name = models.CharField(
         max_length=255,
         blank=True,
-        db_index=True,
-        verbose_name="Valor usado para identificar el dispositivo",
+        verbose_name="Nombre original del archivo",
     )
 
-    device_match_field = models.CharField(
-        max_length=100,
-        blank=True,
-        verbose_name="Campo usado para identificar el dispositivo",
-    )
-
-    device_match_candidates = models.JSONField(
-        default=list,
-        blank=True,
-        verbose_name="Candidatos de dispositivo",
-    )
-
-    parsed_date = models.DateField(
-        null=True,
+    source_file_extension = models.CharField(
+        max_length=20,
         blank=True,
         db_index=True,
-        verbose_name="Fecha interpretada",
+        verbose_name="Extensión",
     )
 
-    parsed_time = models.TimeField(
-        null=True,
-        blank=True,
-        verbose_name="Hora interpretada",
-    )
-
-    parsed_datetime = models.DateTimeField(
-        null=True,
-        blank=True,
-        db_index=True,
-        verbose_name="Fecha y hora interpretadas",
-    )
-
-    source_timezone_name = models.CharField(
-        max_length=100,
-        blank=True,
-        verbose_name="Zona horaria original",
-    )
-
-    external_reference = models.CharField(
-        max_length=255,
-        blank=True,
-        db_index=True,
-        verbose_name="Referencia externa",
-    )
-
-    device_record_id = models.CharField(
+    source_mime_type = models.CharField(
         max_length=150,
         blank=True,
-        db_index=True,
-        verbose_name="ID de registro del dispositivo",
+        verbose_name="Tipo MIME",
     )
 
-    source_checksum = models.CharField(
+    source_file_size = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Tamaño del archivo",
+    )
+
+    file_checksum = models.CharField(
         max_length=128,
         blank=True,
         db_index=True,
-        verbose_name="Checksum de la fila",
+        verbose_name="Checksum del archivo",
     )
 
-    is_duplicate = models.BooleanField(
-        default=False,
-        db_index=True,
-        verbose_name="Es duplicado",
-    )
-
-    duplicate_match_type = models.CharField(
-        max_length=40,
-        choices=DuplicateMatchType.choices,
-        default=DuplicateMatchType.NONE,
-        db_index=True,
-        verbose_name="Tipo de coincidencia duplicada",
-    )
-
-    duplicate_of_item = models.ForeignKey(
-        "self",
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="duplicate_items",
-        verbose_name="Duplicado de la fila",
-    )
-
-    duplicate_content_type = models.ForeignKey(
-        ContentType,
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="attendance_import_item_duplicates",
-        verbose_name="Tipo de registro duplicado",
-    )
-
-    duplicate_object_id = models.CharField(
-        max_length=100,
+    source_system = models.CharField(
+        max_length=255,
         blank=True,
         db_index=True,
-        verbose_name="ID del registro duplicado",
+        verbose_name="Sistema de origen",
     )
 
-    duplicate_object = GenericForeignKey(
-        "duplicate_content_type",
-        "duplicate_object_id",
-    )
-
-    duplicate_details = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Detalle del duplicado",
-    )
-
-    result_content_type = models.ForeignKey(
-        ContentType,
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="attendance_import_item_results",
-        verbose_name="Tipo de registro resultante",
-    )
-
-    result_object_id = models.CharField(
-        max_length=100,
+    source_reference = models.CharField(
+        max_length=255,
         blank=True,
         db_index=True,
-        verbose_name="ID del registro resultante",
+        verbose_name="Referencia de origen",
     )
 
-    result_object = GenericForeignKey(
-        "result_content_type",
-        "result_object_id",
+    external_batch_id = models.CharField(
+        max_length=255,
+        blank=True,
+        db_index=True,
+        verbose_name="ID de lote externo",
     )
 
-    result_model = models.CharField(
+    sheet_name = models.CharField(
         max_length=150,
         blank=True,
+        verbose_name="Hoja",
+    )
+
+    header_row_number = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Fila de encabezado",
+    )
+
+    first_data_row_number = models.PositiveIntegerField(
+        default=2,
+        verbose_name="Primera fila de datos",
+    )
+
+    delimiter = models.CharField(
+        max_length=10,
+        blank=True,
+        default=",",
+        verbose_name="Separador CSV",
+    )
+
+    encoding = models.CharField(
+        max_length=50,
+        default="utf-8",
+        verbose_name="Codificación",
+    )
+
+    date_format = models.CharField(
+        max_length=20,
+        choices=DateFormat.choices,
+        default=DateFormat.AUTO,
+        verbose_name="Formato de fecha",
+    )
+
+    time_format = models.CharField(
+        max_length=20,
+        choices=TimeFormat.choices,
+        default=TimeFormat.AUTO,
+        verbose_name="Formato de hora",
+    )
+
+    timezone_name = models.CharField(
+        max_length=100,
+        default="America/Lima",
+        verbose_name="Zona horaria",
+    )
+
+    employee_match_mode = models.CharField(
+        max_length=30,
+        choices=EmployeeMatchMode.choices,
+        default=EmployeeMatchMode.AUTO,
+        verbose_name="Modo de identificación de trabajador",
+    )
+
+    duplicate_action = models.CharField(
+        max_length=30,
+        choices=DuplicateAction.choices,
+        default=DuplicateAction.REQUIRE_REVIEW,
+        verbose_name="Acción ante duplicados",
+    )
+
+    invalid_record_action = models.CharField(
+        max_length=30,
+        choices=InvalidRecordAction.choices,
+        default=InvalidRecordAction.IMPORT_VALID_RECORDS,
+        verbose_name="Acción ante registros inválidos",
+    )
+
+    column_mapping = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Mapeo de columnas",
+    )
+
+    normalization_rules = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Reglas de normalización",
+    )
+
+    validation_rules = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Reglas de validación",
+    )
+
+    transformation_rules = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Reglas de transformación",
+    )
+
+    import_options = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Opciones de importación",
+    )
+
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Metadatos",
+    )
+
+    dry_run = models.BooleanField(
+        default=False,
         db_index=True,
-        verbose_name="Modelo resultante",
+        verbose_name="Solo validar",
     )
 
-    result_representation = models.CharField(
-        max_length=500,
-        blank=True,
-        verbose_name="Representación del resultado",
+    allow_updates = models.BooleanField(
+        default=True,
+        verbose_name="Permitir actualizaciones",
     )
 
-    attendance_record = models.ForeignKey(
-        "attendance.AttendanceRecord",
+    allow_create_employees = models.BooleanField(
+        default=False,
+        verbose_name="Permitir creación de trabajadores",
+    )
+
+    allow_create_devices = models.BooleanField(
+        default=False,
+        verbose_name="Permitir creación de dispositivos",
+    )
+
+    stop_on_first_error = models.BooleanField(
+        default=False,
+        verbose_name="Detener en primer error",
+    )
+
+    requires_review = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Requiere revisión",
+    )
+
+    uploaded_at = models.DateTimeField(
         null=True,
         blank=True,
-        on_delete=models.PROTECT,
-        related_name="import_items",
-        verbose_name="Marcación resultante",
+        db_index=True,
+        verbose_name="Archivo recibido el",
     )
 
-    daily_attendance = models.ForeignKey(
-        "attendance.DailyAttendance",
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
         null=True,
         blank=True,
-        on_delete=models.PROTECT,
-        related_name="import_items",
-        verbose_name="Asistencia diaria resultante",
+        on_delete=models.SET_NULL,
+        related_name="attendance_import_batches_uploaded",
+        verbose_name="Cargado por",
+    )
+
+    validation_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Validación iniciada el",
+    )
+
+    validation_finished_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Validación finalizada el",
+    )
+
+    validated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="attendance_import_batches_validated",
+        verbose_name="Validado por",
+    )
+
+    import_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Importación iniciada el",
+    )
+
+    import_finished_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Importación finalizada el",
+    )
+
+    imported_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="attendance_import_batches_imported",
+        verbose_name="Importado por",
+    )
+
+    progress_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        verbose_name="Porcentaje de avance",
+    )
+
+    current_stage = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Etapa actual",
+    )
+
+    total_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Total de filas",
+    )
+
+    processed_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas procesadas",
+    )
+
+    valid_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas válidas",
+    )
+
+    warning_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas con observaciones",
+    )
+
+    invalid_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas inválidas",
+    )
+
+    duplicate_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas duplicadas",
+    )
+
+    imported_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas importadas",
+    )
+
+    updated_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas actualizadas",
+    )
+
+    unchanged_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas sin cambios",
+    )
+
+    skipped_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas omitidas",
+    )
+
+    failed_rows = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name="Filas fallidas",
+    )
+
+    validation_summary = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Resumen de validación",
+    )
+
+    import_summary = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Resumen de importación",
     )
 
     warnings = models.JSONField(
@@ -708,18 +701,10 @@ class AttendanceImportItem(models.Model):
         verbose_name="Advertencias",
     )
 
-    validation_errors = models.JSONField(
+    errors = models.JSONField(
         default=list,
         blank=True,
-        verbose_name="Errores de validación",
-    )
-
-    error_category = models.CharField(
-        max_length=40,
-        choices=ErrorCategory.choices,
-        default=ErrorCategory.NONE,
-        db_index=True,
-        verbose_name="Categoría del error",
+        verbose_name="Errores",
     )
 
     error_code = models.CharField(
@@ -746,17 +731,6 @@ class AttendanceImportItem(models.Model):
         verbose_name="Traza del error",
     )
 
-    requires_review = models.BooleanField(
-        default=False,
-        db_index=True,
-        verbose_name="Requiere revisión",
-    )
-
-    review_reason = models.TextField(
-        blank=True,
-        verbose_name="Motivo de revisión",
-    )
-
     reviewed_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -769,7 +743,7 @@ class AttendanceImportItem(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="attendance_import_items_reviewed",
+        related_name="attendance_import_batches_reviewed",
         verbose_name="Revisado por",
     )
 
@@ -790,100 +764,63 @@ class AttendanceImportItem(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="attendance_import_items_approved",
+        related_name="attendance_import_batches_approved",
         verbose_name="Aprobado por",
     )
 
-    rejected_at = models.DateTimeField(
+    approval_observation = models.TextField(
+        blank=True,
+        verbose_name="Observación de aprobación",
+    )
+
+    cancel_requested_at = models.DateTimeField(
         null=True,
         blank=True,
         db_index=True,
-        verbose_name="Rechazado el",
+        verbose_name="Cancelación solicitada el",
     )
 
-    rejected_by = models.ForeignKey(
+    cancel_requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="attendance_import_items_rejected",
-        verbose_name="Rechazado por",
+        related_name="attendance_import_batches_cancel_requested",
+        verbose_name="Cancelación solicitada por",
     )
 
-    rejection_reason = models.TextField(
-        blank=True,
-        verbose_name="Motivo de rechazo",
-    )
-
-    parsing_started_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name="Interpretación iniciada el",
-    )
-
-    validation_started_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name="Validación iniciada el",
-    )
-
-    validation_finished_at = models.DateTimeField(
+    cancelled_at = models.DateTimeField(
         null=True,
         blank=True,
         db_index=True,
-        verbose_name="Validación finalizada el",
+        verbose_name="Cancelado el",
     )
 
-    import_started_at = models.DateTimeField(
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
         null=True,
         blank=True,
-        verbose_name="Importación iniciada el",
+        on_delete=models.SET_NULL,
+        related_name="attendance_import_batches_cancelled",
+        verbose_name="Cancelado por",
     )
 
-    import_finished_at = models.DateTimeField(
-        null=True,
+    cancellation_reason = models.TextField(
         blank=True,
-        db_index=True,
-        verbose_name="Importación finalizada el",
-    )
-
-    processing_duration_milliseconds = (
-        models.PositiveBigIntegerField(
-            default=0,
-            verbose_name="Duración del procesamiento",
-        )
-    )
-
-    retry_count = models.PositiveSmallIntegerField(
-        default=0,
-        verbose_name="Cantidad de reintentos",
-    )
-
-    maximum_retries = models.PositiveSmallIntegerField(
-        default=0,
-        verbose_name="Máximo de reintentos",
-    )
-
-    next_retry_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        db_index=True,
-        verbose_name="Próximo reintento",
-    )
-
-    retry_of = models.ForeignKey(
-        "self",
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="retry_items",
-        verbose_name="Reintento de",
+        verbose_name="Motivo de cancelación",
     )
 
     rollback_available = models.BooleanField(
         default=False,
         db_index=True,
         verbose_name="Permite reversión",
+    )
+
+    rollback_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Reversión iniciada el",
     )
 
     rolled_back_at = models.DateTimeField(
@@ -898,7 +835,7 @@ class AttendanceImportItem(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="attendance_import_items_rolled_back",
+        related_name="attendance_import_batches_rolled_back",
         verbose_name="Revertido por",
     )
 
@@ -913,6 +850,23 @@ class AttendanceImportItem(models.Model):
         verbose_name="Resultado de reversión",
     )
 
+    retry_count = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name="Cantidad de reintentos",
+    )
+
+    maximum_retries = models.PositiveSmallIntegerField(
+        default=3,
+        verbose_name="Máximo de reintentos",
+    )
+
+    next_retry_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Próximo reintento",
+    )
+
     idempotency_key = models.CharField(
         max_length=255,
         null=True,
@@ -922,10 +876,23 @@ class AttendanceImportItem(models.Model):
         verbose_name="Clave de idempotencia",
     )
 
-    metadata = models.JSONField(
-        default=dict,
+    batch_key = models.CharField(
+        max_length=100,
         blank=True,
-        verbose_name="Metadatos",
+        db_index=True,
+        verbose_name="Clave de agrupación",
+    )
+
+    correlation_id = models.CharField(
+        max_length=100,
+        blank=True,
+        db_index=True,
+        verbose_name="ID de correlación",
+    )
+
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Observaciones",
     )
 
     created_at = models.DateTimeField(
@@ -945,7 +912,7 @@ class AttendanceImportItem(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="attendance_import_items_created",
+        related_name="attendance_import_batches_created",
         verbose_name="Creado por",
     )
 
@@ -954,7 +921,7 @@ class AttendanceImportItem(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="attendance_import_items_updated",
+        related_name="attendance_import_batches_updated",
         verbose_name="Actualizado por",
     )
 
@@ -970,7 +937,7 @@ class AttendanceImportItem(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="attendance_import_items_archived",
+        related_name="attendance_import_batches_archived",
         verbose_name="Archivado por",
     )
 
@@ -980,126 +947,110 @@ class AttendanceImportItem(models.Model):
     )
 
     class Meta:
-        verbose_name = "Fila de importación de asistencia"
-        verbose_name_plural = (
-            "Filas de importación de asistencia"
-        )
+        verbose_name = "Lote de importación de asistencia"
+        verbose_name_plural = "Lotes de importación de asistencia"
 
         ordering = (
-            "import_batch",
-            "sequence_number",
+            "-created_at",
         )
 
         constraints = (
-            models.UniqueConstraint(
-                fields=(
-                    "import_batch",
-                    "sequence_number",
+            models.CheckConstraint(
+                condition=(
+                    models.Q(progress_percentage__gte=0)
+                    & models.Q(progress_percentage__lte=100)
                 ),
-                name="att_iitem_batch_seq_unique",
-            ),
-            models.UniqueConstraint(
-                fields=(
-                    "import_batch",
-                    "source_sheet_name",
-                    "source_row_number",
-                ),
-                condition=models.Q(
-                    source_row_number__isnull=False,
-                ),
-                name="att_iitem_source_row_unique",
+                name="att_imp_progress_range",
             ),
             models.CheckConstraint(
                 condition=models.Q(
-                    retry_count__lte=models.F(
-                        "maximum_retries"
-                    ),
+                    processed_rows__lte=models.F("total_rows")
                 ),
-                name="att_iitem_retry_lte_max",
+                name="att_imp_processed_lte_total",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    valid_rows__lte=models.F("total_rows")
+                ),
+                name="att_imp_valid_lte_total",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    warning_rows__lte=models.F("total_rows")
+                ),
+                name="att_imp_warning_lte_total",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    invalid_rows__lte=models.F("total_rows")
+                ),
+                name="att_imp_invalid_lte_total",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    duplicate_rows__lte=models.F("total_rows")
+                ),
+                name="att_imp_duplicate_lte_total",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    retry_count__lte=models.F("maximum_retries")
+                ),
+                name="att_imp_retry_lte_max",
             ),
         )
 
         indexes = (
             models.Index(
                 fields=(
-                    "import_batch",
+                    "import_type",
                     "status",
-                    "sequence_number",
+                    "created_at",
                 ),
-                name="att_iitem_batch_status_idx",
+                name="att_imp_type_status_idx",
             ),
             models.Index(
                 fields=(
-                    "import_batch",
-                    "validation_result",
-                    "import_result",
-                ),
-                name="att_iitem_results_idx",
-            ),
-            models.Index(
-                fields=(
-                    "source_sheet_name",
-                    "source_row_number",
-                ),
-                name="att_iitem_source_row_idx",
-            ),
-            models.Index(
-                fields=(
-                    "employee_profile",
-                    "parsed_datetime",
+                    "source_type",
                     "status",
+                    "created_at",
                 ),
-                name="att_iitem_emp_datetime_idx",
+                name="att_imp_source_status_idx",
             ),
             models.Index(
                 fields=(
                     "attendance_device",
-                    "device_record_id",
-                ),
-                name="att_iitem_device_record_idx",
-            ),
-            models.Index(
-                fields=(
-                    "employee_match_result",
-                    "device_match_result",
-                ),
-                name="att_iitem_match_results_idx",
-            ),
-            models.Index(
-                fields=(
-                    "is_duplicate",
-                    "duplicate_match_type",
-                ),
-                name="att_iitem_duplicate_idx",
-            ),
-            models.Index(
-                fields=(
-                    "duplicate_content_type",
-                    "duplicate_object_id",
-                ),
-                name="att_iitem_dup_object_idx",
-            ),
-            models.Index(
-                fields=(
-                    "result_content_type",
-                    "result_object_id",
-                ),
-                name="att_iitem_result_object_idx",
-            ),
-            models.Index(
-                fields=(
-                    "attendance_record",
-                    "daily_attendance",
-                ),
-                name="att_iitem_attendance_idx",
-            ),
-            models.Index(
-                fields=(
-                    "error_category",
-                    "error_code",
                     "status",
                 ),
-                name="att_iitem_error_idx",
+                name="att_imp_device_status_idx",
+            ),
+            models.Index(
+                fields=(
+                    "processing_run",
+                    "status",
+                ),
+                name="att_imp_process_status_idx",
+            ),
+            models.Index(
+                fields=(
+                    "uploaded_by",
+                    "uploaded_at",
+                ),
+                name="att_imp_uploaded_idx",
+            ),
+            models.Index(
+                fields=(
+                    "validation_started_at",
+                    "validation_finished_at",
+                ),
+                name="att_imp_validation_idx",
+            ),
+            models.Index(
+                fields=(
+                    "import_started_at",
+                    "import_finished_at",
+                ),
+                name="att_imp_importing_idx",
             ),
             models.Index(
                 fields=(
@@ -1107,7 +1058,14 @@ class AttendanceImportItem(models.Model):
                     "reviewed_at",
                     "status",
                 ),
-                name="att_iitem_review_idx",
+                name="att_imp_review_idx",
+            ),
+            models.Index(
+                fields=(
+                    "rollback_available",
+                    "rolled_back_at",
+                ),
+                name="att_imp_rollback_idx",
             ),
             models.Index(
                 fields=(
@@ -1115,35 +1073,28 @@ class AttendanceImportItem(models.Model):
                     "retry_count",
                     "status",
                 ),
-                name="att_iitem_retry_idx",
+                name="att_imp_retry_idx",
             ),
             models.Index(
                 fields=(
-                    "rollback_available",
-                    "rolled_back_at",
+                    "source_system",
+                    "external_batch_id",
                 ),
-                name="att_iitem_rollback_idx",
+                name="att_imp_external_idx",
             ),
             models.Index(
                 fields=(
-                    "external_reference",
-                    "source_checksum",
+                    "batch_key",
+                    "correlation_id",
                 ),
-                name="att_iitem_external_idx",
+                name="att_imp_batch_corr_idx",
             ),
         )
 
     def __str__(self):
-        row_reference = (
-            f"{self.source_sheet_name}:"
-            f"{self.source_row_number}"
-            if self.source_row_number
-            else f"Secuencia {self.sequence_number}"
-        )
-
         return (
-            f"{self.import_batch.batch_number} - "
-            f"{row_reference} - "
+            f"{self.batch_number} - "
+            f"{self.name} - "
             f"{self.get_status_display()}"
         )
 
@@ -1152,45 +1103,25 @@ class AttendanceImportItem(models.Model):
         return self.archived_at is not None
 
     @property
-    def is_valid(self):
-        return self.validation_result in (
-            self.ValidationResult.VALID,
-            self.ValidationResult.WARNING,
-        )
-
-    @property
     def is_finished(self):
         return self.status in (
-            self.Status.IMPORTED,
-            self.Status.UPDATED,
-            self.Status.UNCHANGED,
-            self.Status.SKIPPED,
-            self.Status.REJECTED,
+            self.Status.COMPLETED,
+            self.Status.PARTIALLY_COMPLETED,
             self.Status.FAILED,
-            self.Status.ROLLED_BACK,
             self.Status.CANCELLED,
-        )
-
-    @property
-    def has_warnings(self):
-        return bool(self.warnings)
-
-    @property
-    def has_errors(self):
-        return bool(
-            self.validation_errors
-            or self.error_message
+            self.Status.REJECTED,
+            self.Status.ROLLED_BACK,
         )
 
     @property
     def can_import(self):
         return (
             self.status in (
-                self.Status.VALID,
-                self.Status.VALID_WITH_WARNINGS,
-                self.Status.APPROVED,
+                self.Status.VALIDATED,
+                self.Status.VALIDATED_WITH_WARNINGS,
+                self.Status.PENDING_IMPORT,
             )
-            and not self.is_duplicate
+            and not self.dry_run
             and self.archived_at is None
         )
 
@@ -1207,71 +1138,45 @@ class AttendanceImportItem(models.Model):
         return (
             self.rollback_available
             and self.status in (
-                self.Status.IMPORTED,
-                self.Status.UPDATED,
+                self.Status.COMPLETED,
+                self.Status.PARTIALLY_COMPLETED,
             )
             and not self.rolled_back_at
             and self.archived_at is None
         )
 
-    @property
-    def result_reference(self):
-        if self.result_model and self.result_object_id:
-            return (
-                f"{self.result_model}:"
-                f"{self.result_object_id}"
-            )
+    def calculate_progress(self):
+        if self.total_rows <= 0:
+            self.progress_percentage = 0
+            return self.progress_percentage
 
-        return ""
-
-    def calculate_processing_duration(self):
-        start_at = (
-            self.parsing_started_at
-            or self.validation_started_at
-            or self.import_started_at
+        self.progress_percentage = min(
+            100,
+            round(
+                (
+                    self.processed_rows
+                    / self.total_rows
+                )
+                * 100,
+                2,
+            ),
         )
 
-        end_at = (
-            self.import_finished_at
-            or self.validation_finished_at
-        )
-
-        if (
-            not start_at
-            or not end_at
-            or end_at <= start_at
-        ):
-            self.processing_duration_milliseconds = 0
-            return 0
-
-        self.processing_duration_milliseconds = int(
-            (
-                end_at - start_at
-            ).total_seconds()
-            * 1000
-        )
-
-        return self.processing_duration_milliseconds
+        return self.progress_percentage
 
     def clean(self):
         super().clean()
 
         errors = {}
 
-        if (
-            self.import_batch_id
-            and self.import_batch.archived_at
-        ):
-            errors["import_batch"] = (
-                "El lote de importación está archivado."
+        if not str(self.batch_number or "").strip():
+            errors["batch_number"] = (
+                "Debes indicar el número de lote."
             )
 
-        if (
-            self.employee_profile_id
-            and self.employee_profile.archived_at
-        ):
-            errors["employee_profile"] = (
-                "El perfil laboral está archivado."
+        if not str(self.name or "").strip():
+            errors["name"] = (
+                "Debes indicar el nombre del lote."
             )
 
         if (
@@ -1279,19 +1184,78 @@ class AttendanceImportItem(models.Model):
             and self.attendance_device.archived_at
         ):
             errors["attendance_device"] = (
-                "El dispositivo está archivado."
+                "El dispositivo seleccionado está archivado."
+            )
+
+        if (
+            self.processing_run_id
+            and self.processing_run.archived_at
+        ):
+            errors["processing_run"] = (
+                "La ejecución de procesamiento está archivada."
+            )
+
+        file_source_types = (
+            self.SourceType.XLSX,
+            self.SourceType.XLS,
+            self.SourceType.CSV,
+            self.SourceType.JSON,
+        )
+
+        if (
+            self.source_type in file_source_types
+            and self.status != self.Status.DRAFT
+            and not self.source_file
+        ):
+            errors["source_file"] = (
+                "Este tipo de importación requiere "
+                "un archivo de origen."
+            )
+
+        if (
+            self.source_type
+            == self.SourceType.ATTENDANCE_DEVICE
+            and not self.attendance_device_id
+        ):
+            errors["attendance_device"] = (
+                "Debes indicar el dispositivo de asistencia."
+            )
+
+        if self.header_row_number < 1:
+            errors["header_row_number"] = (
+                "La fila de encabezado debe ser mayor que cero."
+            )
+
+        if self.first_data_row_number < 1:
+            errors["first_data_row_number"] = (
+                "La primera fila de datos debe ser mayor que cero."
+            )
+
+        if (
+            self.source_type
+            in (
+                self.SourceType.XLSX,
+                self.SourceType.XLS,
+                self.SourceType.CSV,
+            )
+            and self.first_data_row_number
+            <= self.header_row_number
+        ):
+            errors["first_data_row_number"] = (
+                "La primera fila de datos debe estar después "
+                "de la fila de encabezado."
             )
 
         json_object_fields = (
-            "raw_data",
-            "normalized_data",
-            "transformed_data",
-            "validated_data",
-            "previous_values",
-            "imported_values",
-            "duplicate_details",
-            "rollback_result",
+            "column_mapping",
+            "normalization_rules",
+            "validation_rules",
+            "transformation_rules",
+            "import_options",
             "metadata",
+            "validation_summary",
+            "import_summary",
+            "rollback_result",
         )
 
         for field_name in json_object_fields:
@@ -1304,11 +1268,8 @@ class AttendanceImportItem(models.Model):
                 )
 
         json_list_fields = (
-            "changed_fields",
-            "employee_match_candidates",
-            "device_match_candidates",
             "warnings",
-            "validation_errors",
+            "errors",
         )
 
         for field_name in json_list_fields:
@@ -1320,286 +1281,49 @@ class AttendanceImportItem(models.Model):
                     "El valor debe ser una lista JSON."
                 )
 
-        if (
-            self.employee_match_result
-            == self.EmployeeMatchResult.MATCHED
-            and not self.employee_profile_id
-        ):
-            errors["employee_profile"] = (
-                "Debes vincular el trabajador identificado."
-            )
+        count_fields = (
+            "processed_rows",
+            "valid_rows",
+            "warning_rows",
+            "invalid_rows",
+            "duplicate_rows",
+            "imported_rows",
+            "updated_rows",
+            "unchanged_rows",
+            "skipped_rows",
+            "failed_rows",
+        )
 
-        if (
-            self.employee_match_result
-            == self.EmployeeMatchResult.CREATED
-            and not self.employee_profile_id
-        ):
-            errors["employee_profile"] = (
-                "Debes vincular el trabajador creado."
-            )
-
-        if (
-            self.employee_match_result
-            == self.EmployeeMatchResult.MULTIPLE_MATCHES
-            and not self.employee_match_candidates
-        ):
-            errors["employee_match_candidates"] = (
-                "Debes registrar las coincidencias encontradas."
-            )
-
-        if (
-            self.device_match_result
-            == self.DeviceMatchResult.MATCHED
-            and not self.attendance_device_id
-        ):
-            errors["attendance_device"] = (
-                "Debes vincular el dispositivo identificado."
-            )
-
-        if (
-            self.device_match_result
-            == self.DeviceMatchResult.CREATED
-            and not self.attendance_device_id
-        ):
-            errors["attendance_device"] = (
-                "Debes vincular el dispositivo registrado."
-            )
-
-        if (
-            self.device_match_result
-            == self.DeviceMatchResult.MULTIPLE_MATCHES
-            and not self.device_match_candidates
-        ):
-            errors["device_match_candidates"] = (
-                "Debes registrar los dispositivos encontrados."
-            )
-
-        if (
-            self.parsed_datetime
-            and self.parsed_date
-            and self.parsed_datetime.date()
-            != self.parsed_date
-        ):
-            errors["parsed_date"] = (
-                "La fecha interpretada no coincide con "
-                "la fecha y hora."
-            )
-
-        if (
-            self.parsed_datetime
-            and self.parsed_time
-            and self.parsed_datetime.time().replace(
-                tzinfo=None,
-            )
-            != self.parsed_time.replace(
-                tzinfo=None,
-            )
-        ):
-            errors["parsed_time"] = (
-                "La hora interpretada no coincide con "
-                "la fecha y hora."
-            )
-
-        if bool(self.duplicate_content_type_id) != bool(
-            self.duplicate_object_id
-        ):
-            errors["duplicate_object_id"] = (
-                "Debes registrar tanto el tipo como el ID "
-                "del objeto duplicado."
-            )
-
-        if bool(self.result_content_type_id) != bool(
-            self.result_object_id
-        ):
-            errors["result_object_id"] = (
-                "Debes registrar tanto el tipo como el ID "
-                "del registro resultante."
-            )
-
-        if self.is_duplicate:
-            if (
-                self.duplicate_match_type
-                == self.DuplicateMatchType.NONE
-            ):
-                errors["duplicate_match_type"] = (
-                    "Debes indicar el tipo de duplicado."
+        for field_name in count_fields:
+            if getattr(self, field_name) > self.total_rows:
+                errors[field_name] = (
+                    "El valor no puede superar "
+                    "el total de filas."
                 )
-
-            if not any(
-                (
-                    self.duplicate_of_item_id,
-                    self.duplicate_content_type_id,
-                    self.duplicate_details,
-                )
-            ):
-                errors["duplicate_details"] = (
-                    "Debes registrar la referencia "
-                    "del duplicado."
-                )
-
-        elif (
-            self.duplicate_match_type
-            != self.DuplicateMatchType.NONE
-        ):
-            errors["duplicate_match_type"] = (
-                "Una fila no duplicada debe tener "
-                "el tipo 'Sin duplicado'."
-            )
-
-        if (
-            self.duplicate_of_item_id
-            and self.duplicate_of_item_id == self.id
-        ):
-            errors["duplicate_of_item"] = (
-                "Una fila no puede ser duplicada de sí misma."
-            )
-
-        if (
-            self.duplicate_of_item_id
-            and self.duplicate_of_item.import_batch_id
-            != self.import_batch_id
-        ):
-            errors["duplicate_of_item"] = (
-                "La fila duplicada debe pertenecer "
-                "al mismo lote."
-            )
-
-        if (
-            self.status == self.Status.PARSING
-            and not self.parsing_started_at
-        ):
-            errors["parsing_started_at"] = (
-                "Una fila en interpretación debe registrar "
-                "la fecha de inicio."
-            )
 
         if (
             self.status == self.Status.VALIDATING
             and not self.validation_started_at
         ):
             errors["validation_started_at"] = (
-                "Una fila en validación debe registrar "
+                "Una importación en validación debe registrar "
                 "la fecha de inicio."
             )
 
         if (
             self.status in (
-                self.Status.VALID,
-                self.Status.VALID_WITH_WARNINGS,
-                self.Status.INVALID,
-                self.Status.DUPLICATE,
-                self.Status.PENDING_REVIEW,
-                self.Status.APPROVED,
-                self.Status.REJECTED,
+                self.Status.VALIDATED,
+                self.Status.VALIDATED_WITH_WARNINGS,
+                self.Status.PENDING_IMPORT,
                 self.Status.IMPORTING,
-                self.Status.IMPORTED,
-                self.Status.UPDATED,
-                self.Status.UNCHANGED,
-                self.Status.SKIPPED,
-                self.Status.FAILED,
+                self.Status.COMPLETED,
+                self.Status.PARTIALLY_COMPLETED,
             )
             and not self.validation_finished_at
         ):
             errors["validation_finished_at"] = (
-                "La fila debe registrar la finalización "
+                "El lote debe registrar la finalización "
                 "de la validación."
-            )
-
-        if (
-            self.status == self.Status.VALID
-            and self.validation_result
-            != self.ValidationResult.VALID
-        ):
-            errors["validation_result"] = (
-                "El estado válido requiere resultado válido."
-            )
-
-        if (
-            self.status == self.Status.VALID_WITH_WARNINGS
-            and self.validation_result
-            != self.ValidationResult.WARNING
-        ):
-            errors["validation_result"] = (
-                "El estado con observaciones requiere "
-                "resultado con observaciones."
-            )
-
-        if (
-            self.status == self.Status.VALID_WITH_WARNINGS
-            and not self.warnings
-        ):
-            errors["warnings"] = (
-                "Debes registrar al menos una observación."
-            )
-
-        if (
-            self.status == self.Status.INVALID
-            and self.validation_result
-            != self.ValidationResult.INVALID
-        ):
-            errors["validation_result"] = (
-                "El estado inválido requiere resultado inválido."
-            )
-
-        if (
-            self.status == self.Status.INVALID
-            and not self.validation_errors
-        ):
-            errors["validation_errors"] = (
-                "Debes registrar los errores de validación."
-            )
-
-        if (
-            self.status == self.Status.DUPLICATE
-            and self.validation_result
-            != self.ValidationResult.DUPLICATE
-        ):
-            errors["validation_result"] = (
-                "El estado duplicado requiere "
-                "resultado duplicado."
-            )
-
-        if (
-            self.status == self.Status.PENDING_REVIEW
-            and self.validation_result
-            != self.ValidationResult.REVIEW_REQUIRED
-        ):
-            errors["validation_result"] = (
-                "La revisión pendiente requiere "
-                "resultado de revisión."
-            )
-
-        if (
-            self.requires_review
-            and not self.review_reason.strip()
-        ):
-            errors["review_reason"] = (
-                "Debes indicar el motivo de revisión."
-            )
-
-        if (
-            self.reviewed_at
-            and not self.reviewed_by_id
-        ):
-            errors["reviewed_by"] = (
-                "Debes indicar quién revisó la fila."
-            )
-
-        if (
-            self.status == self.Status.APPROVED
-            and not self.approved_at
-        ):
-            errors["approved_at"] = (
-                "Una fila aprobada debe registrar "
-                "la fecha de aprobación."
-            )
-
-        if (
-            self.status == self.Status.REJECTED
-            and not self.rejection_reason.strip()
-        ):
-            errors["rejection_reason"] = (
-                "Debes indicar el motivo de rechazo."
             )
 
         if (
@@ -1607,127 +1331,97 @@ class AttendanceImportItem(models.Model):
             and not self.import_started_at
         ):
             errors["import_started_at"] = (
-                "Una fila en importación debe registrar "
+                "Una importación activa debe registrar "
                 "la fecha de inicio."
-            )
-
-        if self.status in (
-            self.Status.IMPORTED,
-            self.Status.UPDATED,
-            self.Status.UNCHANGED,
-            self.Status.SKIPPED,
-            self.Status.FAILED,
-            self.Status.ROLLED_BACK,
-        ) and not self.import_finished_at:
-            errors["import_finished_at"] = (
-                "La fila finalizada debe registrar "
-                "el fin de importación."
-            )
-
-        import_result_by_status = {
-            self.Status.IMPORTED: (
-                self.ImportResult.CREATED
-            ),
-            self.Status.UPDATED: (
-                self.ImportResult.UPDATED
-            ),
-            self.Status.UNCHANGED: (
-                self.ImportResult.UNCHANGED
-            ),
-            self.Status.SKIPPED: (
-                self.ImportResult.SKIPPED
-            ),
-            self.Status.REJECTED: (
-                self.ImportResult.REJECTED
-            ),
-            self.Status.FAILED: (
-                self.ImportResult.FAILED
-            ),
-            self.Status.ROLLED_BACK: (
-                self.ImportResult.ROLLED_BACK
-            ),
-        }
-
-        expected_import_result = import_result_by_status.get(
-            self.status
-        )
-
-        if (
-            expected_import_result
-            and self.import_result
-            != expected_import_result
-        ):
-            errors["import_result"] = (
-                "El resultado de importación no corresponde "
-                "al estado de la fila."
-            )
-
-        if (
-            self.status == self.Status.FAILED
-            and not self.error_message.strip()
-        ):
-            errors["error_message"] = (
-                "Una fila fallida debe registrar el error."
-            )
-
-        if (
-            self.status == self.Status.FAILED
-            and self.error_category
-            == self.ErrorCategory.NONE
-        ):
-            errors["error_category"] = (
-                "Debes indicar la categoría del error."
             )
 
         if (
             self.status in (
-                self.Status.IMPORTED,
-                self.Status.UPDATED,
+                self.Status.COMPLETED,
+                self.Status.PARTIALLY_COMPLETED,
             )
-            and not any(
-                (
-                    self.result_content_type_id,
-                    self.attendance_record_id,
-                    self.daily_attendance_id,
-                )
-            )
+            and not self.import_finished_at
         ):
-            errors["result_object_id"] = (
-                "Debes registrar el objeto creado "
-                "o actualizado."
+            errors["import_finished_at"] = (
+                "Una importación finalizada debe registrar "
+                "la fecha de finalización."
             )
 
         if (
-            self.attendance_record_id
-            and self.employee_profile_id
-            and self.attendance_record.employee_profile_id
-            != self.employee_profile_id
+            self.status == self.Status.FAILED
+            and not str(self.error_message or "").strip()
         ):
-            errors["attendance_record"] = (
-                "La marcación resultante no corresponde "
-                "al trabajador identificado."
+            errors["error_message"] = (
+                "Un lote fallido debe registrar el error."
             )
 
         if (
-            self.daily_attendance_id
-            and self.employee_profile_id
-            and self.daily_attendance.employee_profile_id
-            != self.employee_profile_id
+            self.requires_review
+            and not self.reviewed_at
+            and self.status
+            in (
+                self.Status.PENDING_IMPORT,
+                self.Status.COMPLETED,
+                self.Status.PARTIALLY_COMPLETED,
+            )
         ):
-            errors["daily_attendance"] = (
-                "La asistencia diaria no corresponde "
-                "al trabajador identificado."
+            errors["reviewed_at"] = (
+                "El lote requiere revisión antes "
+                "de continuar."
             )
 
         if (
-            self.daily_attendance_id
-            and self.parsed_date
-            and self.daily_attendance.date
-            != self.parsed_date
+            self.reviewed_at
+            and not self.reviewed_by_id
         ):
-            errors["daily_attendance"] = (
-                "La asistencia diaria no corresponde "
-                "a la fecha interpretada."
+            errors["reviewed_by"] = (
+                "Debes indicar quién revisó el lote."
+            )
+
+        if (
+            self.approved_at
+            and not self.approved_by_id
+        ):
+            errors["approved_by"] = (
+                "Debes indicar quién aprobó el lote."
+            )
+
+        if (
+            self.status in (
+                self.Status.CANCEL_REQUESTED,
+                self.Status.CANCELLED,
+            )
+            and not str(
+                self.cancellation_reason or ""
+            ).strip()
+        ):
+            errors["cancellation_reason"] = (
+                "Debes indicar el motivo de cancelación."
+            )
+
+        if (
+            self.status == self.Status.CANCELLED
+            and not self.cancelled_at
+        ):
+            errors["cancelled_at"] = (
+                "Un lote cancelado debe registrar "
+                "la fecha de cancelación."
+            )
+
+        if (
+            self.rolled_back_at
+            and not self.rolled_back_by_id
+        ):
+            errors["rolled_back_by"] = (
+                "Debes indicar quién realizó la reversión."
+            )
+
+        if (
+            self.rolled_back_at
+            and not str(self.rollback_reason or "").strip()
+        ):
+            errors["rollback_reason"] = (
+                "Debes indicar el motivo de reversión."
             )
 
         if self.retry_count > self.maximum_retries:
@@ -1744,104 +1438,63 @@ class AttendanceImportItem(models.Model):
                 "No puedes programar otro reintento."
             )
 
-        if (
-            self.retry_of_id
-            and self.retry_of_id == self.id
-        ):
-            errors["retry_of"] = (
-                "Una fila no puede ser reintento de sí misma."
-            )
-
-        if (
-            self.retry_of_id
-            and self.retry_of.import_batch_id
-            != self.import_batch_id
-        ):
-            errors["retry_of"] = (
-                "La fila original debe pertenecer "
-                "al mismo lote."
-            )
-
-        if (
-            self.rolled_back_at
-            and not self.rolled_back_by_id
-        ):
-            errors["rolled_back_by"] = (
-                "Debes indicar quién realizó la reversión."
-            )
-
-        if (
-            self.rolled_back_at
-            and not self.rollback_reason.strip()
-        ):
-            errors["rollback_reason"] = (
-                "Debes indicar el motivo de reversión."
-            )
-
-        if (
-            self.rolled_back_at
-            and not self.rollback_available
-        ):
-            errors["rollback_available"] = (
-                "La fila no estaba habilitada para reversión."
-            )
-
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
-        self.source_sheet_name = str(
-            self.source_sheet_name or ""
+        self.batch_number = str(
+            self.batch_number or ""
+        ).strip().upper()
+
+        self.name = str(
+            self.name or ""
         ).strip()
 
-        self.employee_match_value = str(
-            self.employee_match_value or ""
+        self.description = str(
+            self.description or ""
         ).strip()
 
-        self.employee_match_field = str(
-            self.employee_match_field or ""
+        self.original_file_name = str(
+            self.original_file_name or ""
         ).strip()
 
-        self.device_match_value = str(
-            self.device_match_value or ""
+        self.source_file_extension = str(
+            self.source_file_extension or ""
+        ).strip().lower().lstrip(".")
+
+        self.source_mime_type = str(
+            self.source_mime_type or ""
+        ).strip().lower()
+
+        self.file_checksum = str(
+            self.file_checksum or ""
         ).strip()
 
-        self.device_match_field = str(
-            self.device_match_field or ""
+        self.source_system = str(
+            self.source_system or ""
         ).strip()
 
-        self.external_reference = str(
-            self.external_reference or ""
+        self.source_reference = str(
+            self.source_reference or ""
         ).strip()
 
-        self.device_record_id = str(
-            self.device_record_id or ""
+        self.external_batch_id = str(
+            self.external_batch_id or ""
         ).strip()
 
-        self.source_checksum = str(
-            self.source_checksum or ""
+        self.sheet_name = str(
+            self.sheet_name or ""
         ).strip()
 
-        if self.result_content_type_id:
-            self.result_model = (
-                f"{self.result_content_type.app_label}."
-                f"{self.result_content_type.model}"
-            )
+        self.encoding = str(
+            self.encoding or "utf-8"
+        ).strip()
 
-        if (
-            self.result_object is not None
-            and not self.result_representation
-        ):
-            self.result_representation = str(
-                self.result_object
-            )[:500]
+        self.timezone_name = str(
+            self.timezone_name or "America/Lima"
+        ).strip()
 
-        if (
-            self.validation_finished_at
-            or self.import_finished_at
-        ):
-            self.calculate_processing_duration()
-
+        self.calculate_progress()
         self.full_clean()
 
         super().save(
@@ -1849,239 +1502,200 @@ class AttendanceImportItem(models.Model):
             **kwargs,
         )
 
-    def start_parsing(
+    def mark_uploaded(
         self,
+        *,
         user=None,
+        source_file=None,
+        original_file_name="",
+        mime_type="",
+        file_size=0,
+        checksum="",
     ):
-        if self.status != self.Status.PENDING:
+        if self.status != self.Status.DRAFT:
             raise ValidationError(
-                "Solo puedes interpretar una fila pendiente."
+                "Solo puedes cargar un archivo "
+                "en un lote en borrador."
             )
 
-        self.status = self.Status.PARSING
-        self.parsing_started_at = timezone.now()
+        if source_file is not None:
+            self.source_file = source_file
+
+        self.original_file_name = str(
+            original_file_name or ""
+        ).strip()
+
+        self.source_mime_type = str(
+            mime_type or ""
+        ).strip()
+
+        self.source_file_size = max(
+            0,
+            file_size,
+        )
+
+        self.file_checksum = str(
+            checksum or ""
+        ).strip()
+
+        if "." in self.original_file_name:
+            self.source_file_extension = (
+                self.original_file_name.rsplit(
+                    ".",
+                    1,
+                )[-1].lower()
+            )
+
+        self.status = self.Status.UPLOADED
+        self.uploaded_at = timezone.now()
+        self.uploaded_by = user
         self.updated_by = user
 
         self.save()
 
     def start_validation(
         self,
+        *,
+        total_rows=0,
         user=None,
     ):
         if self.status not in (
-            self.Status.PENDING,
-            self.Status.PARSING,
+            self.Status.DRAFT,
+            self.Status.UPLOADED,
+            self.Status.PENDING_VALIDATION,
             self.Status.FAILED,
         ):
             raise ValidationError(
-                "La fila no está disponible para validación."
+                "El lote no está disponible para validación."
+            )
+
+        if total_rows < 0:
+            raise ValidationError(
+                "El total de filas no puede ser negativo."
             )
 
         self.status = self.Status.VALIDATING
-        self.validation_result = (
-            self.ValidationResult.PENDING
-        )
         self.validation_started_at = timezone.now()
         self.validation_finished_at = None
+        self.total_rows = total_rows
+        self.processed_rows = 0
+        self.valid_rows = 0
+        self.warning_rows = 0
+        self.invalid_rows = 0
+        self.duplicate_rows = 0
+        self.current_stage = "Validando registros"
+        self.progress_percentage = 0
+        self.validation_summary = {}
         self.warnings = []
-        self.validation_errors = []
-        self.error_category = self.ErrorCategory.NONE
+        self.errors = []
         self.error_code = ""
         self.error_message = ""
         self.exception_type = ""
         self.stack_trace = ""
+        self.next_retry_at = None
         self.updated_by = user
 
         self.save()
 
-    def mark_valid(
+    def update_validation_progress(
         self,
         *,
-        validated_data=None,
-        user=None,
+        processed_increment=0,
+        valid_increment=0,
+        warning_increment=0,
+        invalid_increment=0,
+        duplicate_increment=0,
+        current_stage="",
     ):
         if self.status != self.Status.VALIDATING:
             raise ValidationError(
-                "La fila no está validándose."
+                "El lote no está en validación."
             )
 
-        self.status = self.Status.VALID
-        self.validation_result = (
-            self.ValidationResult.VALID
+        increments = (
+            processed_increment,
+            valid_increment,
+            warning_increment,
+            invalid_increment,
+            duplicate_increment,
         )
-        self.validated_data = validated_data or {}
-        self.validation_finished_at = timezone.now()
-        self.requires_review = False
-        self.review_reason = ""
-        self.error_category = self.ErrorCategory.NONE
-        self.error_code = ""
-        self.error_message = ""
-        self.updated_by = user
 
+        if any(
+            value < 0
+            for value in increments
+        ):
+            raise ValidationError(
+                "Los incrementos no pueden ser negativos."
+            )
+
+        self.processed_rows += processed_increment
+        self.valid_rows += valid_increment
+        self.warning_rows += warning_increment
+        self.invalid_rows += invalid_increment
+        self.duplicate_rows += duplicate_increment
+
+        if current_stage:
+            self.current_stage = str(
+                current_stage
+            ).strip()
+
+        self.calculate_progress()
         self.save()
 
-    def mark_valid_with_warnings(
+    def finish_validation(
         self,
         *,
-        warnings,
-        validated_data=None,
+        summary=None,
+        warnings=None,
+        errors=None,
         requires_review=False,
-        review_reason="",
         user=None,
     ):
-        warnings = list(
-            warnings or []
-        )
-
-        if not warnings:
-            raise ValidationError(
-                "Debes registrar al menos una advertencia."
-            )
-
         if self.status != self.Status.VALIDATING:
             raise ValidationError(
-                "La fila no está validándose."
+                "El lote no está en validación."
             )
 
-        self.validation_result = (
-            self.ValidationResult.WARNING
-        )
-        self.validated_data = validated_data or {}
         self.validation_finished_at = timezone.now()
-        self.warnings = warnings
+        self.validated_by = user
+        self.validation_summary = summary or {}
+        self.warnings = warnings or []
+        self.errors = errors or []
         self.requires_review = requires_review
-        self.review_reason = str(
-            review_reason or ""
-        ).strip()
-        self.updated_by = user
+        self.current_stage = "Validación finalizada"
 
-        if requires_review:
-            self.status = self.Status.PENDING_REVIEW
-            self.validation_result = (
-                self.ValidationResult.REVIEW_REQUIRED
-            )
-
-            if not self.review_reason:
-                self.review_reason = (
-                    "La fila contiene observaciones "
-                    "que requieren revisión."
+        if self.invalid_rows > 0:
+            if (
+                self.invalid_record_action
+                == self.InvalidRecordAction.REJECT_BATCH
+            ):
+                self.status = self.Status.REJECTED
+            else:
+                self.status = (
+                    self.Status.VALIDATED_WITH_WARNINGS
                 )
-        else:
+        elif (
+            self.warning_rows > 0
+            or self.duplicate_rows > 0
+            or self.warnings
+        ):
             self.status = (
-                self.Status.VALID_WITH_WARNINGS
+                self.Status.VALIDATED_WITH_WARNINGS
             )
-
-        self.save()
-
-    def mark_invalid(
-        self,
-        *,
-        validation_errors,
-        error_category=ErrorCategory.INVALID_VALUE,
-        error_code="",
-        error_message="",
-        user=None,
-    ):
-        validation_errors = list(
-            validation_errors or []
-        )
-
-        if not validation_errors:
-            raise ValidationError(
-                "Debes registrar al menos un error "
-                "de validación."
-            )
-
-        if self.status != self.Status.VALIDATING:
-            raise ValidationError(
-                "La fila no está validándose."
-            )
-
-        self.status = self.Status.INVALID
-        self.validation_result = (
-            self.ValidationResult.INVALID
-        )
-        self.validation_finished_at = timezone.now()
-        self.validation_errors = validation_errors
-        self.error_category = error_category
-        self.error_code = str(
-            error_code or ""
-        ).strip()
-        self.error_message = str(
-            error_message
-            or "La fila contiene información inválida."
-        ).strip()
-        self.updated_by = user
-
-        self.save()
-
-    def mark_duplicate(
-        self,
-        *,
-        duplicate_match_type,
-        duplicate_of_item=None,
-        duplicate_object=None,
-        duplicate_details=None,
-        user=None,
-    ):
-        if self.status not in (
-            self.Status.PENDING,
-            self.Status.PARSING,
-            self.Status.VALIDATING,
-        ):
-            raise ValidationError(
-                "La fila no puede marcarse como duplicada."
-            )
-
-        if duplicate_match_type == (
-            self.DuplicateMatchType.NONE
-        ):
-            raise ValidationError(
-                "Debes indicar el tipo de duplicado."
-            )
-
-        duplicate_content_type = None
-        duplicate_object_id = ""
-
-        if duplicate_object is not None:
-            duplicate_content_type = (
-                ContentType.objects.get_for_model(
-                    duplicate_object,
-                    for_concrete_model=False,
-                )
-            )
-            duplicate_object_id = str(
-                duplicate_object.pk
-            )
+        else:
+            self.status = self.Status.VALIDATED
 
         if (
-            duplicate_of_item is None
-            and duplicate_object is None
-            and not duplicate_details
-        ):
-            raise ValidationError(
-                "Debes indicar la referencia del duplicado."
+            not self.dry_run
+            and self.status
+            in (
+                self.Status.VALIDATED,
+                self.Status.VALIDATED_WITH_WARNINGS,
             )
+            and not requires_review
+        ):
+            self.status = self.Status.PENDING_IMPORT
 
-        self.status = self.Status.DUPLICATE
-        self.validation_result = (
-            self.ValidationResult.DUPLICATE
-        )
-        self.validation_finished_at = timezone.now()
-        self.is_duplicate = True
-        self.duplicate_match_type = (
-            duplicate_match_type
-        )
-        self.duplicate_of_item = duplicate_of_item
-        self.duplicate_content_type = (
-            duplicate_content_type
-        )
-        self.duplicate_object_id = (
-            duplicate_object_id
-        )
-        self.duplicate_details = (
-            duplicate_details or {}
-        )
         self.updated_by = user
 
         self.save()
@@ -2091,290 +1705,156 @@ class AttendanceImportItem(models.Model):
         *,
         user,
         observation="",
-        validated_data=None,
     ):
         if self.status not in (
-            self.Status.PENDING_REVIEW,
-            self.Status.VALID_WITH_WARNINGS,
+            self.Status.VALIDATED,
+            self.Status.VALIDATED_WITH_WARNINGS,
+            self.Status.PENDING_IMPORT,
         ):
             raise ValidationError(
-                "La fila no está pendiente de aprobación."
+                "El lote no está disponible para aprobación."
             )
 
-        self.status = self.Status.APPROVED
-        self.validation_result = (
-            self.ValidationResult.WARNING
-            if self.warnings
-            else self.ValidationResult.VALID
-        )
+        now = timezone.now()
+
         self.requires_review = False
-        self.reviewed_at = timezone.now()
+        self.reviewed_at = now
         self.reviewed_by = user
         self.review_observation = str(
             observation or ""
         ).strip()
-        self.approved_at = timezone.now()
+
+        self.approved_at = now
         self.approved_by = user
-
-        if validated_data is not None:
-            self.validated_data = validated_data
-
-        self.updated_by = user
-
-        self.save()
-
-    def reject(
-        self,
-        *,
-        user,
-        reason,
-    ):
-        reason = str(
-            reason or ""
+        self.approval_observation = str(
+            observation or ""
         ).strip()
 
-        if not reason:
-            raise ValidationError(
-                "Debes indicar el motivo de rechazo."
-            )
+        if not self.dry_run:
+            self.status = self.Status.PENDING_IMPORT
 
-        if self.status not in (
-            self.Status.PENDING_REVIEW,
-            self.Status.VALID_WITH_WARNINGS,
-            self.Status.INVALID,
-            self.Status.DUPLICATE,
-        ):
-            raise ValidationError(
-                "La fila no está disponible para rechazo."
-            )
-
-        self.status = self.Status.REJECTED
-        self.import_result = (
-            self.ImportResult.REJECTED
-        )
-        self.rejected_at = timezone.now()
-        self.rejected_by = user
-        self.rejection_reason = reason
-        self.import_finished_at = timezone.now()
         self.updated_by = user
-
         self.save()
 
     def start_import(
         self,
+        *,
         user=None,
     ):
         if not self.can_import:
             raise ValidationError(
-                "La fila no está disponible para importación."
-            )
-
-        if self.import_batch.dry_run:
-            raise ValidationError(
-                "El lote está configurado únicamente "
-                "para validación."
+                "El lote no está disponible para importación."
             )
 
         self.status = self.Status.IMPORTING
-        self.import_result = (
-            self.ImportResult.PENDING
-        )
         self.import_started_at = timezone.now()
         self.import_finished_at = None
-        self.error_category = self.ErrorCategory.NONE
+        self.imported_rows = 0
+        self.updated_rows = 0
+        self.unchanged_rows = 0
+        self.skipped_rows = 0
+        self.failed_rows = 0
+        self.current_stage = "Importando registros"
+        self.import_summary = {}
         self.error_code = ""
         self.error_message = ""
         self.exception_type = ""
         self.stack_trace = ""
+        self.next_retry_at = None
         self.updated_by = user
 
         self.save()
 
-    def mark_created(
+    def update_import_progress(
         self,
         *,
-        result_object,
-        imported_values=None,
-        daily_attendance=None,
-        rollback_available=True,
-        user=None,
+        imported_increment=0,
+        updated_increment=0,
+        unchanged_increment=0,
+        skipped_increment=0,
+        failed_increment=0,
+        current_stage="",
     ):
         if self.status != self.Status.IMPORTING:
             raise ValidationError(
-                "La fila no está importándose."
+                "El lote no está importándose."
             )
 
-        if result_object is None:
-            raise ValidationError(
-                "Debes indicar el registro creado."
-            )
-
-        content_type = ContentType.objects.get_for_model(
-            result_object,
-            for_concrete_model=False,
+        increments = (
+            imported_increment,
+            updated_increment,
+            unchanged_increment,
+            skipped_increment,
+            failed_increment,
         )
 
-        now = timezone.now()
-
-        self.status = self.Status.IMPORTED
-        self.import_result = self.ImportResult.CREATED
-        self.result_content_type = content_type
-        self.result_object_id = str(
-            result_object.pk
-        )
-        self.result_representation = str(
-            result_object
-        )[:500]
-        self.imported_values = imported_values or {}
-        self.import_finished_at = now
-        self.rollback_available = rollback_available
-        self.daily_attendance = daily_attendance
-
-        if (
-            content_type.app_label == "attendance"
-            and content_type.model == "attendancerecord"
+        if any(
+            value < 0
+            for value in increments
         ):
-            self.attendance_record = result_object
+            raise ValidationError(
+                "Los incrementos no pueden ser negativos."
+            )
 
-        self.updated_by = user
+        self.imported_rows += imported_increment
+        self.updated_rows += updated_increment
+        self.unchanged_rows += unchanged_increment
+        self.skipped_rows += skipped_increment
+        self.failed_rows += failed_increment
+
+        if current_stage:
+            self.current_stage = str(
+                current_stage
+            ).strip()
+
         self.save()
 
-    def mark_updated(
+    def finish_import(
         self,
         *,
-        result_object,
-        previous_values,
-        imported_values,
-        changed_fields,
-        daily_attendance=None,
-        rollback_available=True,
+        summary=None,
+        warnings=None,
+        errors=None,
         user=None,
     ):
         if self.status != self.Status.IMPORTING:
             raise ValidationError(
-                "La fila no está importándose."
+                "El lote no está importándose."
             )
 
-        if result_object is None:
-            raise ValidationError(
-                "Debes indicar el registro actualizado."
-            )
-
-        content_type = ContentType.objects.get_for_model(
-            result_object,
-            for_concrete_model=False,
-        )
-
-        now = timezone.now()
-
-        self.status = self.Status.UPDATED
-        self.import_result = self.ImportResult.UPDATED
-        self.result_content_type = content_type
-        self.result_object_id = str(
-            result_object.pk
-        )
-        self.result_representation = str(
-            result_object
-        )[:500]
-        self.previous_values = previous_values or {}
-        self.imported_values = imported_values or {}
-        self.changed_fields = changed_fields or []
-        self.import_finished_at = now
-        self.rollback_available = rollback_available
-        self.daily_attendance = daily_attendance
-
-        if (
-            content_type.app_label == "attendance"
-            and content_type.model == "attendancerecord"
-        ):
-            self.attendance_record = result_object
-
-        self.updated_by = user
-        self.save()
-
-    def mark_unchanged(
-        self,
-        *,
-        result_object=None,
-        imported_values=None,
-        user=None,
-    ):
-        if self.status != self.Status.IMPORTING:
-            raise ValidationError(
-                "La fila no está importándose."
-            )
-
-        if result_object is not None:
-            content_type = ContentType.objects.get_for_model(
-                result_object,
-                for_concrete_model=False,
-            )
-
-            self.result_content_type = content_type
-            self.result_object_id = str(
-                result_object.pk
-            )
-            self.result_representation = str(
-                result_object
-            )[:500]
-
-        self.status = self.Status.UNCHANGED
-        self.import_result = self.ImportResult.UNCHANGED
-        self.imported_values = imported_values or {}
         self.import_finished_at = timezone.now()
-        self.rollback_available = False
-        self.updated_by = user
+        self.imported_by = user
+        self.import_summary = summary or {}
+        self.warnings = warnings or self.warnings
+        self.errors = errors or self.errors
+        self.current_stage = "Importación finalizada"
+        self.progress_percentage = 100
+        self.rollback_available = bool(
+            self.imported_rows
+            or self.updated_rows
+        )
 
-        self.save()
-
-    def skip(
-        self,
-        *,
-        reason,
-        user=None,
-    ):
-        reason = str(
-            reason or ""
-        ).strip()
-
-        if not reason:
-            raise ValidationError(
-                "Debes indicar el motivo de omisión."
+        if (
+            self.failed_rows > 0
+            or self.skipped_rows > 0
+        ):
+            self.status = (
+                self.Status.PARTIALLY_COMPLETED
             )
+        else:
+            self.status = self.Status.COMPLETED
 
-        if self.is_finished:
-            raise ValidationError(
-                "La fila ya se encuentra finalizada."
-            )
-
-        now = timezone.now()
-
-        if not self.validation_finished_at:
-            self.validation_finished_at = now
-
-        self.status = self.Status.SKIPPED
-        self.import_result = self.ImportResult.SKIPPED
-        self.import_finished_at = now
-        self.warnings = [
-            *list(self.warnings or []),
-            {
-                "code": "SKIPPED",
-                "message": reason,
-                "recorded_at": now.isoformat(),
-            },
-        ]
         self.updated_by = user
-
         self.save()
 
     def mark_failed(
         self,
         *,
         error,
-        error_category=ErrorCategory.SYSTEM,
         error_code="",
         exception_type="",
         stack_trace="",
+        errors=None,
         next_retry_at=None,
         user=None,
     ):
@@ -2384,26 +1864,17 @@ class AttendanceImportItem(models.Model):
 
         if not error:
             raise ValidationError(
-                "Debes indicar el error de importación."
+                "Debes indicar el error."
             )
 
         if self.is_finished:
             raise ValidationError(
-                "La fila ya se encuentra finalizada."
+                "El lote ya está finalizado."
             )
 
         now = timezone.now()
 
-        if not self.validation_finished_at:
-            self.validation_finished_at = now
-
-        if not self.import_started_at:
-            self.import_started_at = now
-
         self.status = self.Status.FAILED
-        self.import_result = self.ImportResult.FAILED
-        self.import_finished_at = now
-        self.error_category = error_category
         self.error_code = str(
             error_code or ""
         ).strip()
@@ -2414,8 +1885,20 @@ class AttendanceImportItem(models.Model):
         self.stack_trace = str(
             stack_trace or ""
         )
-        self.requires_review = True
-        self.review_reason = error
+        self.errors = errors or []
+        self.current_stage = "Error de procesamiento"
+
+        if (
+            self.validation_started_at
+            and not self.validation_finished_at
+        ):
+            self.validation_finished_at = now
+
+        if (
+            self.import_started_at
+            and not self.import_finished_at
+        ):
+            self.import_finished_at = now
 
         if (
             self.retry_count < self.maximum_retries
@@ -2431,128 +1914,39 @@ class AttendanceImportItem(models.Model):
     def prepare_retry(
         self,
         *,
-        sequence_number,
         next_retry_at=None,
         user=None,
     ):
         if not self.can_retry:
             raise ValidationError(
-                "La fila no admite otro reintento."
+                "El lote no admite otro reintento."
             )
 
-        retry_item = AttendanceImportItem(
-            import_batch=self.import_batch,
-            sequence_number=sequence_number,
-            source_row_number=self.source_row_number,
-            source_sheet_name=self.source_sheet_name,
-            item_type=self.item_type,
-            raw_data=dict(
-                self.raw_data or {}
-            ),
-            normalized_data=dict(
-                self.normalized_data or {}
-            ),
-            transformed_data=dict(
-                self.transformed_data or {}
-            ),
-            employee_profile=self.employee_profile,
-            employee_match_result=(
-                self.employee_match_result
-            ),
-            employee_match_value=self.employee_match_value,
-            employee_match_field=self.employee_match_field,
-            employee_match_candidates=list(
-                self.employee_match_candidates or []
-            ),
-            attendance_device=self.attendance_device,
-            device_match_result=self.device_match_result,
-            device_match_value=self.device_match_value,
-            device_match_field=self.device_match_field,
-            device_match_candidates=list(
-                self.device_match_candidates or []
-            ),
-            parsed_date=self.parsed_date,
-            parsed_time=self.parsed_time,
-            parsed_datetime=self.parsed_datetime,
-            source_timezone_name=self.source_timezone_name,
-            external_reference=self.external_reference,
-            device_record_id=self.device_record_id,
-            source_checksum=self.source_checksum,
-            retry_count=self.retry_count + 1,
-            maximum_retries=self.maximum_retries,
-            next_retry_at=next_retry_at,
-            retry_of=self,
-            metadata={
-                **dict(self.metadata or {}),
-                "original_item_id": str(self.id),
-                "original_sequence_number": (
-                    self.sequence_number
-                ),
-            },
-            created_by=user,
-            updated_by=user,
-        )
+        if (
+            next_retry_at
+            and next_retry_at <= timezone.now()
+        ):
+            raise ValidationError(
+                "El próximo reintento debe ser futuro."
+            )
 
-        retry_item.save()
-
+        self.retry_count += 1
         self.next_retry_at = next_retry_at
-        self.updated_by = user
-
-        self.save(
-            update_fields=[
-                "next_retry_at",
-                "updated_by",
-                "updated_at",
-            ]
-        )
-
-        return retry_item
-
-    def mark_rolled_back(
-        self,
-        *,
-        user,
-        reason,
-        result=None,
-    ):
-        reason = str(
-            reason or ""
-        ).strip()
-
-        if not reason:
-            raise ValidationError(
-                "Debes indicar el motivo de reversión."
-            )
-
-        if not self.can_rollback:
-            raise ValidationError(
-                "La fila no está disponible para reversión."
-            )
-
-        now = timezone.now()
-
-        self.status = self.Status.ROLLED_BACK
-        self.import_result = (
-            self.ImportResult.ROLLED_BACK
-        )
-        self.rolled_back_at = now
-        self.rolled_back_by = user
-        self.rollback_reason = reason
-        self.rollback_result = result or {}
-        self.import_finished_at = (
-            self.import_finished_at
-            or now
-        )
-        self.rollback_available = False
+        self.status = self.Status.PENDING_VALIDATION
+        self.error_code = ""
+        self.error_message = ""
+        self.exception_type = ""
+        self.stack_trace = ""
+        self.errors = []
         self.updated_by = user
 
         self.save()
 
-    def cancel(
+    def request_cancel(
         self,
         *,
-        user=None,
-        reason="",
+        user,
+        reason,
     ):
         reason = str(
             reason or ""
@@ -2565,27 +1959,109 @@ class AttendanceImportItem(models.Model):
 
         if self.is_finished:
             raise ValidationError(
-                "La fila ya está finalizada."
+                "El lote ya no puede cancelarse."
             )
 
         now = timezone.now()
 
-        if not self.validation_finished_at:
-            self.validation_finished_at = now
+        self.cancel_requested_at = now
+        self.cancel_requested_by = user
+        self.cancellation_reason = reason
+        self.updated_by = user
+
+        if self.status in (
+            self.Status.DRAFT,
+            self.Status.UPLOADED,
+            self.Status.PENDING_VALIDATION,
+            self.Status.VALIDATED,
+            self.Status.VALIDATED_WITH_WARNINGS,
+            self.Status.PENDING_IMPORT,
+        ):
+            self.status = self.Status.CANCELLED
+            self.cancelled_at = now
+            self.cancelled_by = user
+            self.next_retry_at = None
+        else:
+            self.status = self.Status.CANCEL_REQUESTED
+
+        self.save()
+
+    def mark_cancelled(
+        self,
+        *,
+        user=None,
+    ):
+        if self.status != self.Status.CANCEL_REQUESTED:
+            raise ValidationError(
+                "El lote no tiene una cancelación pendiente."
+            )
+
+        now = timezone.now()
 
         self.status = self.Status.CANCELLED
-        self.import_result = (
-            self.ImportResult.SKIPPED
+        self.cancelled_at = now
+        self.cancelled_by = user
+        self.next_retry_at = None
+        self.current_stage = "Importación cancelada"
+        self.updated_by = user
+
+        if (
+            self.import_started_at
+            and not self.import_finished_at
+        ):
+            self.import_finished_at = now
+
+        self.save()
+
+    def start_rollback(
+        self,
+        *,
+        user,
+        reason,
+    ):
+        reason = str(
+            reason or ""
+        ).strip()
+
+        if not reason:
+            raise ValidationError(
+                "Debes indicar el motivo de reversión."
+            )
+
+        if not self.can_rollback:
+            raise ValidationError(
+                "El lote no está disponible para reversión."
+            )
+
+        self.rollback_started_at = timezone.now()
+        self.rolled_back_by = user
+        self.rollback_reason = reason
+        self.current_stage = "Revirtiendo importación"
+        self.updated_by = user
+
+        self.save()
+
+    def mark_rolled_back(
+        self,
+        *,
+        result=None,
+        user=None,
+    ):
+        if not self.rollback_started_at:
+            raise ValidationError(
+                "La reversión no ha sido iniciada."
+            )
+
+        self.status = self.Status.ROLLED_BACK
+        self.rolled_back_at = timezone.now()
+        self.rolled_back_by = (
+            user
+            or self.rolled_back_by
         )
-        self.import_finished_at = now
-        self.warnings = [
-            *list(self.warnings or []),
-            {
-                "code": "CANCELLED",
-                "message": reason,
-                "recorded_at": now.isoformat(),
-            },
-        ]
+        self.rollback_result = result or {}
+        self.rollback_available = False
+        self.current_stage = "Importación revertida"
+        self.next_retry_at = None
         self.updated_by = user
 
         self.save()
@@ -2607,7 +2083,7 @@ class AttendanceImportItem(models.Model):
 
         if not self.is_finished:
             raise ValidationError(
-                "Solo puedes archivar una fila finalizada."
+                "Solo puedes archivar un lote finalizado."
             )
 
         self.archived_at = timezone.now()

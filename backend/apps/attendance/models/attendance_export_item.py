@@ -11,8 +11,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
-
-
+from .attendance_export_batch import AttendanceExportBatch
 
 class AttendanceExportItem(models.Model):
     """
